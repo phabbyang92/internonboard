@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HR 学生详情原型</title>
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="index.html">
+          <span class="brand-mark">IN</span>
+          <span>HR 后台</span>
+        </a>
+        <nav class="topnav" aria-label="HR 后台页面">
+          <a class="nav-link" href="hr-students.html">学生列表</a>
+          <a class="nav-link active" href="hr-student-detail.html">学生详情</a>
+          <a class="nav-link" href="index.html">原型总览</a>
+        </nav>
+      </header>
+
+      <main class="page">
+        <section class="page-head">
+          <div>
+            <h1 class="page-title">杨晨</h1>
+            <p class="page-subtitle">INT-2026-0001 · 咨询师助理 · token 已提交 · 来源邀请 invite001</p>
+          </div>
+          <div class="actions">
+            <a class="btn" href="hr-students.html">返回列表</a>
+            <button class="btn primary" type="button" data-prototype-action="原型提示：附件下载会在后端校验 HR 登录态">下载全部附件</button>
+          </div>
+        </section>
+
+        <div class="detail-layout">
+          <div class="section-stack">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">个人情况</h2>
+                  <p class="panel-note">身份证号在 HR 后台默认脱敏，必要时再通过权限查看。</p>
+                </div>
+              </div>
+              <div class="panel-body">
+                <div class="kv">
+                  <div class="kv-item">
+                    <div class="kv-label">姓名</div>
+                    <div class="kv-value">杨晨</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">性别</div>
+                    <div class="kv-value">女</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">出生日期</div>
+                    <div class="kv-value">1998-05-30</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">身份证号</div>
+                    <div class="kv-value">430203********0221</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">在读学校</div>
+                    <div class="kv-value">美国佐治亚理工学院</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">专业</div>
+                    <div class="kv-value">计算机科学</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">邮箱</div>
+                    <div class="kv-value">student@example.com</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">联系电话</div>
+                    <div class="kv-value">13027339363</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">投递渠道</div>
+                    <div class="kv-value">官网</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">家庭地址</div>
+                    <div class="kv-value">湖南株洲石峰区北欧小镇</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <h2 class="panel-title">教育情况</h2>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>起始年</th>
+                      <th>终止年</th>
+                      <th>学校</th>
+                      <th>专业</th>
+                      <th>班主任</th>
+                      <th>联系电话</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>2025</td>
+                      <td>2027</td>
+                      <td>佐治亚理工学院</td>
+                      <td>计算机科学</td>
+                      <td>-</td>
+                      <td>-</td>
+                    </tr>
+                    <tr>
+                      <td>2021</td>
+                      <td>2023</td>
+                      <td>南加州大学</td>
+                      <td>计算机科学</td>
+                      <td>-</td>
+                      <td>-</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <h2 class="panel-title">家庭关系</h2>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>关系</th>
+                      <th>姓名</th>
+                      <th>工作单位</th>
+                      <th>联系电话</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>父亲</td>
+                      <td>杨先生</td>
+                      <td>-</td>
+                      <td>13807339808</td>
+                    </tr>
+                    <tr>
+                      <td>母亲</td>
+                      <td>黄女士</td>
+                      <td>-</td>
+                      <td>13017102828</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <aside class="section-stack">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">HR 入职安排</h2>
+                  <p class="panel-note">第一版可先展示，后续再支持编辑。</p>
+                </div>
+              </div>
+              <div class="panel-body">
+                <div class="section-stack">
+                  <div class="field">
+                    <label>实习开始日期</label>
+                    <div class="readonly-value">2026-07-15</div>
+                  </div>
+                  <div class="field">
+                    <label>实习结束日期</label>
+                    <div class="readonly-value">2026-10-15</div>
+                  </div>
+                  <div class="field">
+                    <label>工作地点</label>
+                    <div class="readonly-value">上海徐汇</div>
+                  </div>
+                  <button class="btn subtle" type="button" data-prototype-action="后续版本：编辑实习日期和地点">后续编辑入口</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <h2 class="panel-title">附件</h2>
+              </div>
+              <div class="panel-body">
+                <div class="attachment-list">
+                  <div class="attachment">
+                    <div>
+                      <strong>resume-yangchen.pdf</strong>
+                      <span>简历 · 824 KB · local</span>
+                    </div>
+                    <button class="btn small" type="button" data-prototype-action="原型提示：下载简历">下载</button>
+                  </div>
+                  <div class="attachment">
+                    <div>
+                      <strong>id-card-front.jpg</strong>
+                      <span>身份证件 · 1.8 MB · local</span>
+                    </div>
+                    <button class="btn small" type="button" data-prototype-action="原型提示：下载身份证件">下载</button>
+                  </div>
+                  <div class="attachment">
+                    <div>
+                      <strong>agreement.pdf</strong>
+                      <span>其他附件 · 420 KB · local</span>
+                    </div>
+                    <button class="btn small" type="button" data-prototype-action="原型提示：下载协议附件">下载</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <h2 class="panel-title">token 关系</h2>
+              </div>
+              <div class="panel-body">
+                <div class="kv">
+                  <div class="kv-item">
+                    <div class="kv-label">invite._id</div>
+                    <div class="kv-value">invite001</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">student._id</div>
+                    <div class="kv-value">student001</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">studentCode</div>
+                    <div class="kv-value">INT-2026-0001</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-label">状态</div>
+                    <div class="kv-value">submitted</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </main>
+    </div>
+    <script src="assets/app.js"></script>
+  </body>
+</html>
