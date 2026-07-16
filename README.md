@@ -22,6 +22,7 @@
 - 学生列表分页查询
 - 按姓名、邮箱或手机号搜索学生
 - 按入职状态筛选学生
+- HR 获取学生完整详情
 - HR 单独设置学生工作地点和入职开始时间
 - HR 批量设置学生工作地点和入职开始时间
 - 安排完成后将学生状态更新为 `pending_onboarding`
@@ -208,6 +209,7 @@ prototype/index.html
 | --- | --- | --- |
 | `POST` | `/api/hr/students` | 新增单个学生 |
 | `GET` | `/api/hr/students` | 获取学生列表 |
+| `GET` | `/api/hr/students/:id` | 获取学生完整详情 |
 | `PATCH` | `/api/hr/students/:id/arrangement` | 设置单个学生的入职安排 |
 | `PATCH` | `/api/hr/students/batch-arrangement` | 批量设置学生入职安排 |
 

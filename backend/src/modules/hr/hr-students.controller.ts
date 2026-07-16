@@ -31,6 +31,11 @@ export class HrStudentsController {
     // The guard has already verified that this request belongs to an HR user.
     return this.studentService.findAll(query);
   }
+  @Get(':id')
+  findOneById(@Param('id') id: string) {
+    // The controller passes the URL ID to the service.
+    return this.studentService.findOneById(id);
+  }
   @Patch('batch-arrangement')
   batchUpdateArrangement(
     @Body() dto: BatchUpdateStudentArrangementDto,

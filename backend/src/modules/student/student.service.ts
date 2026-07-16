@@ -82,6 +82,49 @@ export class StudentService {
       },
     };
   }
+  async findOneById(id: string) {
+    // Reuse the shared lookup to validate the ID and exclude deleted students.
+    const student = await this.findActiveStudentById(id);
+
+    return {
+      id: student._id.toString(),
+
+      name: student.name,
+      email: student.email,
+      phone: student.phone ?? null,
+      onboardingStatus: student.onboardingStatus,
+
+      basicInfo: student.basicInfo ?? null,
+      educationExperiences: student.educationExperiences,
+      familyMembers: student.familyMembers,
+      internshipExperiences: student.internshipExperiences,
+
+      emergencyContactName: student.emergencyContactName ?? null,
+      emergencyContactPhone: student.emergencyContactPhone ?? null,
+      emergencyContactRelation: student.emergencyContactRelation ?? null,
+
+      hasIdCopyAndAgreement: student.hasIdCopyAndAgreement ?? null,
+      agreementSignedAt: student.agreementSignedAt ?? null,
+      notes: student.notes ?? null,
+      applicantSignature: student.applicantSignature ?? null,
+      applicantSignedAt: student.applicantSignedAt ?? null,
+
+      // Only return file metadata. File download will use a separate API later.
+      attachments: student.attachments.map((attachment) => ({
+        type: attachment.type,
+        originalName: attachment.originalName,
+        storageKey: attachment.storageKey,
+      })),
+
+      workLocation: student.workLocation ?? null,
+      onboardingStartAt: student.onboardingStartAt ?? null,
+      onboardingEndAt: student.onboardingEndAt ?? null,
+      submittedAt: student.submittedAt ?? null,
+
+      createdAt: student.createdAt,
+      updatedAt: student.updatedAt,
+    };
+  }
 
   async updateArrangement(
     id: string,
