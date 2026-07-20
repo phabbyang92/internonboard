@@ -9,6 +9,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { TrimString } from '../../../common/transforms/trim-string.transform';
 import { SubmitStudentFormDto } from '../../student/dto/submit-student-form.dto';
 import { UpdateBasicInfoDto } from './update-basic-info.dto';
 
@@ -19,12 +20,14 @@ export class UpdateStudentProfileDto extends PartialType(
 ) {
   // 姓名和邮箱不是学生提交 DTO 的字段，但 HR 可以修正预录入错误。
   @IsOptional()
+  @TrimString()
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name?: string;
 
   @IsOptional()
+  @TrimString()
   @IsEmail()
   @MaxLength(254)
   email?: string;

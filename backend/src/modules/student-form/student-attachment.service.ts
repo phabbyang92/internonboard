@@ -75,10 +75,17 @@ export class StudentAttachmentService {
       storageKey,
     );
 
-    // LocalFileStorageService also validates that the key stays under uploads/.
-    await this.fileStorage.delete(attachment.storageKey);
-
-    this.logger.log(`Deleted local file ${attachment.storageKey}`);
+    // MongoDB 元数据已经删除。物理文件清理失败时记录错误，避免把成功的
+    // 数据库操作返回成失败响应并诱发重复删除请求。
+    try {
+      await this.fileStorage.delete(attachment.storageKey);
+      this.logger.log(`Deleted local file ${attachment.storageKey}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to delete attachment file ${attachment.storageKey}: ${message}`,
+      );
+    }
 
     return {
       message: '附件删除成功',

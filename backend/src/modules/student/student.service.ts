@@ -148,7 +148,7 @@ export class StudentService {
           },
         },
         {
-          new: true,
+          returnDocument: 'after',
           runValidators: true,
         },
       )
@@ -194,7 +194,7 @@ export class StudentService {
           },
         },
         {
-          new: true,
+          returnDocument: 'after',
           runValidators: true,
         },
       )
@@ -237,7 +237,7 @@ export class StudentService {
         },
         {
           // 返回删除前的记录，以便取得附件的三个元数据字段。
-          new: false,
+          returnDocument: 'before',
         },
       )
       .exec();
@@ -318,7 +318,10 @@ export class StudentService {
     // 先读取当前记录，用于给出明确错误并校验 HR 安排的开始时间。
     const student = await this.ensureFormIsEditable(id);
 
+    this.validateRequiredAttachments(student);
     this.validateExperienceYears(dto);
+    this.validateFormDates(dto);
+    this.validateAgreementInfo(dto);
 
     if (!student.onboardingStartAt) {
       throw new BadRequestException('HR 尚未安排入职开始时间');
@@ -337,9 +340,12 @@ export class StudentService {
         {
           _id: id,
           isDeleted: false,
-
-          // 这是防止重复提交的关键条件。
           submittedAt: null,
+
+          // 防止附件在提交请求执行期间被另一个请求删除。
+          'attachments.type': {
+            $all: [AttachmentType.Resume, AttachmentType.IdCard],
+          },
         },
         {
           $set: {
@@ -376,7 +382,7 @@ export class StudentService {
         },
         {
           // 返回更新后的学生记录，并执行 Mongoose Schema 校验。
-          new: true,
+          returnDocument: 'after',
           runValidators: true,
         },
       )
@@ -384,7 +390,10 @@ export class StudentService {
 
     if (!updatedStudent) {
       // 并发情况下，另一个请求可能已经先完成提交。
-      await this.ensureFormIsEditable(id);
+      const currentStudent = await this.ensureFormIsEditable(id);
+
+      // 如果提交期间附件被删除，返回明确的附件缺失提示。
+      this.validateRequiredAttachments(currentStudent);
 
       throw new ConflictException('登记表提交状态已发生变化，请重试');
     }
@@ -525,7 +534,7 @@ export class StudentService {
             $set: updates,
           },
           {
-            new: true,
+            returnDocument: 'after',
             runValidators: true,
           },
         )
@@ -728,7 +737,7 @@ export class StudentService {
           },
         },
         {
-          new: true,
+          returnDocument: 'after',
           runValidators: true,
         },
       )
@@ -776,6 +785,28 @@ export class StudentService {
     }
   }
 
+  private validateRequiredAttachments(student: StudentDocument): void {
+    const attachmentTypes = new Set(
+      student.attachments.map((attachment) => attachment.type),
+    );
+
+    const missingAttachments: string[] = [];
+
+    if (!attachmentTypes.has(AttachmentType.Resume)) {
+      missingAttachments.push('简历');
+    }
+
+    if (!attachmentTypes.has(AttachmentType.IdCard)) {
+      missingAttachments.push('身份证件');
+    }
+
+    if (missingAttachments.length > 0) {
+      throw new BadRequestException(
+        `请先上传必需附件：${missingAttachments.join('、')}`,
+      );
+    }
+  }
+
   private validateExperienceYears(dto: SubmitStudentFormDto): void {
     const hasInvalidEducation = dto.educationExperiences.some(
       (item) => item.endYear < item.startYear,
@@ -791,6 +822,28 @@ export class StudentService {
 
     if (hasInvalidInternship) {
       throw new BadRequestException('实习经历的结束年份不能早于开始年份');
+    }
+  }
+
+  private validateFormDates(dto: SubmitStudentFormDto): void {
+    const now = new Date();
+
+    if (new Date(dto.basicInfo.birthDate) >= now) {
+      throw new BadRequestException('出生日期必须早于当前时间');
+    }
+
+    if (new Date(dto.applicantSignedAt) > now) {
+      throw new BadRequestException('申请人签署时间不能晚于当前时间');
+    }
+
+    if (dto.agreementSignedAt && new Date(dto.agreementSignedAt) > now) {
+      throw new BadRequestException('协议签署时间不能晚于当前时间');
+    }
+  }
+
+  private validateAgreementInfo(dto: SubmitStudentFormDto): void {
+    if (dto.hasIdCopyAndAgreement && !dto.agreementSignedAt) {
+      throw new BadRequestException('请填写服务协议签署时间');
     }
   }
 

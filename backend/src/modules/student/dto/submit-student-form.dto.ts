@@ -12,6 +12,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { TrimString } from '../../../common/transforms/trim-string.transform';
 import { BasicInfoDto } from './basic-info.dto';
 import { EducationExperienceDto } from './education-experience.dto';
 import { FamilyMemberDto } from './family-member.dto';
@@ -19,6 +20,7 @@ import { InternshipExperienceDto } from './internship-experience.dto';
 
 export class SubmitStudentFormDto {
   // 姓名和邮箱来自 HR 预录入记录，学生只补充联系电话。
+  @TrimString()
   @IsString()
   @IsNotEmpty()
   @MaxLength(30)
@@ -48,16 +50,19 @@ export class SubmitStudentFormDto {
   @Type(() => InternshipExperienceDto)
   internshipExperiences!: InternshipExperienceDto[];
 
+  @TrimString()
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   emergencyContactName!: string;
 
+  @TrimString()
   @IsString()
   @IsNotEmpty()
   @MaxLength(30)
   emergencyContactPhone!: string;
 
+  @TrimString()
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
@@ -71,10 +76,12 @@ export class SubmitStudentFormDto {
   agreementSignedAt?: string;
 
   @IsOptional()
+  @TrimString()
   @IsString()
   @MaxLength(2000)
   notes?: string;
 
+  @TrimString()
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)

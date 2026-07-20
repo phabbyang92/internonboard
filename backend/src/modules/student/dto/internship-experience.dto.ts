@@ -8,6 +8,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { TrimString } from '../../../common/transforms/trim-string.transform';
 
 export class InternshipExperienceDto {
   @Type(() => Number)
@@ -22,17 +23,20 @@ export class InternshipExperienceDto {
   @Max(2100)
   endYear!: number;
 
+  @TrimString()
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
   company!: string;
 
   @IsOptional()
+  @TrimString()
   @IsString()
   @MaxLength(100)
   referenceName?: string;
 
   @IsOptional()
+  @TrimString()
   @IsString()
   @MaxLength(30)
   phone?: string;

@@ -241,7 +241,8 @@ export class HrStudentManagementService {
       studentId,
       action: OperationAction.StudentSoftDeleted,
       changes: {
-        reason: dto.reason?.trim() || null,
+        // DELETE 请求可以不携带 body，因此这里使用可选链保护。
+        reason: dto?.reason?.trim() || null,
         previousOnboardingStatus: before.onboardingStatus,
         previousWorkLocation: before.workLocation,
       },

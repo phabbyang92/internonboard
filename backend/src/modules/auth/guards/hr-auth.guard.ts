@@ -24,7 +24,14 @@ export class HrAuthGuard implements CanActivate {
 
     try {
       // verifyAsync checks the signature and expiration time.
-      request.hrUser = await this.jwtService.verifyAsync<HrJwtPayload>(token);
+      const payload = await this.jwtService.verifyAsync<HrJwtPayload>(token);
+
+      // HR 和学生共用签名密钥，所以必须检查 token 的身份类型。
+      if (payload.actor !== 'hr') {
+        throw new UnauthorizedException();
+      }
+
+      request.hrUser = payload;
 
       return true;
     } catch {

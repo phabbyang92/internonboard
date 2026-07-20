@@ -36,6 +36,7 @@
 - 工作地点生效历史记录
 - MongoDB 持久化操作日志及分页查询
 - NestJS Logger 记录服务运行日志
+- Jest 单元测试和基于真实 HTTP、MongoDB 的端到端测试
 - 纯前端交互原型
 
 当前尚未实现入职状态定时自动更新、打卡模块、阿里云 OSS 实现和前后端 API 集成。
@@ -185,6 +186,31 @@ prototype/index.html
 ```
 
 静态原型使用模拟数据，不连接后端或 MongoDB。
+
+### 8. 运行测试
+
+```bash
+cd internonboard/backend
+
+# 单元测试
+npm test
+
+# 单元测试覆盖率
+npm run test:cov
+
+# HTTP 端到端测试
+npm run test:e2e
+```
+
+端到端测试默认连接独立数据库
+`mongodb://127.0.0.1:27017/intern_onboarding_e2e`，并会在每个测试前后清空该测试数据库的数据，不会修改开发数据库 `intern_onboarding`。
+
+如需使用其他测试数据库，可单独设置 `E2E_MONGODB_URI`。为了防止误删数据，数据库名称必须以 `_e2e` 结尾：
+
+```bash
+E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
+  npm run test:e2e
+```
 
 ## API 接口
 

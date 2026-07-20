@@ -132,7 +132,7 @@ export class HrAttachmentService {
             },
           },
           {
-            new: true,
+            returnDocument: 'after',
             runValidators: true,
           },
         )
@@ -208,7 +208,7 @@ export class HrAttachmentService {
           },
         },
         {
-          new: true,
+          returnDocument: 'after',
           runValidators: true,
         },
       )

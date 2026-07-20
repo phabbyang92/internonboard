@@ -8,6 +8,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { TrimString } from '../../../common/transforms/trim-string.transform';
 import { OnboardingStatus } from '../enums/student.enums';
 
 export class ListStudentsQueryDto {
@@ -26,6 +27,7 @@ export class ListStudentsQueryDto {
   limit: number = 20;
 
   @IsOptional()
+  @TrimString()
   @IsString()
   @MaxLength(100)
   keyword?: string;

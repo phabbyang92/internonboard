@@ -35,6 +35,7 @@ export class AuthService {
 
     const payload: HrJwtPayload = {
       sub: hrUser._id.toString(),
+      actor: 'hr',
       email: hrUser.email,
       name: hrUser.name,
       role: hrUser.role,

@@ -104,6 +104,7 @@ export class LocalFileStorageService implements FileStorage {
   }
 
   private isFileSystemError(error: unknown): error is NodeJS.ErrnoException {
-    return error instanceof Error && 'code' in error;
+    // Node 错误可能来自不同的 VM 上下文，不能只依赖 instanceof Error。
+    return typeof error === 'object' && error !== null && 'code' in error;
   }
 }
