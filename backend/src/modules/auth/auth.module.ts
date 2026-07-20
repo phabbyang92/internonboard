@@ -6,9 +6,14 @@ import { AuthService } from './auth.service';
 import { HrUser, HrUserSchema } from './schemas/hr-user.schema';
 import { AuthController } from './auth.controller';
 import { HrAuthGuard } from './guards/hr-auth.guard';
+import { StudentModule } from '../student/student.module';
+import { StudentAuthService } from './student-auth.service';
+import { StudentAuthController } from './student-auth.controller';
+import { StudentAuthGuard } from './guards/student-auth.guard';
 
 @Module({
   imports: [
+    StudentModule,
     MongooseModule.forFeature([{ name: HrUser.name, schema: HrUserSchema }]),
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -18,8 +23,8 @@ import { HrAuthGuard } from './guards/hr-auth.guard';
       }),
     }),
   ],
-  providers: [AuthService, HrAuthGuard],
-  exports: [AuthService, HrAuthGuard, JwtModule],
-  controllers: [AuthController],
+  providers: [AuthService, StudentAuthService, HrAuthGuard, StudentAuthGuard],
+  exports: [AuthService, HrAuthGuard, JwtModule, StudentAuthGuard],
+  controllers: [AuthController, StudentAuthController],
 })
 export class AuthModule {}

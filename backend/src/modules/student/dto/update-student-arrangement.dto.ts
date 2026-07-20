@@ -1,19 +1,18 @@
-import {
-  IsISO8601,
-  IsNotEmpty,
-  IsString,
-  Matches,
-  MaxLength,
-} from 'class-validator';
+import { IsEnum, IsISO8601, IsOptional } from 'class-validator';
+import { WorkLocation } from '../enums/student.enums';
 
 export class UpdateStudentArrangementDto {
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/\S/, { message: '工作地点不能为空' })
-  @MaxLength(200)
-  workLocation!: string;
+  @IsOptional()
+  @IsEnum(WorkLocation, {
+    message: '请选择有效的工作地点',
+  })
+  workLocation?: WorkLocation;
 
-  // Require a complete ISO 8601 date-time with timezone information.
+  @IsOptional()
   @IsISO8601({ strict: true })
-  onboardingStartAt!: string;
+  onboardingStartAt?: string;
+
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  onboardingEndAt?: string;
 }

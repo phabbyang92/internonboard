@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
 import { BaseSchema } from '../../../common/schemas/base.schema';
-import { OnboardingStatus } from '../enums/student.enums';
+import { OnboardingStatus, WorkLocation } from '../enums/student.enums';
 import {
   Attachment,
   AttachmentSchema,
@@ -91,8 +91,12 @@ export class Student extends BaseSchema {
   @Prop({ type: Date, default: null })
   onboardingEndAt?: Date | null;
 
-  @Prop({ type: String, trim: true })
-  workLocation?: string;
+  @Prop({
+    type: String,
+    enum: Object.values(WorkLocation),
+    trim: true,
+  })
+  workLocation?: WorkLocation;
 
   @Prop({ type: Date, default: null })
   submittedAt?: Date | null;

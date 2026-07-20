@@ -26,10 +26,19 @@
 - HR 单独设置学生工作地点和入职开始时间
 - HR 批量设置学生工作地点和入职开始时间
 - 安排完成后将学生状态更新为 `pending_onboarding`
-- NestJS Logger 记录关键 HR 操作
+- 学生姓名和邮箱登录、JWT Cookie 鉴权
+- 学生获取并一次性提交登记表
+- 学生上传和删除未提交表单的附件
+- HR 修改学生登记信息和入职安排
+- HR 上传、替换、下载和删除学生附件
+- 本地文件存储抽象，可替换为阿里云 OSS 实现
+- HR 软删除学生
+- 工作地点生效历史记录
+- MongoDB 持久化操作日志及分页查询
+- NestJS Logger 记录服务运行日志
 - 纯前端交互原型
 
-当前尚未实现学生登录、登记表提交、附件上传下载、HR 学生详情编辑、学生软删除、入职状态自动更新和前后端 API 集成。
+当前尚未实现入职状态定时自动更新、打卡模块、阿里云 OSS 实现和前后端 API 集成。
 
 ## 项目结构
 
@@ -42,10 +51,13 @@ internonboard/
 │   │   │   └── schemas/              # 基础 Schema
 │   │   ├── database/                 # MongoDB 连接
 │   │   ├── modules/
-│   │   │   ├── auth/                 # HR 登录、JWT、Cookie、Guard
+│   │   │   ├── auth/                 # HR/学生登录、JWT、Cookie、Guard
 │   │   │   ├── hr/                   # HR 学生管理接口
 │   │   │   ├── student/              # 学生模型、DTO 和业务逻辑
-│   │   │   ├── file/                 # 文件模块，待开发
+│   │   │   ├── student-form/         # 学生登记表和附件接口
+│   │   │   ├── file/                 # 本地文件存储抽象和文件校验
+│   │   │   ├── operation-log/        # 持久化操作日志
+│   │   │   ├── work-location/        # 工作地点有效期历史
 │   │   │   └── onboarding/           # 入职状态模块，待开发
 │   │   ├── app.module.ts
 │   │   └── main.ts
@@ -210,8 +222,28 @@ prototype/index.html
 | `POST` | `/api/hr/students` | 新增单个学生 |
 | `GET` | `/api/hr/students` | 获取学生列表 |
 | `GET` | `/api/hr/students/:id` | 获取学生完整详情 |
+| `GET` | `/api/hr/students/:id/work-location-history` | 获取工作地点历史 |
+| `GET` | `/api/hr/students/:id/operation-logs` | 分页获取操作日志 |
+| `PATCH` | `/api/hr/students/:id/profile` | 修改学生登记信息 |
 | `PATCH` | `/api/hr/students/:id/arrangement` | 设置单个学生的入职安排 |
 | `PATCH` | `/api/hr/students/batch-arrangement` | 批量设置学生入职安排 |
+| `DELETE` | `/api/hr/students/:id` | 软删除学生 |
+| `POST` | `/api/hr/students/:id/attachments` | HR 上传附件 |
+| `PUT` | `/api/hr/students/:id/attachments/replace` | HR 替换附件 |
+| `DELETE` | `/api/hr/students/:id/attachments` | HR 删除附件 |
+| `GET` | `/api/hr/students/:id/attachments/download` | HR 下载附件 |
+
+### 学生登录和登记
+
+| Method | Path | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/student/login` | 使用姓名和邮箱登录 |
+| `POST` | `/api/student/logout` | 清除学生登录 Cookie |
+| `GET` | `/api/student/me` | 获取当前登录学生 |
+| `GET` | `/api/student/form` | 获取登记表和 HR 安排 |
+| `POST` | `/api/student/form/submit` | 一次性提交登记表 |
+| `POST` | `/api/student/attachments` | 提交前上传附件 |
+| `DELETE` | `/api/student/attachments` | 提交前删除附件 |
 
 新增学生请求体：
 

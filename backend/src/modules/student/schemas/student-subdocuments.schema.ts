@@ -1,10 +1,17 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { AttachmentType } from '../enums/student.enums';
+import { ApplicationDirection, AttachmentType } from '../enums/student.enums';
 
 @Schema({ _id: false })
 export class BasicInfo {
   @Prop({ trim: true })
   position?: string;
+
+  @Prop({
+    type: String,
+    enum: Object.values(ApplicationDirection),
+    trim: true,
+  })
+  applicationDirection?: ApplicationDirection;
 
   @Prop({ type: Date })
   formDate?: Date;

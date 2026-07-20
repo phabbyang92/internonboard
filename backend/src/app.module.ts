@@ -9,6 +9,7 @@ import { FileModule } from './modules/file/file.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { StudentFormModule } from './modules/student-form/student-form.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     AuthModule,
     FileModule,
     OnboardingModule,
+    StudentFormModule,
   ],
   controllers: [AppController],
   providers: [
