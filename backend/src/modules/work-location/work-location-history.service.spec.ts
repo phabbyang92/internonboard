@@ -47,7 +47,7 @@ function createService(model: AssignmentModelMock) {
   );
 }
 
-function input(workLocation = WorkLocation.ShanghaiOffice) {
+function input(workLocation: string = WorkLocation.ShanghaiOffice) {
   return {
     studentId: STUDENT_ID,
     workLocation,
@@ -85,6 +85,22 @@ describe('WorkLocationHistoryService', () => {
         effectiveFrom: new Date('2026-08-01T00:00:00.000Z'),
         effectiveTo: null,
       }),
+    );
+  });
+
+  it('preserves a legacy location label while backfilling history', async () => {
+    const model: AssignmentModelMock = {
+      findOne: jest.fn().mockReturnValue(queryResult(null)),
+      create: jest.fn(),
+    };
+    model.create.mockResolvedValue(
+      createAssignment({ workLocation: '上海静安' }),
+    );
+
+    await createService(model).recordAssignment(input('上海静安'));
+
+    expect(model.create).toHaveBeenCalledWith(
+      expect.objectContaining({ workLocation: '上海静安' }),
     );
   });
 

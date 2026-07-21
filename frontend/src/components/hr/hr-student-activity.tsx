@@ -10,7 +10,7 @@ import {
   getWorkLocationHistory,
   softDeleteHrStudent,
 } from "@/lib/api/hr-students";
-import { formatDateTime } from "@/lib/format-date";
+import { formatDateOnly, formatDateTime } from "@/lib/format-date";
 import type {
   OperationAction,
   OperationLogResponse,
@@ -56,8 +56,8 @@ const fieldLabels: Record<string, string> = {
   applicantSignature: "申请人签名",
   applicantSignedAt: "申请人签署日期",
   workLocation: "工作地点",
-  onboardingStartAt: "入职开始时间",
-  onboardingEndAt: "实习结束时间",
+  onboardingStartAt: "入职开始日期",
+  onboardingEndAt: "实习结束日期",
 };
 
 const emptyLogs: OperationLogResponse = {
@@ -98,7 +98,11 @@ function describeChanges(changes: Record<string, unknown> | null): string {
       const change = changes[field];
       if (!change || typeof change !== "object") return null;
       const pair = change as { before?: unknown; after?: unknown };
-      return `${fieldLabels[field]}：${valueText(pair.before)} → ${valueText(pair.after)}`;
+      const displayValue = (value: unknown) =>
+        field === "onboardingStartAt" || field === "onboardingEndAt"
+          ? formatDateOnly(typeof value === "string" ? value : null)
+          : valueText(value);
+      return `${fieldLabels[field]}：${displayValue(pair.before)} → ${displayValue(pair.after)}`;
     })
     .filter((item): item is string => item !== null);
 

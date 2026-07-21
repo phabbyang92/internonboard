@@ -4,7 +4,7 @@ import { StudentPageHeader } from "@/components/student/student-page-header";
 import { StudentPageState } from "@/components/student/student-page-state";
 import { StudentRegistrationForm } from "@/components/student/student-registration-form";
 import { useStudentFormAccess } from "@/hooks/use-student-form-access";
-import { formatDateTime } from "@/lib/format-date";
+import { formatDateOnly } from "@/lib/format-date";
 
 export default function StudentFormPage() {
   const { form, isLoading, errorMessage } =
@@ -55,9 +55,9 @@ export default function StudentFormPage() {
               </dd>
             </div>
             <div className="border-b border-[#e1e7e5] p-5 sm:border-r sm:border-b-0">
-              <dt className="text-xs font-medium text-[#75817d]">入职开始时间</dt>
+              <dt className="text-xs font-medium text-[#75817d]">入职开始日期</dt>
               <dd className="mt-2 text-sm font-semibold">
-                {formatDateTime(form.onboardingStartAt)}
+                {formatDateOnly(form.onboardingStartAt)}
               </dd>
             </div>
             <div className="p-5">

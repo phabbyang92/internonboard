@@ -3,12 +3,12 @@ import { AttachmentType } from '../student/enums/student.enums';
 import { StudentService } from '../student/student.service';
 import { StudentAttachmentService } from './student-attachment.service';
 
-function createPdfFile(): Express.Multer.File {
+function createPdfFile(originalname = 'resume.pdf'): Express.Multer.File {
   const buffer = Buffer.from('%PDF-1.7 test file');
 
   return {
     fieldname: 'file',
-    originalname: 'resume.pdf',
+    originalname,
     encoding: '7bit',
     mimetype: 'application/pdf',
     size: buffer.length,
@@ -59,6 +59,33 @@ describe('StudentAttachmentService', () => {
     ).rejects.toBe(databaseError);
     expect(fileStorage.delete).toHaveBeenCalledWith(
       'students/id/resume/new.pdf',
+    );
+  });
+
+  it('normalizes a Chinese filename before storing metadata', async () => {
+    const { service, studentService, fileStorage } = createDependencies();
+    const originalName = '中文简历.pdf';
+    const mojibake = Buffer.from(originalName, 'utf8').toString('latin1');
+    const attachment = {
+      type: AttachmentType.Resume,
+      originalName,
+      storageKey: 'students/id/resume/new.pdf',
+    };
+    fileStorage.save.mockResolvedValue(attachment.storageKey);
+    studentService.addAttachmentMetadata.mockResolvedValue(attachment);
+
+    await service.upload(
+      'student-id',
+      { type: AttachmentType.Resume },
+      createPdfFile(mojibake),
+    );
+
+    expect(fileStorage.save).toHaveBeenCalledWith(
+      expect.objectContaining({ originalName }),
+    );
+    expect(studentService.addAttachmentMetadata).toHaveBeenCalledWith(
+      'student-id',
+      expect.objectContaining({ originalName }),
     );
   });
 

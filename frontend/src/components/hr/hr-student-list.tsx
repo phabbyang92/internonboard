@@ -12,14 +12,20 @@ import { ApiError } from "@/lib/api/client";
 import { listHrStudents } from "@/lib/api/hr-students";
 import { formatDateOnly, formatDateTime } from "@/lib/format-date";
 import type {
+  FormSubmissionStatus,
   HrStudentListItem,
   HrStudentListResponse,
 } from "@/types/hr";
-import type { OnboardingStatus } from "@/types/student";
+import {
+  WORK_LOCATIONS,
+  type OnboardingStatus,
+  type WorkLocation,
+} from "@/types/student";
 
 const emptyResponse: HrStudentListResponse = {
   items: [],
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+  stats: { all: 0, notSubmitted: 0, pendingOnboarding: 0, onboarded: 0 },
 };
 
 export function HrStudentList() {
@@ -27,6 +33,8 @@ export function HrStudentList() {
   const [searchInput, setSearchInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<OnboardingStatus | "">("");
+  const [workLocation, setWorkLocation] = useState<WorkLocation | "">("");
+  const [formStatus, setFormStatus] = useState<FormSubmissionStatus | "">("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -42,7 +50,14 @@ export function HrStudentList() {
   useEffect(() => {
     let isActive = true;
 
-    void listHrStudents({ page, limit, keyword, status })
+    void listHrStudents({
+      page,
+      limit,
+      keyword,
+      status,
+      workLocation,
+      formStatus,
+    })
       .then((response) => {
         if (isActive) {
           setData(response);
@@ -73,7 +88,7 @@ export function HrStudentList() {
     return () => {
       isActive = false;
     };
-  }, [keyword, limit, page, refreshKey, router, status]);
+  }, [formStatus, keyword, limit, page, refreshKey, router, status, workLocation]);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,6 +96,7 @@ export function HrStudentList() {
     setErrorMessage("");
     setPage(1);
     setKeyword(searchInput.trim());
+    setSelectedIds([]);
     setRefreshKey((current) => current + 1);
   }
 
@@ -90,12 +106,19 @@ export function HrStudentList() {
     setSearchInput("");
     setKeyword("");
     setStatus("");
+    setWorkLocation("");
+    setFormStatus("");
+    setSelectedIds([]);
     setPage(1);
     setRefreshKey((current) => current + 1);
   }
 
   const pageCount = Math.max(1, data.pagination.totalPages);
-  const hasFilters = keyword !== "" || status !== "";
+  const hasFilters =
+    keyword !== "" ||
+    status !== "" ||
+    workLocation !== "" ||
+    formStatus !== "";
   const selectableItems = data.items.filter(
     (student) => student.onboardingStatus !== "onboarded",
   );
@@ -121,6 +144,64 @@ export function HrStudentList() {
     ]);
   }
 
+  function applyQuickFilter(
+    nextStatus: OnboardingStatus | "",
+    nextFormStatus: FormSubmissionStatus | "",
+  ) {
+    setIsLoading(true);
+    setErrorMessage("");
+    setSearchInput("");
+    setKeyword("");
+    setStatus(nextStatus);
+    setWorkLocation("");
+    setFormStatus(nextFormStatus);
+    setSelectedIds([]);
+    setPage(1);
+  }
+
+  const summaryItems = [
+    {
+      label: "全部学生",
+      value: data.stats.all,
+      description: "当前有效记录",
+      isActive: !hasFilters,
+      onClick: () => applyQuickFilter("", ""),
+    },
+    {
+      label: "待填写",
+      value: data.stats.notSubmitted,
+      description: "尚未提交登记表",
+      isActive:
+        formStatus === "not_submitted" &&
+        status === "" &&
+        workLocation === "" &&
+        keyword === "",
+      onClick: () => applyQuickFilter("", "not_submitted"),
+    },
+    {
+      label: "待入职",
+      value: data.stats.pendingOnboarding,
+      description: "已安排开始日期",
+      isActive:
+        status === "pending_onboarding" &&
+        formStatus === "" &&
+        workLocation === "" &&
+        keyword === "",
+      onClick: () => applyQuickFilter("pending_onboarding", ""),
+    },
+    {
+      label: "已入职",
+      value: data.stats.onboarded,
+      description: "已到入职日期",
+      isActive:
+        status === "onboarded" &&
+        formStatus === "" &&
+        workLocation === "" &&
+        keyword === "",
+      onClick: () => applyQuickFilter("onboarded", ""),
+    },
+  ];
+
   return (
     <main className="mx-auto max-w-7xl px-5 py-7 sm:px-8 sm:py-9">
       <div className="flex flex-col gap-4 border-b border-[#cdd8d4] pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -129,12 +210,39 @@ export function HrStudentList() {
           <h1 className="mt-2 text-2xl font-semibold">学生列表</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-[#66736f]">共 {data.pagination.total} 名学生</span>
+          <span className="text-sm text-[#66736f]">当前显示 {data.pagination.total} 名学生</span>
           <button type="button" onClick={() => setIsCreateOpen(true)} className="min-h-10 bg-[#147565] px-4 text-sm font-semibold text-white hover:bg-[#0f6255]">
             新增学生
           </button>
         </div>
       </div>
+
+      <section
+        className="mt-6 grid overflow-hidden border border-[#d3ddda] bg-white sm:grid-cols-2 lg:grid-cols-4"
+        aria-label="学生统计与快捷筛选"
+      >
+        {summaryItems.map((item) => (
+          <button
+            key={item.label}
+            type="button"
+            aria-pressed={item.isActive}
+            onClick={item.onClick}
+            className={`min-h-32 border-b border-[#d8e0dd] px-5 py-5 text-left transition last:border-b-0 hover:bg-[#f4f8f7] sm:[&:nth-child(odd)]:border-r lg:border-b-0 lg:border-r lg:last:border-r-0 ${
+              item.isActive ? "bg-[#edf7f4] shadow-[inset_0_3px_0_#147565]" : ""
+            }`}
+          >
+            <span className="block text-sm font-semibold text-[#52615d]">
+              {item.label}
+            </span>
+            <span className="mt-2 block text-3xl font-semibold text-[#17231f]">
+              {item.value}
+            </span>
+            <span className="mt-1 block text-xs text-[#75817d]">
+              {item.description}
+            </span>
+          </button>
+        ))}
+      </section>
 
       {selectedIds.length > 0 ? (
         <div className="mt-5 flex flex-col gap-3 border border-[#a9c9c1] bg-[#edf7f4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -148,10 +256,10 @@ export function HrStudentList() {
 
       <section className="mt-6 border-y border-[#d3ddda] bg-white">
         <form
-          className="grid gap-4 px-4 py-4 md:grid-cols-[minmax(240px,1fr)_190px_130px_auto] md:items-end sm:px-5"
+          className="grid gap-4 px-4 py-4 sm:grid-cols-2 sm:px-5 lg:grid-cols-12 lg:items-end"
           onSubmit={handleSearch}
         >
-          <div>
+          <div className="sm:col-span-2 lg:col-span-4">
             <label
               className="mb-2 block text-xs font-semibold text-[#52615d]"
               htmlFor="student-keyword"
@@ -164,12 +272,40 @@ export function HrStudentList() {
               maxLength={100}
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="姓名、邮箱或手机号"
+              placeholder="姓名、邮箱、手机号或学校"
               className="h-11 w-full border border-[#bdcac6] px-3 text-sm outline-none focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
             />
           </div>
 
-          <div>
+          <div className="lg:col-span-2">
+            <label
+              className="mb-2 block text-xs font-semibold text-[#52615d]"
+              htmlFor="student-work-location"
+            >
+              工作地点
+            </label>
+            <select
+              id="student-work-location"
+              value={workLocation}
+              onChange={(event) => {
+                setIsLoading(true);
+                setErrorMessage("");
+                setWorkLocation(event.target.value as WorkLocation | "");
+                setSelectedIds([]);
+                setPage(1);
+              }}
+              className="h-11 w-full border border-[#bdcac6] bg-white px-3 text-sm outline-none focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
+            >
+              <option value="">全部地点</option>
+              {WORK_LOCATIONS.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="lg:col-span-2">
             <label
               className="mb-2 block text-xs font-semibold text-[#52615d]"
               htmlFor="student-status"
@@ -183,6 +319,7 @@ export function HrStudentList() {
                 setIsLoading(true);
                 setErrorMessage("");
                 setStatus(event.target.value as OnboardingStatus | "");
+                setSelectedIds([]);
                 setPage(1);
               }}
               className="h-11 w-full border border-[#bdcac6] bg-white px-3 text-sm outline-none focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
@@ -194,21 +331,50 @@ export function HrStudentList() {
             </select>
           </div>
 
-          <button
-            type="submit"
-            className="h-11 bg-[#147565] px-5 text-sm font-semibold text-white transition hover:bg-[#0f6255] focus:outline-none focus:ring-2 focus:ring-[#147565]/25"
-          >
-            查询
-          </button>
+          <div className="lg:col-span-2">
+            <label
+              className="mb-2 block text-xs font-semibold text-[#52615d]"
+              htmlFor="student-form-status"
+            >
+              表单状态
+            </label>
+            <select
+              id="student-form-status"
+              value={formStatus}
+              onChange={(event) => {
+                setIsLoading(true);
+                setErrorMessage("");
+                setFormStatus(
+                  event.target.value as FormSubmissionStatus | "",
+                );
+                setSelectedIds([]);
+                setPage(1);
+              }}
+              className="h-11 w-full border border-[#bdcac6] bg-white px-3 text-sm outline-none focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
+            >
+              <option value="">全部表单状态</option>
+              <option value="not_submitted">待填写</option>
+              <option value="submitted">已提交</option>
+            </select>
+          </div>
 
-          <button
-            type="button"
-            className="h-11 border border-[#bdcac6] px-4 text-sm font-medium text-[#52615d] transition hover:border-[#147565] hover:text-[#147565] disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={!hasFilters && searchInput === ""}
-            onClick={clearFilters}
-          >
-            清除
-          </button>
+          <div className="flex gap-3 sm:col-span-2 lg:col-span-2">
+            <button
+              type="submit"
+              className="h-11 flex-1 bg-[#147565] px-4 text-sm font-semibold text-white transition hover:bg-[#0f6255] focus:outline-none focus:ring-2 focus:ring-[#147565]/25"
+            >
+              查询
+            </button>
+
+            <button
+              type="button"
+              className="h-11 flex-1 border border-[#bdcac6] px-4 text-sm font-medium text-[#52615d] transition hover:border-[#147565] hover:text-[#147565] disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={!hasFilters && searchInput === ""}
+              onClick={clearFilters}
+            >
+              清除
+            </button>
+          </div>
         </form>
       </section>
 
@@ -242,7 +408,7 @@ export function HrStudentList() {
                   <th className="border-b border-[#d8e0dd] px-4 py-3">联系电话</th>
                   <th className="border-b border-[#d8e0dd] px-4 py-3">状态</th>
                   <th className="border-b border-[#d8e0dd] px-4 py-3">工作地点</th>
-                  <th className="border-b border-[#d8e0dd] px-4 py-3">入职开始时间</th>
+                  <th className="border-b border-[#d8e0dd] px-4 py-3">入职开始日期</th>
                   <th className="border-b border-[#d8e0dd] px-4 py-3">实习结束日期</th>
                   <th className="border-b border-[#d8e0dd] px-5 py-3">登记提交</th>
                   <th className="border-b border-[#d8e0dd] px-5 py-3">操作</th>
@@ -302,7 +468,7 @@ export function HrStudentList() {
                         {student.workLocation ?? "未安排"}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-[#44514d]">
-                        {formatDateTime(student.onboardingStartAt)}
+                        {formatDateOnly(student.onboardingStartAt)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-[#44514d]">
                         {formatDateOnly(student.onboardingEndAt)}

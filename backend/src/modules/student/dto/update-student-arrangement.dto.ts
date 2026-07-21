@@ -9,10 +9,10 @@ export class UpdateStudentArrangementDto {
   workLocation?: WorkLocation;
 
   @IsOptional()
-  @IsISO8601({ strict: true })
+  @IsISO8601({ strict: true }, { message: '入职开始日期格式错误' })
   onboardingStartAt?: string;
 
   @IsOptional()
-  @IsISO8601({ strict: true })
+  @IsISO8601({ strict: true }, { message: '实习结束日期格式错误' })
   onboardingEndAt?: string;
 }

@@ -4,6 +4,11 @@ export enum OnboardingStatus {
   Onboarded = 'onboarded',
 }
 
+export enum FormSubmissionStatus {
+  NotSubmitted = 'not_submitted',
+  Submitted = 'submitted',
+}
+
 export enum AttachmentType {
   Resume = 'resume',
   IdCard = 'id_card',

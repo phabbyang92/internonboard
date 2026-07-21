@@ -48,7 +48,7 @@ export default function StudentSubmittedPage() {
               ["姓名", form.name],
               ["邮箱", form.email],
               ["工作地点", form.workLocation ?? "未设置"],
-              ["入职开始时间", formatDateTime(form.onboardingStartAt)],
+              ["入职开始日期", formatDateOnly(form.onboardingStartAt)],
               ["实习结束日期", formatDateOnly(form.onboardingEndAt)],
               ["提交时间", formatDateTime(form.submittedAt)],
               ["联系电话", form.phone ?? "未填写"],

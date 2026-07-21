@@ -9,7 +9,11 @@ import {
   Min,
 } from 'class-validator';
 import { TrimString } from '../../../common/transforms/trim-string.transform';
-import { OnboardingStatus } from '../enums/student.enums';
+import {
+  FormSubmissionStatus,
+  OnboardingStatus,
+  WorkLocation,
+} from '../enums/student.enums';
 
 export class ListStudentsQueryDto {
   // Query parameters arrive as strings, so convert them to numbers.
@@ -35,4 +39,12 @@ export class ListStudentsQueryDto {
   @IsOptional()
   @IsEnum(OnboardingStatus)
   status?: OnboardingStatus;
+
+  @IsOptional()
+  @IsEnum(WorkLocation)
+  workLocation?: WorkLocation;
+
+  @IsOptional()
+  @IsEnum(FormSubmissionStatus)
+  formStatus?: FormSubmissionStatus;
 }

@@ -90,7 +90,7 @@ export class SubmitStudentFormDto {
   @IsISO8601({ strict: true })
   applicantSignedAt!: string;
 
-  // 入职结束时间由学生填写；开始时间和地点仍由 HR 控制。
+  // 实习结束日期由学生填写；入职开始日期和地点仍由 HR 控制。
   @IsISO8601({ strict: true })
   onboardingEndAt!: string;
 }

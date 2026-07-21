@@ -56,9 +56,23 @@ const STUDENT = {
   phone: '13800138000',
 };
 
-// A past start date lets the history test model an active location changing
-// from A to B. Future plans are intentionally corrected in place instead.
-const ONBOARDING_START_AT = '2026-06-01T01:30:00.000Z';
+function getChinaTodayStartIso(): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const getPart = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? '';
+
+  return new Date(
+    `${getPart('year')}-${getPart('month')}-${getPart('day')}T00:00:00+08:00`,
+  ).toISOString();
+}
+
+// Today's arrangement is valid and already effective for location history.
+const ONBOARDING_START_AT = getChinaTodayStartIso();
 
 describe('Intern onboarding API (e2e)', () => {
   let app: INestApplication;

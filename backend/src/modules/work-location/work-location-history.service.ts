@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Types } from 'mongoose';
 import type { Model } from 'mongoose';
-import { WorkLocation } from '../student/enums/student.enums';
 import {
   WorkLocationAssignment,
   type WorkLocationAssignmentDocument,
@@ -11,7 +10,7 @@ import { WorkLocationAssignmentSource } from './work-location-assignment-source.
 
 interface RecordWorkLocationInput {
   studentId: string;
-  workLocation: WorkLocation;
+  workLocation: string;
   onboardingStartAt: Date | null;
   changedByHrId: string;
   source: WorkLocationAssignmentSource;

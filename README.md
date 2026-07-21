@@ -2,7 +2,7 @@
 
 实习生入职登记系统是一个基于 Next.js、NestJS 和 MongoDB 的全栈项目，用于完成实习生名单预录入、HR 入职安排、学生信息登记和附件管理。
 
-系统的目标流程是：HR 登录后台并预先录入学生，设置工作地点和入职开始时间；学生通过统一入口使用姓名和邮箱登录，填写并一次性提交登记表；HR 在后台查看学生信息并下载附件。
+系统的目标流程是：HR 登录后台并预先录入学生，设置工作地点和入职开始日期；学生通过统一入口使用姓名和邮箱登录，填写并一次性提交登记表；HR 在后台查看学生信息并下载附件。
 
 当前 MVP 已完成前后端 API 集成。学生端和 HR 后台均可在浏览器中使用；`prototype/` 保留早期用于需求讨论的静态页面，不参与正式系统运行。
 
@@ -20,11 +20,13 @@
 - 新增单个学生
 - 连续调用新增接口录入多名学生
 - 学生列表分页查询
-- 按姓名、邮箱或手机号搜索学生
-- 按入职状态筛选学生
+- 按姓名、邮箱、手机号或学校搜索学生
+- 按工作地点、入职状态和表单状态筛选学生
+- 学生总数、待填写、待入职和已入职统计及快捷筛选
 - HR 获取学生完整详情
-- HR 单独设置学生工作地点和入职开始时间
-- HR 批量设置学生工作地点和入职开始时间
+- HR 单独设置学生工作地点和入职开始日期
+- HR 批量设置学生工作地点和入职开始日期
+- 入职开始日期不可早于中国时区的当天日期
 - 安排完成后将学生状态更新为 `pending_onboarding`
 - 学生姓名和邮箱登录、JWT Cookie 鉴权
 - 学生获取并一次性提交登记表
@@ -314,15 +316,17 @@ E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
 | --- | --- | --- | --- |
 | `page` | number | `1` | 当前页码 |
 | `limit` | number | `20` | 每页数量，最大 100 |
-| `keyword` | string | - | 搜索姓名、邮箱或手机号 |
+| `keyword` | string | - | 搜索姓名、邮箱、手机号或学校 |
 | `status` | string | - | 按学生状态筛选 |
+| `workLocation` | string | - | 按工作地点筛选 |
+| `formStatus` | string | - | `not_submitted` 或 `submitted` |
 
 单个安排请求体：
 
 ```json
 {
   "workLocation": "上海办公室",
-  "onboardingStartAt": "2026-08-01T09:00:00+08:00"
+  "onboardingStartAt": "2026-08-01T00:00:00+08:00"
 }
 ```
 
@@ -335,7 +339,7 @@ E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
     "studentObjectId2"
   ],
   "workLocation": "线上",
-  "onboardingStartAt": "2026-08-05T09:30:00+08:00"
+  "onboardingStartAt": "2026-08-05T00:00:00+08:00"
 }
 ```
 
@@ -346,7 +350,7 @@ candidate -> pending_onboarding -> onboarded
 ```
 
 - `candidate`：HR 已预录入，但尚未完成入职安排。
-- `pending_onboarding`：HR 已设置工作地点和入职开始时间。
+- `pending_onboarding`：HR 已设置工作地点和入职开始日期。
 - `onboarded`：已到入职时间，自动更新逻辑尚未实现。
 
 ## 技术栈

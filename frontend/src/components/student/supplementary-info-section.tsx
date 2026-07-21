@@ -2,6 +2,7 @@
 
 import { FormField } from "@/components/student/form-field";
 import { inputClassName } from "@/components/student/form-control-styles";
+import { toChinaDateInput } from "@/lib/format-date";
 import type { StudentFormDraft } from "@/types/student-form-draft";
 
 type SupplementaryField =
@@ -39,7 +40,7 @@ function getMinimumEndDate(onboardingStartAt: string | null) {
     return "";
   }
 
-  const startDate = onboardingStartAt.slice(0, 10);
+  const startDate = toChinaDateInput(onboardingStartAt);
   const [year, month, day] = startDate.split("-").map(Number);
   const nextDay = new Date(Date.UTC(year, month - 1, day + 1));
 

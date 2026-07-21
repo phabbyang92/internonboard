@@ -9,6 +9,7 @@ import { SubmitStudentFormDto } from './dto/submit-student-form.dto';
 import {
   ApplicationDirection,
   AttachmentType,
+  FormSubmissionStatus,
   OnboardingStatus,
   WorkLocation,
 } from './enums/student.enums';
@@ -23,6 +24,7 @@ interface StudentModelMock {
   findOne: jest.Mock;
   findOneAndUpdate: jest.Mock;
   find: jest.Mock;
+  countDocuments: jest.Mock;
   updateMany: jest.Mock;
 }
 
@@ -37,6 +39,7 @@ function createModelMock(): StudentModelMock {
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn(),
     find: jest.fn(),
+    countDocuments: jest.fn(),
     updateMany: jest.fn(),
   };
 }
@@ -124,6 +127,69 @@ function createValidFormDto(
 }
 
 describe('StudentService', () => {
+  describe('findAll', () => {
+    it('applies all filters, searches schools, and returns global stats', async () => {
+      const model = createModelMock();
+      const student = createStudent();
+      const listQuery = {
+        sort: jest.fn(),
+        skip: jest.fn(),
+        limit: jest.fn(),
+        exec: jest.fn().mockResolvedValue([student]),
+      };
+      listQuery.sort.mockReturnValue(listQuery);
+      listQuery.skip.mockReturnValue(listQuery);
+      listQuery.limit.mockReturnValue(listQuery);
+      model.find.mockReturnValue(listQuery);
+      model.countDocuments
+        .mockReturnValueOnce(queryResult(1))
+        .mockReturnValueOnce(queryResult(24))
+        .mockReturnValueOnce(queryResult(6))
+        .mockReturnValueOnce(queryResult(13))
+        .mockReturnValueOnce(queryResult(5));
+
+      const result = await createService(model).findAll({
+        page: 1,
+        limit: 20,
+        keyword: '测试.*',
+        status: OnboardingStatus.PendingOnboarding,
+        workLocation: WorkLocation.ShanghaiOffice,
+        formStatus: FormSubmissionStatus.NotSubmitted,
+      });
+
+      expect(model.find).toHaveBeenCalledWith({
+        isDeleted: false,
+        onboardingStatus: OnboardingStatus.PendingOnboarding,
+        workLocation: WorkLocation.ShanghaiOffice,
+        submittedAt: null,
+        $or: [
+          { name: { $regex: '测试\\.\\*', $options: 'i' } },
+          { email: { $regex: '测试\\.\\*', $options: 'i' } },
+          { phone: { $regex: '测试\\.\\*', $options: 'i' } },
+          {
+            'basicInfo.currentSchool': {
+              $regex: '测试\\.\\*',
+              $options: 'i',
+            },
+          },
+          {
+            'educationExperiences.school': {
+              $regex: '测试\\.\\*',
+              $options: 'i',
+            },
+          },
+        ],
+      });
+      expect(result.stats).toEqual({
+        all: 24,
+        notSubmitted: 6,
+        pendingOnboarding: 13,
+        onboarded: 5,
+      });
+      expect(result.pagination.total).toBe(1);
+    });
+  });
+
   describe('submitForm', () => {
     it.each([
       {
@@ -152,7 +218,7 @@ describe('StudentService', () => {
       },
     );
 
-    it('rejects an end time that is not later than the HR start time', async () => {
+    it('rejects an end date that is not later than the HR start date', async () => {
       const model = createModelMock();
       model.findOne.mockReturnValue(queryResult(createStudent()));
 
@@ -163,7 +229,7 @@ describe('StudentService', () => {
             onboardingEndAt: START_AT.toISOString(),
           }),
         ),
-      ).rejects.toThrow('实习结束时间必须晚于入职开始时间');
+      ).rejects.toThrow('实习结束日期必须晚于入职开始日期');
     });
 
     it('rejects a future birth date', async () => {
@@ -268,6 +334,39 @@ describe('StudentService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('normalizes the start value to midnight in China', async () => {
+      const model = createModelMock();
+      const save = jest.fn().mockResolvedValue(undefined);
+      const student = createStudent({ save });
+      model.findOne.mockReturnValue(queryResult(student));
+
+      await createService(model).updateArrangement(
+        STUDENT_ID,
+        { onboardingStartAt: '2026-09-01T09:30:00+08:00' },
+        'hr-id',
+      );
+
+      expect(student.onboardingStartAt?.toISOString()).toBe(
+        '2026-08-31T16:00:00.000Z',
+      );
+      expect(save).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects an onboarding start date before today', async () => {
+      const model = createModelMock();
+      const save = jest.fn().mockResolvedValue(undefined);
+      model.findOne.mockReturnValue(queryResult(createStudent({ save })));
+
+      await expect(
+        createService(model).updateArrangement(
+          STUDENT_ID,
+          { onboardingStartAt: '2000-01-01T00:00:00+08:00' },
+          'hr-id',
+        ),
+      ).rejects.toThrow('入职开始日期不能早于今天');
+      expect(save).not.toHaveBeenCalled();
+    });
+
     it('does not allow an onboarded student start time to change', async () => {
       const model = createModelMock();
       model.findOne.mockReturnValue(
@@ -346,6 +445,26 @@ describe('StudentService', () => {
       await expect(
         createService(model).batchUpdateArrangement(batchDto(), 'hr-id'),
       ).rejects.toThrow(ConflictException);
+      expect(model.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects a batch start date before today', async () => {
+      const model = createModelMock();
+      model.find.mockReturnValue({
+        select: jest
+          .fn()
+          .mockReturnValue(queryResult([createStudent(), createStudent()])),
+      });
+
+      await expect(
+        createService(model).batchUpdateArrangement(
+          {
+            ...batchDto(),
+            onboardingStartAt: '2000-01-01T00:00:00+08:00',
+          },
+          'hr-id',
+        ),
+      ).rejects.toThrow('入职开始日期不能早于今天');
       expect(model.updateMany).not.toHaveBeenCalled();
     });
   });

@@ -3,6 +3,7 @@ import {
   FILE_STORAGE,
   type FileStorage,
 } from '../file/storage/file-storage.interface';
+import { normalizeUploadedFileName } from '../file/filename/normalize-uploaded-file-name';
 import { validateAttachmentFile } from '../file/validation/attachment-file.validator';
 import { StudentService } from '../student/student.service';
 import { UploadAttachmentDto } from './dto/upload-attachment.dto';
@@ -27,13 +28,16 @@ export class StudentAttachmentService {
     // Submitted or deleted students cannot upload more attachments.
     await this.studentService.ensureFormIsEditable(studentId);
 
+    const originalName = normalizeUploadedFileName(file.originalname);
+    const normalizedFile = { ...file, originalname: originalName };
+
     // Validate size, extension, MIME type, and file signature before saving.
-    validateAttachmentFile(dto.type, file);
+    validateAttachmentFile(dto.type, normalizedFile);
 
     const storageKey = await this.fileStorage.save({
       studentId,
       type: dto.type,
-      originalName: file.originalname,
+      originalName,
       buffer: file.buffer,
     });
 
@@ -42,7 +46,7 @@ export class StudentAttachmentService {
         studentId,
         {
           type: dto.type,
-          originalName: file.originalname,
+          originalName,
           storageKey,
         },
       );

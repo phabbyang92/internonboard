@@ -65,4 +65,17 @@ describe('DTO validation and text normalization', () => {
       expect.arrayContaining(['page', 'limit']),
     );
   });
+
+  it('rejects unsupported student-list filters', async () => {
+    const dto = plainToInstance(ListStudentsQueryDto, {
+      workLocation: '不存在的办公室',
+      formStatus: 'unknown',
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors.map((error) => error.property)).toEqual(
+      expect.arrayContaining(['workLocation', 'formStatus']),
+    );
+  });
 });

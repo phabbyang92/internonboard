@@ -17,12 +17,12 @@ export class BatchUpdateStudentArrangementDto {
   @IsMongoId({ each: true })
   studentIds!: string[];
 
-  // 批量安排仍然要求 HR 同时提供统一地点和开始时间。
+  // 批量安排仍然要求 HR 同时提供统一地点和开始日期。
   @IsEnum(WorkLocation, {
     message: '请选择有效的工作地点',
   })
   workLocation!: WorkLocation;
 
-  @IsISO8601({ strict: true })
+  @IsISO8601({ strict: true }, { message: '入职开始日期格式错误' })
   onboardingStartAt!: string;
 }

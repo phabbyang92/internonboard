@@ -6,8 +6,9 @@ import { HrModal } from "@/components/hr/hr-modal";
 import { ApiError } from "@/lib/api/client";
 import { updateHrStudentArrangement } from "@/lib/api/hr-students";
 import {
-  chinaDateTimeInputToIso,
-  toChinaDateTimeInput,
+  chinaDateInputToIso,
+  getChinaTodayInput,
+  toChinaDateInput,
 } from "@/lib/format-date";
 import type { HrStudentListItem } from "@/types/hr";
 import { WORK_LOCATIONS, type WorkLocation } from "@/types/student";
@@ -29,10 +30,10 @@ export function HrSingleArrangementModal({
     student?.workLocation ?? "",
   );
   const [startAt, setStartAt] = useState(
-    toChinaDateTimeInput(student?.onboardingStartAt ?? null),
+    toChinaDateInput(student?.onboardingStartAt ?? null),
   );
   const [endAt, setEndAt] = useState(
-    student?.onboardingEndAt?.slice(0, 10) ?? "",
+    toChinaDateInput(student?.onboardingEndAt ?? null),
   );
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -50,7 +51,7 @@ export function HrSingleArrangementModal({
       await updateHrStudentArrangement(student.id, {
         workLocation,
         ...(student.onboardingStatus !== "onboarded" && startAt
-          ? { onboardingStartAt: chinaDateTimeInputToIso(startAt) }
+          ? { onboardingStartAt: chinaDateInputToIso(startAt) }
           : {}),
         ...(endAt
           ? {
@@ -97,11 +98,12 @@ export function HrSingleArrangementModal({
         </label>
 
         <label className="block text-sm font-medium text-[#35453f]">
-          入职开始时间
+          入职开始日期
           <input
             required={!isOnboarded}
             disabled={isOnboarded}
-            type="datetime-local"
+            min={getChinaTodayInput()}
+            type="date"
             value={startAt}
             onChange={(event) => setStartAt(event.target.value)}
             className="mt-2 h-11 w-full border border-[#bdcac6] px-3 disabled:bg-[#f0f3f2] disabled:text-[#75817d]"
@@ -120,7 +122,7 @@ export function HrSingleArrangementModal({
 
         {isOnboarded ? (
           <p className="text-xs text-[#8a5a35]">
-            该学生已经入职，入职开始时间不可修改。
+            该学生已经入职，入职开始日期不可修改。
           </p>
         ) : null}
         {error ? (

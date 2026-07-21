@@ -257,7 +257,7 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
     }
 
     if (!form.onboardingStartAt || !form.workLocation) {
-      setSubmitError("HR 尚未完成工作地点或入职开始时间安排");
+      setSubmitError("HR 尚未完成工作地点或入职开始日期安排");
       return;
     }
 

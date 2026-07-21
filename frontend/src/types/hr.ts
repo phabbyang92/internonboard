@@ -49,7 +49,11 @@ export interface HrStudentListQuery {
   limit?: number;
   keyword?: string;
   status?: OnboardingStatus | "";
+  workLocation?: WorkLocation | "";
+  formStatus?: FormSubmissionStatus | "";
 }
+
+export type FormSubmissionStatus = "not_submitted" | "submitted";
 
 export interface HrStudentListResponse {
   items: HrStudentListItem[];
@@ -58,6 +62,12 @@ export interface HrStudentListResponse {
     limit: number;
     total: number;
     totalPages: number;
+  };
+  stats: {
+    all: number;
+    notSubmitted: number;
+    pendingOnboarding: number;
+    onboarded: number;
   };
 }
 
@@ -111,7 +121,7 @@ export type HrStudentDetail = StudentForm;
 export interface WorkLocationHistoryItem {
   id: string;
   studentId: string;
-  workLocation: WorkLocation;
+  workLocation: string;
   effectiveFrom: string;
   effectiveTo: string | null;
   changedByHrId: string;

@@ -12,10 +12,15 @@ import { isValidObjectId } from 'mongoose';
 import type { Model, QueryFilter } from 'mongoose';
 import { ListStudentsQueryDto } from './dto/list-students-query.dto';
 import { UpdateStudentArrangementDto } from './dto/update-student-arrangement.dto';
-import { AttachmentType, OnboardingStatus } from './enums/student.enums';
+import {
+  AttachmentType,
+  FormSubmissionStatus,
+  OnboardingStatus,
+} from './enums/student.enums';
 import { BatchUpdateStudentArrangementDto } from './dto/batch-update-student-arrangement.dto';
 import { SubmitStudentFormDto } from './dto/submit-student-form.dto';
 import { UpdateStudentProfileDto } from '../hr/dto/update-student-profile.dto';
+import { normalizeUploadedFileName } from '../file/filename/normalize-uploaded-file-name';
 
 interface AttachmentMetadataInput {
   type: AttachmentType;
@@ -77,6 +82,10 @@ export class StudentService {
         { name: { $regex: safeKeyword, $options: 'i' } },
         { email: { $regex: safeKeyword, $options: 'i' } },
         { phone: { $regex: safeKeyword, $options: 'i' } },
+        { 'basicInfo.currentSchool': { $regex: safeKeyword, $options: 'i' } },
+        {
+          'educationExperiences.school': { $regex: safeKeyword, $options: 'i' },
+        },
       ];
     }
 
@@ -84,16 +93,43 @@ export class StudentService {
       filter.onboardingStatus = query.status;
     }
 
-    // Run the data query and count query at the same time.
-    const [students, total] = await Promise.all([
-      this.studentModel
-        .find(filter)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .exec(),
-      this.studentModel.countDocuments(filter).exec(),
-    ]);
+    if (query.workLocation) {
+      filter.workLocation = query.workLocation;
+    }
+
+    if (query.formStatus === FormSubmissionStatus.Submitted) {
+      filter.submittedAt = { $ne: null };
+    } else if (query.formStatus === FormSubmissionStatus.NotSubmitted) {
+      filter.submittedAt = null;
+    }
+
+    // 列表总数受筛选条件影响，顶部统计始终基于全部有效学生。
+    const [students, total, all, notSubmitted, pendingOnboarding, onboarded] =
+      await Promise.all([
+        this.studentModel
+          .find(filter)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .exec(),
+        this.studentModel.countDocuments(filter).exec(),
+        this.studentModel.countDocuments({ isDeleted: false }).exec(),
+        this.studentModel
+          .countDocuments({ isDeleted: false, submittedAt: null })
+          .exec(),
+        this.studentModel
+          .countDocuments({
+            isDeleted: false,
+            onboardingStatus: OnboardingStatus.PendingOnboarding,
+          })
+          .exec(),
+        this.studentModel
+          .countDocuments({
+            isDeleted: false,
+            onboardingStatus: OnboardingStatus.Onboarded,
+          })
+          .exec(),
+      ]);
 
     return {
       items: students.map((student) => ({
@@ -113,6 +149,12 @@ export class StudentService {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
+      },
+      stats: {
+        all,
+        notSubmitted,
+        pendingOnboarding,
+        onboarded,
       },
     };
   }
@@ -166,7 +208,7 @@ export class StudentService {
     // 只返回 mentor 确认需要保存的三个字段。
     return {
       type: attachment.type,
-      originalName: attachment.originalName,
+      originalName: normalizeUploadedFileName(attachment.originalName),
       storageKey: attachment.storageKey,
     };
   }
@@ -298,7 +340,7 @@ export class StudentService {
       // Only return file metadata. File download will use a separate API later.
       attachments: student.attachments.map((attachment) => ({
         type: attachment.type,
-        originalName: attachment.originalName,
+        originalName: normalizeUploadedFileName(attachment.originalName),
         storageKey: attachment.storageKey,
       })),
 
@@ -315,7 +357,7 @@ export class StudentService {
   }
 
   async submitForm(id: string, dto: SubmitStudentFormDto) {
-    // 先读取当前记录，用于给出明确错误并校验 HR 安排的开始时间。
+    // 先读取当前记录，用于给出明确错误并校验 HR 安排的开始日期。
     const student = await this.ensureFormIsEditable(id);
 
     this.validateRequiredAttachments(student);
@@ -324,13 +366,13 @@ export class StudentService {
     this.validateAgreementInfo(dto);
 
     if (!student.onboardingStartAt) {
-      throw new BadRequestException('HR 尚未安排入职开始时间');
+      throw new BadRequestException('HR 尚未安排入职开始日期');
     }
 
     const onboardingEndAt = new Date(dto.onboardingEndAt);
 
     if (onboardingEndAt <= student.onboardingStartAt) {
-      throw new BadRequestException('实习结束时间必须晚于入职开始时间');
+      throw new BadRequestException('实习结束日期必须晚于入职开始日期');
     }
 
     const submittedAt = new Date();
@@ -579,18 +621,18 @@ export class StudentService {
       throw new BadRequestException('没有提供需要修改的入职安排');
     }
 
-    // 已入职后，开始时间成为历史数据，不允许再修改。
+    // 已入职后，开始日期成为历史数据，不允许再修改。
     if (
       student.onboardingStatus === OnboardingStatus.Onboarded &&
       dto.onboardingStartAt !== undefined
     ) {
-      throw new ConflictException('已入职学生不能修改入职开始时间');
+      throw new ConflictException('已入职学生不能修改入职开始日期');
     }
 
     // 使用修改后的值和数据库原值共同进行日期校验。
     const effectiveStartAt =
       dto.onboardingStartAt !== undefined
-        ? new Date(dto.onboardingStartAt)
+        ? this.normalizeOnboardingStartDate(dto.onboardingStartAt)
         : (student.onboardingStartAt ?? null);
 
     const effectiveEndAt =
@@ -598,8 +640,16 @@ export class StudentService {
         ? new Date(dto.onboardingEndAt)
         : (student.onboardingEndAt ?? null);
 
+    if (
+      dto.onboardingStartAt !== undefined &&
+      effectiveStartAt &&
+      effectiveStartAt < this.getChinaTodayStart()
+    ) {
+      throw new BadRequestException('入职开始日期不能早于今天');
+    }
+
     if (dto.onboardingEndAt !== undefined && !effectiveStartAt) {
-      throw new BadRequestException('设置实习结束时间前必须先安排入职开始时间');
+      throw new BadRequestException('设置实习结束日期前必须先安排入职开始日期');
     }
 
     if (
@@ -607,7 +657,7 @@ export class StudentService {
       effectiveEndAt &&
       effectiveEndAt <= effectiveStartAt
     ) {
-      throw new BadRequestException('实习结束时间必须晚于入职开始时间');
+      throw new BadRequestException('实习结束日期必须晚于入职开始日期');
     }
 
     if (dto.workLocation !== undefined) {
@@ -625,8 +675,8 @@ export class StudentService {
       changedFields.push('onboardingEndAt');
     }
 
-    // 学生拥有地点和开始时间后才具备登录填表资格。
-    // 已入职学生修改地点或结束时间时，不能退回待入职状态。
+    // 学生拥有地点和开始日期后才具备登录填表资格。
+    // 已入职学生修改地点或结束日期时，不能退回待入职状态。
     if (
       student.onboardingStatus !== OnboardingStatus.Onboarded &&
       student.workLocation &&
@@ -677,11 +727,17 @@ export class StudentService {
     );
 
     if (containsOnboardedStudent) {
-      throw new ConflictException('已入职学生不能重新安排入职开始时间');
+      throw new ConflictException('已入职学生不能重新安排入职开始日期');
     }
 
     const workLocation = dto.workLocation;
-    const onboardingStartAt = new Date(dto.onboardingStartAt);
+    const onboardingStartAt = this.normalizeOnboardingStartDate(
+      dto.onboardingStartAt,
+    );
+
+    if (onboardingStartAt < this.getChinaTodayStart()) {
+      throw new BadRequestException('入职开始日期不能早于今天');
+    }
 
     // updateMany sends one database update for all selected students.
     const result = await this.studentModel
@@ -845,6 +901,27 @@ export class StudentService {
     if (dto.hasIdCopyAndAgreement && !dto.agreementSignedAt) {
       throw new BadRequestException('请填写服务协议签署时间');
     }
+  }
+
+  private normalizeOnboardingStartDate(value: string): Date {
+    const inputDate = new Date(value);
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(inputDate);
+    const getPart = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find((part) => part.type === type)?.value ?? '';
+
+    // Date 仍用于数据库兼容，但只保留中国时区的自然日含义。
+    return new Date(
+      `${getPart('year')}-${getPart('month')}-${getPart('day')}T00:00:00+08:00`,
+    );
+  }
+
+  private getChinaTodayStart(): Date {
+    return this.normalizeOnboardingStartDate(new Date().toISOString());
   }
 
   private isDuplicateKeyError(error: unknown): boolean {

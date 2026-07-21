@@ -30,6 +30,14 @@ export function listHrStudents(
     searchParams.set("status", query.status);
   }
 
+  if (query.workLocation) {
+    searchParams.set("workLocation", query.workLocation);
+  }
+
+  if (query.formStatus) {
+    searchParams.set("formStatus", query.formStatus);
+  }
+
   return apiRequest<HrStudentListResponse>(
     `/api/hr/students?${searchParams.toString()}`,
     { method: "GET" },

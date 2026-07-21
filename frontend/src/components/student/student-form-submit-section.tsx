@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateOnly, formatDateTime } from "@/lib/format-date";
+import { formatDateOnly } from "@/lib/format-date";
 import type { AttachmentMetadata, StudentForm } from "@/types/student";
 import type { StudentFormDraft } from "@/types/student-form-draft";
 
@@ -92,7 +92,7 @@ export function StudentFormSubmitSection({
                 ["申请职位", draft.basicInfo.position],
                 ["投递方向", draft.basicInfo.applicationDirection],
                 ["工作地点", form.workLocation ?? "未设置"],
-                ["入职开始时间", formatDateTime(form.onboardingStartAt)],
+                ["入职开始日期", formatDateOnly(form.onboardingStartAt)],
                 ["实习结束日期", formatDateOnly(draft.onboardingEndAt)],
                 ["附件数量", `${attachments.length} 个`],
                 ["申请人签名", draft.applicantSignature],

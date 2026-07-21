@@ -5,6 +5,7 @@ import {
   FILE_STORAGE,
   type FileStorage,
 } from '../file/storage/file-storage.interface';
+import { normalizeUploadedFileName } from '../file/filename/normalize-uploaded-file-name';
 import { validateAttachmentFile } from '../file/validation/attachment-file.validator';
 import {
   Student,
@@ -38,18 +39,19 @@ export class HrAttachmentService {
     hrUserId: string,
   ) {
     await this.studentService.findOneById(studentId);
-    validateAttachmentFile(dto.type, file);
+    const originalName = normalizeUploadedFileName(file.originalname);
+    validateAttachmentFile(dto.type, { ...file, originalname: originalName });
 
     const storageKey = await this.fileStorage.save({
       studentId,
       type: dto.type,
-      originalName: file.originalname,
+      originalName,
       buffer: file.buffer,
     });
 
     const attachment = {
       type: dto.type,
-      originalName: file.originalname,
+      originalName,
       storageKey,
     };
 
@@ -101,18 +103,19 @@ export class HrAttachmentService {
       throw new NotFoundException('需要替换的附件不存在');
     }
 
-    validateAttachmentFile(dto.type, file);
+    const originalName = normalizeUploadedFileName(file.originalname);
+    validateAttachmentFile(dto.type, { ...file, originalname: originalName });
 
     const newStorageKey = await this.fileStorage.save({
       studentId,
       type: dto.type,
-      originalName: file.originalname,
+      originalName,
       buffer: file.buffer,
     });
 
     const newAttachment = {
       type: dto.type,
-      originalName: file.originalname,
+      originalName,
       storageKey: newStorageKey,
     };
 
@@ -265,7 +268,7 @@ export class HrAttachmentService {
       stream,
       attachment: {
         type: attachment.type,
-        originalName: attachment.originalName,
+        originalName: normalizeUploadedFileName(attachment.originalName),
         storageKey: attachment.storageKey,
       },
     };

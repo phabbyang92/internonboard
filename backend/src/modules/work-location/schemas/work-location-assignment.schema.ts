@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
 import { SchemaTypes, Types } from 'mongoose';
-import { WorkLocation } from '../../student/enums/student.enums';
 import { WorkLocationAssignmentSource } from '../work-location-assignment-source.enum';
 
 export type WorkLocationAssignmentDocument =
@@ -23,10 +22,10 @@ export class WorkLocationAssignment {
 
   @Prop({
     type: String,
-    enum: Object.values(WorkLocation),
     required: true,
   })
-  workLocation!: WorkLocation;
+  // 历史记录允许保留已经停用的旧地点名称。
+  workLocation!: string;
 
   // 该地点从什么时候开始对学生生效。
   @Prop({ type: Date, required: true, index: true })
