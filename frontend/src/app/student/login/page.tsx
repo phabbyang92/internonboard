@@ -1,0 +1,192 @@
+"use client";
+
+import { ApiError } from "@/lib/api/client";
+import { getCurrentStudent, loginStudent } from "@/lib/api/student-auth";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
+
+function getStudentDestination(hasSubmitted: boolean): string {
+  return hasSubmitted ? "/student/submitted" : "/student/form";
+}
+
+export default function StudentLoginPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  useEffect(() => {
+    let isActive = true;
+
+    void getCurrentStudent()
+      .then(({ student }) => {
+        if (isActive) {
+          router.replace(getStudentDestination(student.hasSubmitted));
+        }
+      })
+      .catch(() => {
+        // A missing/expired Cookie is the normal state on the login page.
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsCheckingSession(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [router]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedName || !normalizedEmail) {
+      setErrorMessage("请填写姓名和邮箱");
+      return;
+    }
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const { student } = await loginStudent({
+        name: normalizedName,
+        email: normalizedEmail,
+      });
+
+      router.replace(getStudentDestination(student.hasSubmitted));
+    } catch (error: unknown) {
+      setErrorMessage(
+        error instanceof ApiError ? error.message : "登录失败，请稍后重试",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (isCheckingSession) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#f3f6f5] px-6">
+        <p className="text-sm text-[#52615d]" role="status">
+          正在确认登录状态...
+        </p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f3f6f5] text-[#17221f]">
+      <header className="border-b border-[#d8e0dd] bg-white">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center px-5 sm:px-8">
+          <Image
+            src="/frost-sullivan-logo.svg"
+            alt="Frost & Sullivan 沙利文"
+            width={189}
+            height={60}
+            priority
+            className="h-11 w-auto"
+          />
+          <span className="ml-4 hidden border-l border-[#d8e0dd] pl-4 text-sm font-semibold text-[#33443f] sm:inline">
+            实习生入职登记系统
+          </span>
+        </div>
+      </header>
+
+      <section className="mx-auto grid max-w-6xl items-start gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:py-20">
+        <div className="max-w-xl pt-2 lg:pt-10">
+          <p className="text-sm font-semibold text-[#147565]">学生入口</p>
+          <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+            实习生入职登记
+          </h1>
+          <p className="mt-5 max-w-lg text-base leading-7 text-[#52615d]">
+            请使用 HR 预录入的姓名和邮箱进入登记系统。
+          </p>
+
+          <dl className="mt-10 grid gap-5 border-l-2 border-[#f0a36a] pl-5 text-sm">
+            <div>
+              <dt className="font-medium text-[#263632]">登录信息</dt>
+              <dd className="mt-1 text-[#66736f]">姓名与邮箱需和入职名单一致</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-[#263632]">提交规则</dt>
+              <dd className="mt-1 text-[#66736f]">登记表确认后只能提交一次</dd>
+            </div>
+          </dl>
+        </div>
+
+        <form
+          className="border border-[#d5dedb] bg-white p-6 shadow-[0_12px_35px_rgba(30,60,52,0.08)] sm:p-8"
+          onSubmit={handleSubmit}
+          noValidate
+        >
+          <div>
+            <h2 className="text-xl font-semibold">登录</h2>
+            <p className="mt-2 text-sm text-[#66736f]">进入你的入职登记表</p>
+          </div>
+
+          <div className="mt-7 space-y-5">
+            <div>
+              <label className="text-sm font-medium" htmlFor="student-name">
+                姓名
+              </label>
+              <input
+                id="student-name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                maxLength={100}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="mt-2 h-11 w-full border border-[#bdcac6] bg-white px-3 text-base outline-none transition focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
+                placeholder="请输入姓名"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium" htmlFor="student-email">
+                邮箱
+              </label>
+              <input
+                id="student-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                maxLength={254}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="mt-2 h-11 w-full border border-[#bdcac6] bg-white px-3 text-base outline-none transition focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
+                placeholder="name@example.com"
+                required
+              />
+            </div>
+          </div>
+
+          {errorMessage ? (
+            <p
+              className="mt-5 border-l-2 border-[#c94f3d] bg-[#fff5f2] px-3 py-2 text-sm text-[#9d3426]"
+              role="alert"
+            >
+              {errorMessage}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="mt-7 h-11 w-full bg-[#147565] px-4 text-sm font-semibold text-white transition hover:bg-[#0e6557] focus:outline-none focus:ring-2 focus:ring-[#147565] focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#86aaa3]"
+          >
+            {isSubmitting ? "正在登录..." : "进入登记系统"}
+          </button>
+        </form>
+      </section>
+    </main>
+  );
+}

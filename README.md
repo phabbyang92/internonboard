@@ -4,7 +4,7 @@
 
 系统的目标流程是：HR 登录后台并预先录入学生，设置工作地点和入职开始时间；学生通过统一入口使用姓名和邮箱登录，填写并一次性提交登记表；HR 在后台查看学生信息并下载附件。
 
-当前项目处于 MVP 后端开发阶段。Next.js 前端目前是基础脚手架，`prototype/` 中提供了用于与 HR 和 mentor 讨论需求的静态页面原型。
+当前 MVP 已完成前后端 API 集成。学生端和 HR 后台均可在浏览器中使用；`prototype/` 保留早期用于需求讨论的静态页面，不参与正式系统运行。
 
 ## 已实现功能
 
@@ -37,9 +37,15 @@
 - MongoDB 持久化操作日志及分页查询
 - NestJS Logger 记录服务运行日志
 - Jest 单元测试和基于真实 HTTP、MongoDB 的端到端测试
-- 纯前端交互原型
+- 学生姓名和邮箱登录页面
+- 学生登记表、动态经历、附件上传和一次性提交页面
+- HR 登录、学生列表、搜索筛选和分页页面
+- HR 连续新增学生、单个安排和批量安排页面
+- HR 学生详情、登记信息编辑和附件管理页面
+- HR 工作地点历史、操作日志和软删除页面
+- 前后端 Cookie 鉴权及未登录页面跳转
 
-当前尚未实现入职状态定时自动更新、打卡模块、阿里云 OSS 实现和前后端 API 集成。
+当前尚未实现入职状态定时自动更新、打卡模块和阿里云 OSS 实现。
 
 ## 项目结构
 
@@ -66,11 +72,18 @@ internonboard/
 │   ├── .env.example
 │   └── package.json
 ├── frontend/
-│   ├── src/app/                      # Next.js App Router
+│   ├── public/                       # Logo 等静态资源
+│   ├── src/app/                      # Next.js App Router 页面
+│   │   ├── hr/                       # HR 登录、列表和详情页
+│   │   └── student/                  # 学生登录、登记和提交成功页
+│   ├── src/components/               # HR 与学生业务组件
+│   ├── src/hooks/                    # 登录态和表单访问控制
+│   ├── src/lib/                      # API 请求、日期和表单转换
+│   ├── src/types/                    # 前端数据类型
 │   └── package.json
 ├── prototype/
-│   ├── index.html                    # 当前交互原型入口
-│   └── assets/
+│   ├── index.html                    # 早期交互原型入口
+│   └── *.html                        # 学生端和 HR 端静态原型
 ├── PROJECT_PLAN.md                   # 需求、流程和数据设计
 └── README.md
 ```
@@ -159,14 +172,21 @@ http://localhost:3001/api
 curl http://localhost:3001/api/health
 ```
 
-### 6. 启动前端
+### 6. 配置并启动前端
 
 新建一个终端：
 
 ```bash
 cd internonboard/frontend
 npm install
+cp .env.example .env.local
 npm run dev
+```
+
+`frontend/.env.local` 默认内容：
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
 前端默认地址：
@@ -175,19 +195,14 @@ npm run dev
 http://localhost:3000
 ```
 
-当前 Next.js 页面还没有连接后端 API。
-
-### 7. 查看静态原型
-
-直接在浏览器打开：
+可访问的主要页面：
 
 ```text
-prototype/index.html
+http://localhost:3000/student/login
+http://localhost:3000/hr/login
 ```
 
-静态原型使用模拟数据，不连接后端或 MongoDB。
-
-### 8. 运行测试
+### 7. 运行检查和测试
 
 ```bash
 cd internonboard/backend
@@ -200,6 +215,18 @@ npm run test:cov
 
 # HTTP 端到端测试
 npm run test:e2e
+
+# 后端代码检查和生产构建
+npm run lint
+npm run build
+```
+
+```bash
+cd internonboard/frontend
+
+# 前端代码检查和生产构建
+npm run lint
+npm run build
 ```
 
 端到端测试默认连接独立数据库
@@ -294,7 +321,7 @@ E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
 
 ```json
 {
-  "workLocation": "上海徐汇",
+  "workLocation": "上海办公室",
   "onboardingStartAt": "2026-08-01T09:00:00+08:00"
 }
 ```
@@ -307,7 +334,7 @@ E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
     "studentObjectId1",
     "studentObjectId2"
   ],
-  "workLocation": "上海静安",
+  "workLocation": "线上",
   "onboardingStartAt": "2026-08-05T09:30:00+08:00"
 }
 ```
@@ -335,5 +362,5 @@ candidate -> pending_onboarding -> onboarded
 | Validation | class-validator + class-transformer |
 | Authentication | JWT + HttpOnly Cookie |
 | Password Hash | bcrypt |
-| Current File Storage | 本地 `uploads/`，待实现 |
+| Current File Storage | 本地 `backend/uploads/` |
 | Future File Storage | 公司阿里云 OSS |
