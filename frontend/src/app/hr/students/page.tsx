@@ -22,7 +22,7 @@ export default function HrStudentsPage() {
 
   return (
     <HrShell user={user}>
-      <HrStudentList />
+      <HrStudentList user={user} />
     </HrShell>
   );
 }

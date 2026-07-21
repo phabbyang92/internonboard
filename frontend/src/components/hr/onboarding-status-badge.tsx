@@ -16,6 +16,10 @@ const statusConfig: Record<
     label: "已入职",
     className: "border-[#9cc8ba] bg-[#eef8f4] text-[#176555]",
   },
+  departed: {
+    label: "已离职",
+    className: "border-[#b9c9d7] bg-[#eef3f7] text-[#425a6e]",
+  },
 };
 
 export function OnboardingStatusBadge({

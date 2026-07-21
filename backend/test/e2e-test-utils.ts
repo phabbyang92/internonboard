@@ -21,6 +21,12 @@ export const TEST_HR = {
   name: 'E2E HR',
 };
 
+export interface TestHrAccount {
+  email: string;
+  password: string;
+  name: string;
+}
+
 export async function createE2eApp(): Promise<INestApplication> {
   const moduleFixture = await Test.createTestingModule({
     imports: [AppModule],
@@ -62,24 +68,31 @@ export async function resetE2eState(app: INestApplication): Promise<void> {
   }
 }
 
-export async function seedHr(app: INestApplication): Promise<void> {
+export async function seedHr(
+  app: INestApplication,
+  account: TestHrAccount = TEST_HR,
+  role: HrRole = HrRole.Hr,
+): Promise<void> {
   const hrUserModel = app.get<Model<HrUserDocument>>(
     getModelToken(HrUser.name),
   );
-  const passwordHash = await bcrypt.hash(TEST_HR.password, 10);
+  const passwordHash = await bcrypt.hash(account.password, 10);
 
   await hrUserModel.create({
-    email: TEST_HR.email,
+    email: account.email,
     passwordHash,
-    name: TEST_HR.name,
-    role: HrRole.Hr,
+    name: account.name,
+    role,
   });
 }
 
-export async function loginHr(agent: request.Agent): Promise<request.Response> {
+export async function loginHr(
+  agent: request.Agent,
+  account: TestHrAccount = TEST_HR,
+): Promise<request.Response> {
   return agent.post('/api/hr/login').send({
-    email: TEST_HR.email,
-    password: TEST_HR.password,
+    email: account.email,
+    password: account.password,
   });
 }
 

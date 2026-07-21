@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import { BaseSchema } from '../../../common/schemas/base.schema';
 import { OnboardingStatus, WorkLocation } from '../enums/student.enums';
 import {
@@ -23,6 +24,13 @@ export type StudentDocument = HydratedDocument<Student>;
   versionKey: false,
 })
 export class Student extends BaseSchema {
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'HrUser',
+    required: true,
+  })
+  ownerHrId!: Types.ObjectId;
+
   @Prop({ type: String, required: true, trim: true })
   name!: string;
 
@@ -111,3 +119,5 @@ StudentSchema.index(
     name: 'unique_student_name_email',
   },
 );
+
+StudentSchema.index({ ownerHrId: 1, isDeleted: 1, createdAt: -1 });

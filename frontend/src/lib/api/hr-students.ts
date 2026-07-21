@@ -1,4 +1,9 @@
-import { API_BASE_URL, ApiError, apiRequest, getErrorMessage } from "@/lib/api/client";
+import {
+  API_BASE_URL,
+  ApiError,
+  apiRequest,
+  getErrorMessage,
+} from "@/lib/api/client";
 import type {
   AttachmentMutationResult,
   BatchUpdateHrArrangementPayload,
@@ -36,6 +41,10 @@ export function listHrStudents(
 
   if (query.formStatus) {
     searchParams.set("formStatus", query.formStatus);
+  }
+
+  if (query.ownerHrId) {
+    searchParams.set("ownerHrId", query.ownerHrId);
   }
 
   return apiRequest<HrStudentListResponse>(
@@ -96,10 +105,15 @@ export function getOperationLogs(
   id: string,
   page = 1,
 ): Promise<OperationLogResponse> {
-  return apiRequest(`/api/hr/students/${id}/operation-logs?page=${page}&limit=20`);
+  return apiRequest(
+    `/api/hr/students/${id}/operation-logs?page=${page}&limit=20`,
+  );
 }
 
-export function softDeleteHrStudent(id: string, reason?: string): Promise<unknown> {
+export function softDeleteHrStudent(
+  id: string,
+  reason?: string,
+): Promise<unknown> {
   return apiRequest(`/api/hr/students/${id}`, {
     method: "DELETE",
     body: JSON.stringify(reason?.trim() ? { reason: reason.trim() } : {}),
@@ -141,7 +155,10 @@ export function replaceHrAttachment(
   });
 }
 
-export function deleteHrAttachment(id: string, storageKey: string): Promise<unknown> {
+export function deleteHrAttachment(
+  id: string,
+  storageKey: string,
+): Promise<unknown> {
   const query = new URLSearchParams({ storageKey });
   return apiRequest(`/api/hr/students/${id}/attachments?${query}`, {
     method: "DELETE",

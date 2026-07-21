@@ -2,6 +2,7 @@ export enum OnboardingStatus {
   Candidate = 'candidate',
   PendingOnboarding = 'pending_onboarding',
   Onboarded = 'onboarded',
+  Departed = 'departed',
 }
 
 export enum FormSubmissionStatus {

@@ -16,6 +16,7 @@ import { ReplaceHrAttachmentDto } from './dto/replace-hr-attachment.dto';
 import { UploadHrAttachmentDto } from './dto/upload-hr-attachment.dto';
 import { OperationAction } from '../operation-log/enums/operation-action.enum';
 import { OperationLogService } from '../operation-log/operation-log.service';
+import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
 
 @Injectable()
 export class HrAttachmentService {
@@ -36,9 +37,9 @@ export class HrAttachmentService {
     studentId: string,
     dto: UploadHrAttachmentDto,
     file: Express.Multer.File,
-    hrUserId: string,
+    access: HrAccessContext,
   ) {
-    await this.studentService.findOneById(studentId);
+    await this.studentService.findOneByIdForHr(studentId, access);
     const originalName = normalizeUploadedFileName(file.originalname);
     validateAttachmentFile(dto.type, { ...file, originalname: originalName });
 
@@ -59,6 +60,7 @@ export class HrAttachmentService {
       await this.studentService.addAttachmentMetadataByHr(
         studentId,
         attachment,
+        access,
       );
     } catch (error: unknown) {
       // 只有附件元数据保存失败时，才删除刚写入存储系统的文件。
@@ -67,12 +69,12 @@ export class HrAttachmentService {
     }
 
     this.logger.log(
-      `HR ${hrUserId} uploaded attachment ${storageKey} for student ${studentId}`,
+      `HR ${access.hrUserId} uploaded attachment ${storageKey} for student ${studentId}`,
     );
 
     // 日志位于清理文件的 try/catch 外，避免日志失败时误删有效文件。
     await this.operationLogService.record({
-      operatorHrId: hrUserId,
+      operatorHrId: access.hrUserId,
       studentId,
       action: OperationAction.AttachmentUploaded,
       changes: {
@@ -90,11 +92,14 @@ export class HrAttachmentService {
     studentId: string,
     dto: ReplaceHrAttachmentDto,
     file: Express.Multer.File,
-    hrUserId: string,
+    access: HrAccessContext,
   ) {
     const oldStorageKey = dto.oldStorageKey.trim();
 
-    const student = await this.studentService.findOneById(studentId);
+    const student = await this.studentService.findOneByIdForHr(
+      studentId,
+      access,
+    );
     const oldAttachment = student.attachments.find(
       (attachment) => attachment.storageKey === oldStorageKey,
     );
@@ -125,6 +130,7 @@ export class HrAttachmentService {
           {
             _id: studentId,
             isDeleted: false,
+            ...this.studentService.getHrAccessFilter(access),
             'attachments.storageKey': oldStorageKey,
           },
           {
@@ -154,11 +160,11 @@ export class HrAttachmentService {
     await this.cleanupStoredFile(oldStorageKey);
 
     this.logger.log(
-      `HR ${hrUserId} replaced attachment ${oldStorageKey} with ${newStorageKey} for student ${studentId}`,
+      `HR ${access.hrUserId} replaced attachment ${oldStorageKey} with ${newStorageKey} for student ${studentId}`,
     );
 
     await this.operationLogService.record({
-      operatorHrId: hrUserId,
+      operatorHrId: access.hrUserId,
       studentId,
       action: OperationAction.AttachmentReplaced,
       changes: {
@@ -182,10 +188,13 @@ export class HrAttachmentService {
     };
   }
 
-  async remove(studentId: string, storageKey: string, hrUserId: string) {
+  async remove(studentId: string, storageKey: string, access: HrAccessContext) {
     const normalizedStorageKey = storageKey.trim();
 
-    const student = await this.studentService.findOneById(studentId);
+    const student = await this.studentService.findOneByIdForHr(
+      studentId,
+      access,
+    );
     const attachment = student.attachments.find(
       (item) => item.storageKey === normalizedStorageKey,
     );
@@ -199,6 +208,7 @@ export class HrAttachmentService {
         {
           _id: studentId,
           isDeleted: false,
+          ...this.studentService.getHrAccessFilter(access),
 
           // 确保附件仍然属于该学生，防止并发删除。
           'attachments.storageKey': normalizedStorageKey,
@@ -225,11 +235,11 @@ export class HrAttachmentService {
     await this.cleanupStoredFile(normalizedStorageKey);
 
     this.logger.log(
-      `HR ${hrUserId} deleted attachment ${normalizedStorageKey} for student ${studentId}`,
+      `HR ${access.hrUserId} deleted attachment ${normalizedStorageKey} for student ${studentId}`,
     );
 
     await this.operationLogService.record({
-      operatorHrId: hrUserId,
+      operatorHrId: access.hrUserId,
       studentId,
       action: OperationAction.AttachmentDeleted,
       changes: {
@@ -247,10 +257,17 @@ export class HrAttachmentService {
     };
   }
 
-  async createDownload(studentId: string, storageKey: string) {
+  async createDownload(
+    studentId: string,
+    storageKey: string,
+    access: HrAccessContext,
+  ) {
     const normalizedStorageKey = storageKey.trim();
 
-    const student = await this.studentService.findOneById(studentId);
+    const student = await this.studentService.findOneByIdForHr(
+      studentId,
+      access,
+    );
 
     const attachment = student.attachments.find(
       (item) => item.storageKey === normalizedStorageKey,

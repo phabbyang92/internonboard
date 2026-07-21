@@ -31,8 +31,13 @@ export interface HrMeResponse {
   user: HrUser;
 }
 
+export interface HrUserListResponse {
+  items: HrUser[];
+}
+
 export interface HrStudentListItem {
   id: string;
+  ownerHrId: string | null;
   name: string;
   email: string;
   phone: string | null;
@@ -51,6 +56,7 @@ export interface HrStudentListQuery {
   status?: OnboardingStatus | "";
   workLocation?: WorkLocation | "";
   formStatus?: FormSubmissionStatus | "";
+  ownerHrId?: string;
 }
 
 export type FormSubmissionStatus = "not_submitted" | "submitted";
@@ -68,6 +74,7 @@ export interface HrStudentListResponse {
     notSubmitted: number;
     pendingOnboarding: number;
     onboarded: number;
+    departed: number;
   };
 }
 
@@ -79,6 +86,7 @@ export interface CreateHrStudentPayload {
 
 export interface CreateHrStudentResponse {
   id: string;
+  ownerHrId: string;
   name: string;
   email: string;
   phone: string | null;
@@ -116,7 +124,9 @@ export interface UpdateHrProfilePayload {
   applicantSignedAt?: string | null;
 }
 
-export type HrStudentDetail = StudentForm;
+export type HrStudentDetail = StudentForm & {
+  ownerHrId: string | null;
+};
 
 export interface WorkLocationHistoryItem {
   id: string;

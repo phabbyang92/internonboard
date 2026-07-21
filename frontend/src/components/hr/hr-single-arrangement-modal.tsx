@@ -46,7 +46,9 @@ export function HrSingleArrangementModal({
     if (
       !student ||
       !workLocation ||
-      (student.onboardingStatus !== "onboarded" && !startAt)
+      (student.onboardingStatus !== "onboarded" &&
+        student.onboardingStatus !== "departed" &&
+        !startAt)
     ) {
       setError("请选择工作地点和入职开始日期");
       return;
@@ -58,7 +60,9 @@ export function HrSingleArrangementModal({
     try {
       await updateHrStudentArrangement(student.id, {
         workLocation,
-        ...(student.onboardingStatus !== "onboarded" && startAt
+        ...(student.onboardingStatus !== "onboarded" &&
+        student.onboardingStatus !== "departed" &&
+        startAt
           ? { onboardingStartAt: chinaDateInputToIso(startAt) }
           : {}),
         ...(endAt
@@ -72,13 +76,17 @@ export function HrSingleArrangementModal({
       onSaved();
       onClose();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "保存入职安排失败");
+      setError(
+        caught instanceof ApiError ? caught.message : "保存入职安排失败",
+      );
     } finally {
       setIsSaving(false);
     }
   }
 
-  const isOnboarded = student.onboardingStatus === "onboarded";
+  const hasStarted =
+    student.onboardingStatus === "onboarded" ||
+    student.onboardingStatus === "departed";
 
   return (
     <HrModal
@@ -108,8 +116,8 @@ export function HrSingleArrangementModal({
         <label className="block text-sm font-medium text-[#31485c]">
           入职开始日期
           <DatePickerInput
-            required={!isOnboarded}
-            disabled={isOnboarded}
+            required={!hasStarted}
+            disabled={hasStarted}
             min={getChinaTodayInput()}
             value={startAt}
             onChange={(event) => setStartAt(event.target.value)}
@@ -126,9 +134,9 @@ export function HrSingleArrangementModal({
           />
         </label>
 
-        {isOnboarded ? (
+        {hasStarted ? (
           <p className="text-xs text-[#8a5a35]">
-            该学生已经入职，入职开始日期不可修改。
+            该学生已经入职或离职，入职开始日期不可修改。
           </p>
         ) : null}
         {error ? (

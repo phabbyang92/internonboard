@@ -1,5 +1,12 @@
 import { INestApplication } from '@nestjs/common';
+import { getModelToken } from '@nestjs/mongoose';
+import type { Model } from 'mongoose';
 import request from 'supertest';
+import { HrRole } from '../src/modules/auth/enums/hr-role.enum';
+import {
+  HrUser,
+  type HrUserDocument,
+} from '../src/modules/auth/schemas/hr-user.schema';
 import {
   createE2eApp,
   getE2eHttpServer,
@@ -54,6 +61,18 @@ const STUDENT = {
   name: 'E2E 测试学生',
   email: 'e2e.student@example.com',
   phone: '13800138000',
+};
+
+const SECOND_HR = {
+  email: 'e2e.hr.two@example.com',
+  password: 'E2ePassword456!',
+  name: 'E2E HR Two',
+};
+
+const ADMIN_HR = {
+  email: 'e2e.admin@example.com',
+  password: 'E2eAdminPassword123!',
+  name: 'E2E Admin',
 };
 
 function getChinaTodayStartIso(): string {
@@ -214,6 +233,62 @@ describe('Intern onboarding API (e2e)', () => {
     await studentAgent.get('/api/student/me').expect(401);
     await hrAgent.post('/api/hr/logout').expect(204);
     await hrAgent.get('/api/hr/me').expect(401);
+  });
+
+  it('isolates regular HR students and lets an administrator view all owners', async () => {
+    const server = getE2eHttpServer(app);
+    const firstHrAgent = request.agent(server);
+    const secondHrAgent = request.agent(server);
+    const adminAgent = request.agent(server);
+    await seedHr(app, SECOND_HR);
+    await seedHr(app, ADMIN_HR, HrRole.Admin);
+    expect((await loginHr(firstHrAgent)).status).toBe(200);
+    expect((await loginHr(secondHrAgent, SECOND_HR)).status).toBe(200);
+    expect((await loginHr(adminAgent, ADMIN_HR)).status).toBe(200);
+
+    const firstCreateResponse = await firstHrAgent
+      .post('/api/hr/students')
+      .send(STUDENT)
+      .expect(201);
+    const firstStudent = responseBody<StudentRecord>(firstCreateResponse);
+    const secondCreateResponse = await secondHrAgent
+      .post('/api/hr/students')
+      .send({
+        name: 'E2E 第二名学生',
+        email: 'e2e.student.two@example.com',
+      })
+      .expect(201);
+    const secondStudent = responseBody<StudentRecord>(secondCreateResponse);
+
+    const firstHrList = responseBody<{ items: StudentRecord[] }>(
+      await firstHrAgent.get('/api/hr/students').expect(200),
+    );
+    expect(firstHrList.items.map((student) => student.id)).toEqual([
+      firstStudent.id,
+    ]);
+    await firstHrAgent.get(`/api/hr/students/${secondStudent.id}`).expect(404);
+    await firstHrAgent.get('/api/hr/users').expect(403);
+
+    const adminList = responseBody<{ items: StudentRecord[] }>(
+      await adminAgent.get('/api/hr/students').expect(200),
+    );
+    expect(adminList.items).toHaveLength(2);
+
+    const hrUserModel = app.get<Model<HrUserDocument>>(
+      getModelToken(HrUser.name),
+    );
+    const secondHr = await hrUserModel.findOne({ email: SECOND_HR.email });
+    expect(secondHr).not.toBeNull();
+    const secondHrId = secondHr!._id.toString();
+    const filteredAdminList = responseBody<{ items: StudentRecord[] }>(
+      await adminAgent
+        .get('/api/hr/students')
+        .query({ ownerHrId: secondHrId })
+        .expect(200),
+    );
+    expect(filteredAdminList.items.map((student) => student.id)).toEqual([
+      secondStudent.id,
+    ]);
   });
 
   it('completes the HR creation, student submission, and HR correction flow', async () => {

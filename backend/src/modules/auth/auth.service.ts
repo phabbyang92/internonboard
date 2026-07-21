@@ -53,4 +53,21 @@ export class AuthService {
       },
     };
   }
+
+  async listHrUsers() {
+    const users = await this.hrUserModel
+      .find({})
+      .sort({ name: 1, email: 1 })
+      .lean()
+      .exec();
+
+    return {
+      items: users.map((user) => ({
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      })),
+    };
+  }
 }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   HttpCode,
   HttpStatus,
   Post,
@@ -15,6 +16,7 @@ import { AuthService } from './auth.service';
 import { HrLoginDto } from './dto/hr-login.dto';
 import { HrAuthGuard } from './guards/hr-auth.guard';
 import type { AuthenticatedHrRequest } from './interfaces/authenticated-hr-request.interface';
+import { HrRole } from './enums/hr-role.enum';
 
 @Controller('hr')
 export class AuthController {
@@ -28,6 +30,16 @@ export class AuthController {
     return {
       user: { id: sub, email, name, role },
     };
+  }
+
+  @Get('users')
+  @UseGuards(HrAuthGuard)
+  listHrUsers(@Req() request: AuthenticatedHrRequest) {
+    if (request.hrUser.role !== HrRole.Admin) {
+      throw new ForbiddenException('只有管理员可以查看 HR 账号列表');
+    }
+
+    return this.authService.listHrUsers();
   }
 
   @Post('login')

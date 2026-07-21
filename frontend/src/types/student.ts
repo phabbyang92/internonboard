@@ -2,6 +2,7 @@ export const ONBOARDING_STATUSES = [
   "candidate",
   "pending_onboarding",
   "onboarded",
+  "departed",
 ] as const;
 
 export type OnboardingStatus = (typeof ONBOARDING_STATUSES)[number];

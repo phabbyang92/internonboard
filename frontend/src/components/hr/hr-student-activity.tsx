@@ -84,7 +84,11 @@ function describeChanges(changes: Record<string, unknown> | null): string {
   }
 
   const attachment = changes.attachment;
-  if (attachment && typeof attachment === "object" && "originalName" in attachment) {
+  if (
+    attachment &&
+    typeof attachment === "object" &&
+    "originalName" in attachment
+  ) {
     return `附件：${valueText((attachment as { originalName?: unknown }).originalName)}`;
   }
 
@@ -113,7 +117,11 @@ function describeChanges(changes: Record<string, unknown> | null): string {
   return "操作已记录";
 }
 
-export function HrStudentActivity({ studentId, studentName, refreshToken }: Props) {
+export function HrStudentActivity({
+  studentId,
+  studentName,
+  refreshToken,
+}: Props) {
   const router = useRouter();
   const [history, setHistory] = useState<WorkLocationHistoryItem[]>([]);
   const [logs, setLogs] = useState<OperationLogResponse>(emptyLogs);
@@ -140,7 +148,9 @@ export function HrStudentActivity({ studentId, studentName, refreshToken }: Prop
       })
       .catch((caught: unknown) => {
         if (!isActive) return;
-        setError(caught instanceof ApiError ? caught.message : "无法读取历史记录");
+        setError(
+          caught instanceof ApiError ? caught.message : "无法读取历史记录",
+        );
       })
       .finally(() => {
         if (isActive) setIsLoading(false);
@@ -159,7 +169,9 @@ export function HrStudentActivity({ studentId, studentName, refreshToken }: Prop
       router.replace("/hr/students");
       router.refresh();
     } catch (caught) {
-      setDeleteError(caught instanceof ApiError ? caught.message : "删除学生失败");
+      setDeleteError(
+        caught instanceof ApiError ? caught.message : "删除学生失败",
+      );
       setIsDeleting(false);
     }
   }
@@ -172,48 +184,82 @@ export function HrStudentActivity({ studentId, studentName, refreshToken }: Prop
         <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
           <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
             <h2 className="font-semibold text-[#223548]">工作地点历史</h2>
-            <p className="mt-1 text-xs text-[#6b7f92]">记录学生曾在哪个地点工作，以及每次安排的生效时间。</p>
+            <p className="mt-1 text-xs text-[#6b7f92]">
+              记录学生曾在哪个地点工作，以及每次安排的生效时间。
+            </p>
           </header>
           {isLoading ? (
-            <p className="px-5 py-8 text-sm text-[#6b7f92]">正在加载地点历史...</p>
+            <p className="px-5 py-8 text-sm text-[#6b7f92]">
+              正在加载地点历史...
+            </p>
           ) : error ? (
-            <p className="px-5 py-8 text-sm text-[#9d3426]" role="alert">{error}</p>
+            <p className="px-5 py-8 text-sm text-[#9d3426]" role="alert">
+              {error}
+            </p>
           ) : history.length ? (
             <ol className="divide-y divide-[#e1e8ef]">
               {history.map((item) => (
-                <li key={item.id} className="grid gap-2 px-5 py-4 sm:grid-cols-[1fr_auto] sm:px-6">
+                <li
+                  key={item.id}
+                  className="grid gap-2 px-5 py-4 sm:grid-cols-[1fr_auto] sm:px-6"
+                >
                   <div>
-                    <p className="text-sm font-semibold text-[#2b3e50]">{item.workLocation}</p>
-                    <p className="mt-1 text-xs text-[#6b7f92]">{formatDateTime(item.effectiveFrom)} 至 {item.effectiveTo ? formatDateTime(item.effectiveTo) : "当前"}</p>
+                    <p className="text-sm font-semibold text-[#2b3e50]">
+                      {item.workLocation}
+                    </p>
+                    <p className="mt-1 text-xs text-[#6b7f92]">
+                      {formatDateTime(item.effectiveFrom)} 至{" "}
+                      {item.effectiveTo
+                        ? formatDateTime(item.effectiveTo)
+                        : "当前"}
+                    </p>
                   </div>
-                  <span className="self-start border border-[#c7d6e2] bg-[#f3f7fa] px-2 py-1 text-xs text-[#52677a]">{sourceLabels[item.source]}</span>
+                  <span className="self-start border border-[#c7d6e2] bg-[#f3f7fa] px-2 py-1 text-xs text-[#52677a]">
+                    {sourceLabels[item.source]}
+                  </span>
                 </li>
               ))}
             </ol>
           ) : (
-            <p className="px-5 py-8 text-sm text-[#6b7f92]">暂无地点变更历史。</p>
+            <p className="px-5 py-8 text-sm text-[#6b7f92]">
+              暂无地点变更历史。
+            </p>
           )}
         </section>
 
         <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
           <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
             <h2 className="font-semibold text-[#223548]">HR 操作日志</h2>
-            <p className="mt-1 text-xs text-[#6b7f92]">日志只记录操作和必要字段，不复制身份证号等敏感内容。</p>
+            <p className="mt-1 text-xs text-[#6b7f92]">
+              日志只记录操作和必要字段，不复制身份证号等敏感内容。
+            </p>
           </header>
           {isLoading ? (
-            <p className="px-5 py-8 text-sm text-[#6b7f92]">正在加载操作日志...</p>
+            <p className="px-5 py-8 text-sm text-[#6b7f92]">
+              正在加载操作日志...
+            </p>
           ) : error ? (
-            <p className="px-5 py-8 text-sm text-[#9d3426]" role="alert">{error}</p>
+            <p className="px-5 py-8 text-sm text-[#9d3426]" role="alert">
+              {error}
+            </p>
           ) : logs.items.length ? (
             <ol className="divide-y divide-[#e1e8ef]">
               {logs.items.map((log) => (
                 <li key={log.id} className="px-5 py-4 sm:px-6">
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-[#2b3e50]">{actionLabels[log.action]}</p>
-                    <time className="text-xs text-[#6b7f92]">{formatDateTime(log.createdAt)}</time>
+                    <p className="text-sm font-semibold text-[#2b3e50]">
+                      {actionLabels[log.action]}
+                    </p>
+                    <time className="text-xs text-[#6b7f92]">
+                      {formatDateTime(log.createdAt)}
+                    </time>
                   </div>
-                  <p className="mt-2 text-xs leading-5 text-[#5f7285]">{describeChanges(log.changes)}</p>
-                  <p className="mt-1 text-[11px] text-[#7f90a0]">操作人 ID：{log.operatorHrId}</p>
+                  <p className="mt-2 text-xs leading-5 text-[#5f7285]">
+                    {describeChanges(log.changes)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-[#7f90a0]">
+                    操作人 ID：{log.operatorHrId}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -223,9 +269,33 @@ export function HrStudentActivity({ studentId, studentName, refreshToken }: Prop
 
           {!isLoading && !error && logs.pagination.total > 0 ? (
             <div className="flex items-center justify-between border-t border-[#d5e0e9] px-5 py-3 text-xs text-[#5f7285] sm:px-6">
-              <button type="button" disabled={logPage <= 1} onClick={() => { setIsLoading(true); setError(""); setLogPage((page) => Math.max(1, page - 1)); }} className="min-h-9 border border-[#b9c9d7] px-3 disabled:opacity-40">上一页</button>
-              <span>第 {logs.pagination.page} / {pageCount} 页</span>
-              <button type="button" disabled={logPage >= pageCount} onClick={() => { setIsLoading(true); setError(""); setLogPage((page) => page + 1); }} className="min-h-9 border border-[#b9c9d7] px-3 disabled:opacity-40">下一页</button>
+              <button
+                type="button"
+                disabled={logPage <= 1}
+                onClick={() => {
+                  setIsLoading(true);
+                  setError("");
+                  setLogPage((page) => Math.max(1, page - 1));
+                }}
+                className="min-h-9 border border-[#b9c9d7] px-3 disabled:opacity-40"
+              >
+                上一页
+              </button>
+              <span>
+                第 {logs.pagination.page} / {pageCount} 页
+              </span>
+              <button
+                type="button"
+                disabled={logPage >= pageCount}
+                onClick={() => {
+                  setIsLoading(true);
+                  setError("");
+                  setLogPage((page) => page + 1);
+                }}
+                className="min-h-9 border border-[#b9c9d7] px-3 disabled:opacity-40"
+              >
+                下一页
+              </button>
             </div>
           ) : null}
         </section>
@@ -235,22 +305,66 @@ export function HrStudentActivity({ studentId, studentName, refreshToken }: Prop
         <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
             <h2 className="font-semibold text-[#7f3025]">删除学生记录</h2>
-            <p className="mt-1 text-xs leading-5 text-[#75635f]">学生将从正常列表中隐藏，现有附件和操作日志仍会保留。此功能暂不提供前端恢复入口。</p>
+            <p className="mt-1 text-xs leading-5 text-[#75635f]">
+              学生将从正常列表中隐藏，现有附件和操作日志仍会保留。此功能暂不提供前端恢复入口。
+            </p>
           </div>
-          <button type="button" onClick={() => { setDeleteReason(""); setDeleteError(""); setIsDeleteOpen(true); }} className="min-h-10 shrink-0 border border-[#b95a4d] px-4 text-sm font-semibold text-[#9d3426] hover:bg-[#fff4f2]">删除学生</button>
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteReason("");
+              setDeleteError("");
+              setIsDeleteOpen(true);
+            }}
+            className="min-h-10 shrink-0 border border-[#b95a4d] px-4 text-sm font-semibold text-[#9d3426] hover:bg-[#fff4f2]"
+          >
+            删除学生
+          </button>
         </div>
       </section>
 
-      <HrModal isOpen={isDeleteOpen} onClose={() => !isDeleting && setIsDeleteOpen(false)} title={`确认删除 ${studentName}`} description="删除后，该学生无法继续登录，也不会出现在正常学生列表中。">
+      <HrModal
+        isOpen={isDeleteOpen}
+        onClose={() => !isDeleting && setIsDeleteOpen(false)}
+        title={`确认删除 ${studentName}`}
+        description="删除后，该学生无法继续登录，也不会出现在正常学生列表中。"
+      >
         <div className="space-y-4 px-5 py-5 sm:px-6">
-          <label className="block text-sm font-medium text-[#31485c]">删除原因（选填）
-            <textarea maxLength={500} value={deleteReason} onChange={(event) => setDeleteReason(event.target.value)} placeholder="例如：学生未入职、offer 变动" className="mt-2 min-h-24 w-full border border-[#b9c9d7] p-3 text-sm outline-none focus:border-[#184268]" />
+          <label className="block text-sm font-medium text-[#31485c]">
+            删除原因（选填）
+            <textarea
+              maxLength={500}
+              value={deleteReason}
+              onChange={(event) => setDeleteReason(event.target.value)}
+              placeholder="例如：学生未入职、offer 变动"
+              className="mt-2 min-h-24 w-full border border-[#b9c9d7] p-3 text-sm outline-none focus:border-[#184268]"
+            />
           </label>
-          <p className="text-xs text-[#9d3426]">请确认学生身份无误。删除动作会写入操作日志。</p>
-          {deleteError ? <p className="text-sm text-[#9d3426]" role="alert">{deleteError}</p> : null}
+          <p className="text-xs text-[#9d3426]">
+            请确认学生身份无误。删除动作会写入操作日志。
+          </p>
+          {deleteError ? (
+            <p className="text-sm text-[#9d3426]" role="alert">
+              {deleteError}
+            </p>
+          ) : null}
           <div className="flex justify-end gap-3">
-            <button type="button" disabled={isDeleting} onClick={() => setIsDeleteOpen(false)} className="min-h-11 border border-[#b9c9d7] px-5 text-sm">取消</button>
-            <button type="button" disabled={isDeleting} onClick={() => void confirmDelete()} className="min-h-11 bg-[#a23b2e] px-5 text-sm font-semibold text-white disabled:opacity-50">{isDeleting ? "正在删除..." : "确认删除学生"}</button>
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => setIsDeleteOpen(false)}
+              className="min-h-11 border border-[#b9c9d7] px-5 text-sm"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => void confirmDelete()}
+              className="min-h-11 bg-[#a23b2e] px-5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {isDeleting ? "正在删除..." : "确认删除学生"}
+            </button>
           </div>
         </div>
       </HrModal>

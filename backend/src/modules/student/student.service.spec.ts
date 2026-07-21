@@ -3,7 +3,10 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { Types } from 'mongoose';
 import type { Model } from 'mongoose';
+import { HrRole } from '../auth/enums/hr-role.enum';
+import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
 import { BatchUpdateStudentArrangementDto } from './dto/batch-update-student-arrangement.dto';
 import { SubmitStudentFormDto } from './dto/submit-student-form.dto';
 import {
@@ -18,7 +21,13 @@ import { StudentService } from './student.service';
 
 const STUDENT_ID = '6a574ec45bd0f7b2a8b65a02';
 const SECOND_STUDENT_ID = '6a5898b91231f75de80eec8e';
+const HR_ID = '6a574ec45bd0f7b2a8b65b99';
 const START_AT = new Date('2026-08-05T01:30:00.000Z');
+const HR_ACCESS: HrAccessContext = { hrUserId: HR_ID, role: HrRole.Hr };
+const ADMIN_ACCESS: HrAccessContext = {
+  hrUserId: '6a574ec45bd0f7b2a8b65b98',
+  role: HrRole.Admin,
+};
 
 interface StudentModelMock {
   findOne: jest.Mock;
@@ -53,6 +62,7 @@ function createStudent(
 ): StudentDocument {
   return {
     _id: { toString: () => STUDENT_ID },
+    ownerHrId: new Types.ObjectId(HR_ID),
     name: '测试学生',
     email: 'student@example.com',
     phone: '13800138000',
@@ -132,6 +142,22 @@ function createValidFormDto(
 }
 
 describe('StudentService', () => {
+  describe('HR access scope', () => {
+    it('scopes regular HR queries to their own students', () => {
+      const service = createService(createModelMock());
+
+      expect(service.getHrAccessFilter(HR_ACCESS)).toEqual({
+        ownerHrId: new Types.ObjectId(HR_ID),
+      });
+    });
+
+    it('does not restrict administrator queries', () => {
+      const service = createService(createModelMock());
+
+      expect(service.getHrAccessFilter(ADMIN_ACCESS)).toEqual({});
+    });
+  });
+
   describe('findAll', () => {
     it('applies all filters, searches schools, and returns global stats', async () => {
       const model = createModelMock();
@@ -154,19 +180,24 @@ describe('StudentService', () => {
         .mockReturnValueOnce(queryResult(24))
         .mockReturnValueOnce(queryResult(6))
         .mockReturnValueOnce(queryResult(13))
-        .mockReturnValueOnce(queryResult(5));
+        .mockReturnValueOnce(queryResult(3))
+        .mockReturnValueOnce(queryResult(2));
 
-      const result = await createService(model).findAll({
-        page: 1,
-        limit: 20,
-        keyword: '测试.*',
-        status: OnboardingStatus.PendingOnboarding,
-        workLocation: WorkLocation.ShanghaiOffice,
-        formStatus: FormSubmissionStatus.NotSubmitted,
-      });
+      const result = await createService(model).findAll(
+        {
+          page: 1,
+          limit: 20,
+          keyword: '测试.*',
+          status: OnboardingStatus.PendingOnboarding,
+          workLocation: WorkLocation.ShanghaiOffice,
+          formStatus: FormSubmissionStatus.NotSubmitted,
+        },
+        HR_ACCESS,
+      );
 
       expect(model.find).toHaveBeenCalledWith({
         isDeleted: false,
+        ownerHrId: new Types.ObjectId(HR_ID),
         onboardingStatus: OnboardingStatus.PendingOnboarding,
         workLocation: WorkLocation.ShanghaiOffice,
         submittedAt: null,
@@ -192,7 +223,8 @@ describe('StudentService', () => {
         all: 24,
         notSubmitted: 6,
         pendingOnboarding: 13,
-        onboarded: 5,
+        onboarded: 3,
+        departed: 2,
       });
       expect(result.pagination.total).toBe(1);
     });
@@ -201,9 +233,11 @@ describe('StudentService', () => {
   describe('updateDueOnboardingStatuses', () => {
     it('marks active pending students whose China start date has arrived', async () => {
       const model = createModelMock();
-      model.updateMany.mockReturnValue(
-        queryResult({ matchedCount: 2, modifiedCount: 2 }),
-      );
+      model.updateMany
+        .mockReturnValueOnce(queryResult({ matchedCount: 2, modifiedCount: 2 }))
+        .mockReturnValueOnce(
+          queryResult({ matchedCount: 0, modifiedCount: 0 }),
+        );
 
       const result = await createService(model).updateDueOnboardingStatuses(
         new Date('2026-08-05T12:00:00.000Z'),
@@ -227,17 +261,61 @@ describe('StudentService', () => {
           runValidators: true,
         },
       );
+      expect(model.updateMany).toHaveBeenNthCalledWith(
+        2,
+        {
+          isDeleted: false,
+          onboardingStatus: {
+            $in: [
+              OnboardingStatus.PendingOnboarding,
+              OnboardingStatus.Onboarded,
+            ],
+          },
+          onboardingEndAt: {
+            $ne: null,
+            $lt: new Date('2026-08-04T16:00:00.000Z'),
+          },
+        },
+        {
+          $set: {
+            onboardingStatus: OnboardingStatus.Departed,
+          },
+        },
+        {
+          runValidators: true,
+        },
+      );
       expect(result).toEqual({
         matchedCount: 2,
         modifiedCount: 2,
+        onboardedCount: 2,
+        departedCount: 0,
         effectiveDate: new Date('2026-08-04T16:00:00.000Z'),
       });
+    });
+
+    it('marks onboarded students as departed on the day after their China end date', async () => {
+      const model = createModelMock();
+      model.updateMany
+        .mockReturnValueOnce(queryResult({ matchedCount: 0, modifiedCount: 0 }))
+        .mockReturnValueOnce(
+          queryResult({ matchedCount: 3, modifiedCount: 3 }),
+        );
+
+      const result = await createService(model).updateDueOnboardingStatuses(
+        new Date('2026-08-05T12:00:00.000Z'),
+      );
+
+      expect(result.departedCount).toBe(3);
+      expect(result.modifiedCount).toBe(3);
     });
 
     it('is safe to repeat because the database filter only targets pending students', async () => {
       const model = createModelMock();
       model.updateMany
         .mockReturnValueOnce(queryResult({ matchedCount: 1, modifiedCount: 1 }))
+        .mockReturnValueOnce(queryResult({ matchedCount: 0, modifiedCount: 0 }))
+        .mockReturnValueOnce(queryResult({ matchedCount: 0, modifiedCount: 0 }))
         .mockReturnValueOnce(
           queryResult({ matchedCount: 0, modifiedCount: 0 }),
         );
@@ -248,7 +326,7 @@ describe('StudentService', () => {
       const repeatedResult =
         await service.updateDueOnboardingStatuses(referenceDate);
 
-      expect(model.updateMany).toHaveBeenCalledTimes(2);
+      expect(model.updateMany).toHaveBeenCalledTimes(4);
       expect(repeatedResult.modifiedCount).toBe(0);
     });
   });
@@ -401,7 +479,7 @@ describe('StudentService', () => {
       model.findOne.mockReturnValue(queryResult(createStudent()));
 
       await expect(
-        createService(model).updateArrangement(STUDENT_ID, {}, 'hr-id'),
+        createService(model).updateArrangement(STUDENT_ID, {}, HR_ACCESS),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -414,7 +492,7 @@ describe('StudentService', () => {
       await createService(model).updateArrangement(
         STUDENT_ID,
         { onboardingStartAt: '2026-09-01T09:30:00+08:00' },
-        'hr-id',
+        HR_ACCESS,
       );
 
       expect(student.onboardingStartAt?.toISOString()).toBe(
@@ -432,28 +510,29 @@ describe('StudentService', () => {
         createService(model).updateArrangement(
           STUDENT_ID,
           { onboardingStartAt: '2000-01-01T00:00:00+08:00' },
-          'hr-id',
+          HR_ACCESS,
         ),
       ).rejects.toThrow('入职开始日期不能早于今天');
       expect(save).not.toHaveBeenCalled();
     });
 
-    it('does not allow an onboarded student start time to change', async () => {
-      const model = createModelMock();
-      model.findOne.mockReturnValue(
-        queryResult(
-          createStudent({ onboardingStatus: OnboardingStatus.Onboarded }),
-        ),
-      );
+    it.each([OnboardingStatus.Onboarded, OnboardingStatus.Departed])(
+      'does not allow a %s student start time to change',
+      async (onboardingStatus) => {
+        const model = createModelMock();
+        model.findOne.mockReturnValue(
+          queryResult(createStudent({ onboardingStatus })),
+        );
 
-      await expect(
-        createService(model).updateArrangement(
-          STUDENT_ID,
-          { onboardingStartAt: '2026-09-01T00:00:00.000Z' },
-          'hr-id',
-        ),
-      ).rejects.toThrow(ConflictException);
-    });
+        await expect(
+          createService(model).updateArrangement(
+            STUDENT_ID,
+            { onboardingStartAt: '2026-09-01T00:00:00.000Z' },
+            HR_ACCESS,
+          ),
+        ).rejects.toThrow(ConflictException);
+      },
+    );
 
     it('allows location and end time changes after onboarding', async () => {
       const model = createModelMock();
@@ -470,7 +549,7 @@ describe('StudentService', () => {
           workLocation: WorkLocation.Online,
           onboardingEndAt: '2026-12-31T00:00:00.000Z',
         },
-        'hr-id',
+        HR_ACCESS,
       );
 
       expect(save).toHaveBeenCalledTimes(1);
@@ -495,29 +574,32 @@ describe('StudentService', () => {
       });
 
       await expect(
-        createService(model).batchUpdateArrangement(batchDto(), 'hr-id'),
+        createService(model).batchUpdateArrangement(batchDto(), HR_ACCESS),
       ).rejects.toThrow(NotFoundException);
       expect(model.updateMany).not.toHaveBeenCalled();
     });
 
-    it('rejects the whole batch when it contains an onboarded student', async () => {
-      const model = createModelMock();
-      model.find.mockReturnValue({
-        select: jest
-          .fn()
-          .mockReturnValue(
-            queryResult([
-              createStudent(),
-              createStudent({ onboardingStatus: OnboardingStatus.Onboarded }),
-            ]),
-          ),
-      });
+    it.each([OnboardingStatus.Onboarded, OnboardingStatus.Departed])(
+      'rejects the whole batch when it contains a %s student',
+      async (onboardingStatus) => {
+        const model = createModelMock();
+        model.find.mockReturnValue({
+          select: jest
+            .fn()
+            .mockReturnValue(
+              queryResult([
+                createStudent(),
+                createStudent({ onboardingStatus }),
+              ]),
+            ),
+        });
 
-      await expect(
-        createService(model).batchUpdateArrangement(batchDto(), 'hr-id'),
-      ).rejects.toThrow(ConflictException);
-      expect(model.updateMany).not.toHaveBeenCalled();
-    });
+        await expect(
+          createService(model).batchUpdateArrangement(batchDto(), HR_ACCESS),
+        ).rejects.toThrow(ConflictException);
+        expect(model.updateMany).not.toHaveBeenCalled();
+      },
+    );
 
     it('rejects a batch start date before today', async () => {
       const model = createModelMock();
@@ -533,7 +615,7 @@ describe('StudentService', () => {
             ...batchDto(),
             onboardingStartAt: '2000-01-01T00:00:00+08:00',
           },
-          'hr-id',
+          HR_ACCESS,
         ),
       ).rejects.toThrow('入职开始日期不能早于今天');
       expect(model.updateMany).not.toHaveBeenCalled();

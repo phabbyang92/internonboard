@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { HrAuthGuard } from '../auth/guards/hr-auth.guard';
 import type { AuthenticatedHrRequest } from '../auth/interfaces/authenticated-hr-request.interface';
+import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
 import { BatchUpdateStudentArrangementDto } from '../student/dto/batch-update-student-arrangement.dto';
 import { CreateStudentDto } from '../student/dto/create-student.dto';
 import { ListStudentsQueryDto } from '../student/dto/list-students-query.dto';
@@ -37,31 +38,45 @@ export class HrStudentsController {
   ) {
     return this.hrStudentManagementService.createStudent(
       dto,
-      request.hrUser.sub,
+      this.getAccess(request),
     );
   }
 
   @Get()
-  findAll(@Query() query: ListStudentsQueryDto) {
-    return this.studentService.findAll(query);
+  findAll(
+    @Query() query: ListStudentsQueryDto,
+    @Req() request: AuthenticatedHrRequest,
+  ) {
+    return this.studentService.findAll(query, this.getAccess(request));
   }
 
   @Get(':id/work-location-history')
-  getWorkLocationHistory(@Param('id') id: string) {
-    return this.hrStudentManagementService.getWorkLocationHistory(id);
+  getWorkLocationHistory(
+    @Param('id') id: string,
+    @Req() request: AuthenticatedHrRequest,
+  ) {
+    return this.hrStudentManagementService.getWorkLocationHistory(
+      id,
+      this.getAccess(request),
+    );
   }
 
   @Get(':id/operation-logs')
   getOperationLogs(
     @Param('id') id: string,
     @Query() query: ListOperationLogsQueryDto,
+    @Req() request: AuthenticatedHrRequest,
   ) {
-    return this.hrStudentManagementService.getOperationLogs(id, query);
+    return this.hrStudentManagementService.getOperationLogs(
+      id,
+      query,
+      this.getAccess(request),
+    );
   }
 
   @Get(':id')
-  findOneById(@Param('id') id: string) {
-    return this.studentService.findOneById(id);
+  findOneById(@Param('id') id: string, @Req() request: AuthenticatedHrRequest) {
+    return this.studentService.findOneByIdForHr(id, this.getAccess(request));
   }
 
   @Patch('batch-arrangement')
@@ -71,7 +86,7 @@ export class HrStudentsController {
   ) {
     return this.hrStudentManagementService.batchUpdateArrangement(
       dto,
-      request.hrUser.sub,
+      this.getAccess(request),
     );
   }
 
@@ -84,7 +99,7 @@ export class HrStudentsController {
     return this.hrStudentManagementService.updateArrangement(
       id,
       dto,
-      request.hrUser.sub,
+      this.getAccess(request),
     );
   }
 
@@ -97,7 +112,7 @@ export class HrStudentsController {
     return this.hrStudentManagementService.updateProfile(
       id,
       dto,
-      request.hrUser.sub,
+      this.getAccess(request),
     );
   }
 
@@ -110,7 +125,14 @@ export class HrStudentsController {
     return this.hrStudentManagementService.softDeleteStudent(
       id,
       dto,
-      request.hrUser.sub,
+      this.getAccess(request),
     );
+  }
+
+  private getAccess(request: AuthenticatedHrRequest): HrAccessContext {
+    return {
+      hrUserId: request.hrUser.sub,
+      role: request.hrUser.role,
+    };
   }
 }

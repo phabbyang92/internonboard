@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
+  IsMongoId,
   IsOptional,
   IsString,
   Max,
@@ -47,4 +48,8 @@ export class ListStudentsQueryDto {
   @IsOptional()
   @IsEnum(FormSubmissionStatus)
   formStatus?: FormSubmissionStatus;
+
+  @IsOptional()
+  @IsMongoId()
+  ownerHrId?: string;
 }

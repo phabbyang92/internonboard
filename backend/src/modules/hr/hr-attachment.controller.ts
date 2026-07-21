@@ -21,6 +21,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { HrAuthGuard } from '../auth/guards/hr-auth.guard';
 import type { AuthenticatedHrRequest } from '../auth/interfaces/authenticated-hr-request.interface';
+import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
 import { MAX_ATTACHMENT_FILE_SIZE_BYTES } from '../file/validation/attachment-file.validator';
 import { DownloadAttachmentQueryDto } from './dto/download-attachment-query.dto';
 import { ReplaceHrAttachmentDto } from './dto/replace-hr-attachment.dto';
@@ -62,7 +63,7 @@ export class HrAttachmentController {
       studentId,
       dto,
       file,
-      request.hrUser.sub,
+      this.getAccess(request),
     );
   }
 
@@ -96,7 +97,7 @@ export class HrAttachmentController {
       studentId,
       dto,
       file,
-      request.hrUser.sub,
+      this.getAccess(request),
     );
   }
 
@@ -110,7 +111,7 @@ export class HrAttachmentController {
     return this.hrAttachmentService.remove(
       studentId,
       query.storageKey,
-      request.hrUser.sub,
+      this.getAccess(request),
     );
   }
 
@@ -118,12 +119,14 @@ export class HrAttachmentController {
   async download(
     @Param('studentId') studentId: string,
     @Query() query: DownloadAttachmentQueryDto,
+    @Req() request: AuthenticatedHrRequest,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     const { stream, attachment } =
       await this.hrAttachmentService.createDownload(
         studentId,
         query.storageKey,
+        this.getAccess(request),
       );
 
     const encodedFileName = this.encodeFileName(attachment.originalName);
@@ -143,5 +146,12 @@ export class HrAttachmentController {
       /[!'()*]/g,
       (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
     );
+  }
+
+  private getAccess(request: AuthenticatedHrRequest): HrAccessContext {
+    return {
+      hrUserId: request.hrUser.sub,
+      role: request.hrUser.role,
+    };
   }
 }

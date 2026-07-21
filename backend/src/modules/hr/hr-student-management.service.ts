@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
 import { OperationAction } from '../operation-log/enums/operation-action.enum';
 import { OperationLogService } from '../operation-log/operation-log.service';
 import { BatchUpdateStudentArrangementDto } from '../student/dto/batch-update-student-arrangement.dto';
@@ -19,17 +20,18 @@ export class HrStudentManagementService {
     private readonly workLocationHistoryService: WorkLocationHistoryService,
   ) {}
 
-  async createStudent(dto: CreateStudentDto, hrUserId: string) {
-    const result = await this.studentService.create(dto);
+  async createStudent(dto: CreateStudentDto, access: HrAccessContext) {
+    const result = await this.studentService.create(dto, access.hrUserId);
 
     await this.operationLogService.record({
-      operatorHrId: hrUserId,
+      operatorHrId: access.hrUserId,
       studentId: result.id,
       action: OperationAction.StudentCreated,
 
       // 日志记录创建动作和字段，不复制姓名、邮箱、手机号等个人信息。
       changes: {
         fields: ['name', 'email', ...(dto.phone ? ['phone'] : [])],
+        ownerHrId: access.hrUserId,
       },
     });
 
@@ -39,16 +41,16 @@ export class HrStudentManagementService {
   async updateProfile(
     studentId: string,
     dto: UpdateStudentProfileDto,
-    hrUserId: string,
+    access: HrAccessContext,
   ) {
     const result = await this.studentService.updateProfile(
       studentId,
       dto,
-      hrUserId,
+      access,
     );
 
     await this.operationLogService.record({
-      operatorHrId: hrUserId,
+      operatorHrId: access.hrUserId,
       studentId,
       action: OperationAction.StudentProfileUpdated,
 
@@ -64,10 +66,13 @@ export class HrStudentManagementService {
   async updateArrangement(
     studentId: string,
     dto: UpdateStudentArrangementDto,
-    hrUserId: string,
+    access: HrAccessContext,
   ) {
     // 修改前读取旧值，操作日志才能记录 before -> after。
-    const before = await this.studentService.findOneById(studentId);
+    const before = await this.studentService.findOneByIdForHr(
+      studentId,
+      access,
+    );
 
     if (
       before.workLocation &&
@@ -78,7 +83,7 @@ export class HrStudentManagementService {
         studentId,
         workLocation: before.workLocation,
         onboardingStartAt: before.onboardingStartAt,
-        changedByHrId: hrUserId,
+        changedByHrId: access.hrUserId,
         source: WorkLocationAssignmentSource.Backfill,
       });
     }
@@ -86,7 +91,7 @@ export class HrStudentManagementService {
     const result = await this.studentService.updateArrangement(
       studentId,
       dto,
-      hrUserId,
+      access,
     );
 
     if (
@@ -97,7 +102,7 @@ export class HrStudentManagementService {
         studentId,
         workLocation: result.workLocation,
         onboardingStartAt: result.onboardingStartAt,
-        changedByHrId: hrUserId,
+        changedByHrId: access.hrUserId,
         source: WorkLocationAssignmentSource.Single,
       });
     }
@@ -126,7 +131,7 @@ export class HrStudentManagementService {
     }
 
     await this.operationLogService.record({
-      operatorHrId: hrUserId,
+      operatorHrId: access.hrUserId,
       studentId,
       action: OperationAction.StudentArrangementUpdated,
       changes,
@@ -137,12 +142,12 @@ export class HrStudentManagementService {
 
   async batchUpdateArrangement(
     dto: BatchUpdateStudentArrangementDto,
-    hrUserId: string,
+    access: HrAccessContext,
   ) {
     // 修改前读取旧安排，使每位学生都有独立的 before -> after 日志。
     const studentsBeforeUpdate = await Promise.all(
       dto.studentIds.map((studentId) =>
-        this.studentService.findOneById(studentId),
+        this.studentService.findOneByIdForHr(studentId, access),
       ),
     );
 
@@ -156,7 +161,7 @@ export class HrStudentManagementService {
           studentId: dto.studentIds[index],
           workLocation: student.workLocation,
           onboardingStartAt: student.onboardingStartAt,
-          changedByHrId: hrUserId,
+          changedByHrId: access.hrUserId,
           source: WorkLocationAssignmentSource.Backfill,
         });
       }),
@@ -164,7 +169,7 @@ export class HrStudentManagementService {
 
     const result = await this.studentService.batchUpdateArrangement(
       dto,
-      hrUserId,
+      access,
     );
 
     await Promise.all(
@@ -173,7 +178,7 @@ export class HrStudentManagementService {
           studentId,
           workLocation: result.workLocation,
           onboardingStartAt: result.onboardingStartAt,
-          changedByHrId: hrUserId,
+          changedByHrId: access.hrUserId,
           source: WorkLocationAssignmentSource.Batch,
         }),
       ),
@@ -182,7 +187,7 @@ export class HrStudentManagementService {
     await Promise.all(
       studentsBeforeUpdate.map((student, index) =>
         this.operationLogService.record({
-          operatorHrId: hrUserId,
+          operatorHrId: access.hrUserId,
           studentId: dto.studentIds[index],
           action: OperationAction.StudentArrangementUpdated,
           changes: {
@@ -207,28 +212,38 @@ export class HrStudentManagementService {
     return result;
   }
 
-  async getWorkLocationHistory(studentId: string) {
+  async getWorkLocationHistory(studentId: string, access: HrAccessContext) {
     // 先确认学生存在且没有被软删除。
-    await this.studentService.findOneById(studentId);
+    await this.studentService.findOneByIdForHr(studentId, access);
 
     return {
       items: await this.workLocationHistoryService.findByStudentId(studentId),
     };
   }
 
-  async getOperationLogs(studentId: string, query: ListOperationLogsQueryDto) {
+  async getOperationLogs(
+    studentId: string,
+    query: ListOperationLogsQueryDto,
+    access: HrAccessContext,
+  ) {
     // 操作日志需要支持查询已软删除学生，因此不能使用只查 active 的方法。
-    await this.studentService.ensureStudentExistsIncludingDeleted(studentId);
+    await this.studentService.ensureStudentExistsIncludingDeletedForHr(
+      studentId,
+      access,
+    );
     return this.operationLogService.findByStudentId(studentId, query);
   }
 
   async softDeleteStudent(
     studentId: string,
     dto: SoftDeleteStudentDto,
-    hrUserId: string,
+    access: HrAccessContext,
   ) {
-    const before = await this.studentService.findOneById(studentId);
-    const result = await this.studentService.softDelete(studentId, hrUserId);
+    const before = await this.studentService.findOneByIdForHr(
+      studentId,
+      access,
+    );
+    const result = await this.studentService.softDelete(studentId, access);
 
     // 删除学生后关闭尚未结束的地点安排，供未来出勤统计正确判断。
     await this.workLocationHistoryService.closeCurrentAssignment(
@@ -237,7 +252,7 @@ export class HrStudentManagementService {
     );
 
     await this.operationLogService.record({
-      operatorHrId: hrUserId,
+      operatorHrId: access.hrUserId,
       studentId,
       action: OperationAction.StudentSoftDeleted,
       changes: {

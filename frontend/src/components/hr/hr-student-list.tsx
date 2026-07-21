@@ -9,12 +9,14 @@ import { HrCreateStudentModal } from "@/components/hr/hr-create-student-modal";
 import { HrSingleArrangementModal } from "@/components/hr/hr-single-arrangement-modal";
 import { OnboardingStatusBadge } from "@/components/hr/onboarding-status-badge";
 import { ApiError } from "@/lib/api/client";
+import { listHrUsers } from "@/lib/api/hr-auth";
 import { listHrStudents } from "@/lib/api/hr-students";
 import { formatDateOnly, formatDateTime } from "@/lib/format-date";
 import type {
   FormSubmissionStatus,
   HrStudentListItem,
   HrStudentListResponse,
+  HrUser,
 } from "@/types/hr";
 import {
   WORK_LOCATIONS,
@@ -25,16 +27,28 @@ import {
 const emptyResponse: HrStudentListResponse = {
   items: [],
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
-  stats: { all: 0, notSubmitted: 0, pendingOnboarding: 0, onboarded: 0 },
+  stats: {
+    all: 0,
+    notSubmitted: 0,
+    pendingOnboarding: 0,
+    onboarded: 0,
+    departed: 0,
+  },
 };
 
-export function HrStudentList() {
+interface Props {
+  user: HrUser;
+}
+
+export function HrStudentList({ user }: Props) {
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<OnboardingStatus | "">("");
   const [workLocation, setWorkLocation] = useState<WorkLocation | "">("");
   const [formStatus, setFormStatus] = useState<FormSubmissionStatus | "">("");
+  const [ownerHrId, setOwnerHrId] = useState("");
+  const [hrUsers, setHrUsers] = useState<HrUser[]>([]);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -46,6 +60,29 @@ export function HrStudentList() {
   const [isBatchOpen, setIsBatchOpen] = useState(false);
   const [arrangingStudent, setArrangingStudent] =
     useState<HrStudentListItem | null>(null);
+  const isAdmin = user.role === "admin";
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    let isActive = true;
+
+    void listHrUsers()
+      .then(({ items }) => {
+        if (isActive) setHrUsers(items);
+      })
+      .catch((error: unknown) => {
+        if (isActive) {
+          setErrorMessage(
+            error instanceof ApiError ? error.message : "无法读取 HR 账号列表",
+          );
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [isAdmin]);
 
   useEffect(() => {
     let isActive = true;
@@ -57,6 +94,7 @@ export function HrStudentList() {
       status,
       workLocation,
       formStatus,
+      ownerHrId: isAdmin ? ownerHrId : undefined,
     })
       .then((response) => {
         if (isActive) {
@@ -88,7 +126,18 @@ export function HrStudentList() {
     return () => {
       isActive = false;
     };
-  }, [formStatus, keyword, limit, page, refreshKey, router, status, workLocation]);
+  }, [
+    formStatus,
+    isAdmin,
+    keyword,
+    limit,
+    ownerHrId,
+    page,
+    refreshKey,
+    router,
+    status,
+    workLocation,
+  ]);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,19 +157,23 @@ export function HrStudentList() {
     setStatus("");
     setWorkLocation("");
     setFormStatus("");
+    setOwnerHrId("");
     setSelectedIds([]);
     setPage(1);
     setRefreshKey((current) => current + 1);
   }
 
   const pageCount = Math.max(1, data.pagination.totalPages);
-  const hasFilters =
-    keyword !== "" ||
-    status !== "" ||
-    workLocation !== "" ||
-    formStatus !== "";
+  const hasRecordFilters =
+    keyword !== "" || status !== "" || workLocation !== "" || formStatus !== "";
+  const hasFilters = hasRecordFilters || (isAdmin && ownerHrId !== "");
+  const hrUserNames = new Map(
+    hrUsers.map((hrUser) => [hrUser.id, hrUser.name]),
+  );
   const selectableItems = data.items.filter(
-    (student) => student.onboardingStatus !== "onboarded",
+    (student) =>
+      student.onboardingStatus !== "onboarded" &&
+      student.onboardingStatus !== "departed",
   );
   const allPageItemsSelected =
     selectableItems.length > 0 &&
@@ -164,7 +217,7 @@ export function HrStudentList() {
       label: "全部学生",
       value: data.stats.all,
       description: "当前有效记录",
-      isActive: !hasFilters,
+      isActive: !hasRecordFilters,
       onClick: () => applyQuickFilter("", ""),
     },
     {
@@ -200,6 +253,17 @@ export function HrStudentList() {
         keyword === "",
       onClick: () => applyQuickFilter("onboarded", ""),
     },
+    {
+      label: "已离职",
+      value: data.stats.departed,
+      description: "实习结束日期已过",
+      isActive:
+        status === "departed" &&
+        formStatus === "" &&
+        workLocation === "" &&
+        keyword === "",
+      onClick: () => applyQuickFilter("departed", ""),
+    },
   ];
 
   return (
@@ -210,15 +274,21 @@ export function HrStudentList() {
           <h1 className="mt-2 text-2xl font-semibold">学生列表</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-[#5f7285]">当前显示 {data.pagination.total} 名学生</span>
-          <button type="button" onClick={() => setIsCreateOpen(true)} className="min-h-10 bg-[#184268] px-4 text-sm font-semibold text-white hover:bg-[#123653]">
+          <span className="text-sm text-[#5f7285]">
+            当前显示 {data.pagination.total} 名学生
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="min-h-10 bg-[#184268] px-4 text-sm font-semibold text-white hover:bg-[#123653]"
+          >
             新增学生
           </button>
         </div>
       </div>
 
       <section
-        className="mt-6 grid overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_4px_18px_rgba(24,66,104,0.05)] sm:grid-cols-2 lg:grid-cols-4"
+        className="mt-6 grid overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_4px_18px_rgba(24,66,104,0.05)] sm:grid-cols-2 lg:grid-cols-5"
         aria-label="学生统计与快捷筛选"
       >
         {summaryItems.map((item) => (
@@ -246,10 +316,24 @@ export function HrStudentList() {
 
       {selectedIds.length > 0 ? (
         <div className="mt-5 flex flex-col gap-3 rounded-lg border border-[#aac2d5] bg-[#edf4fa] px-4 py-3 shadow-[0_3px_12px_rgba(24,66,104,0.04)] sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-medium text-[#184268]">已选择 {selectedIds.length} 名学生</p>
+          <p className="text-sm font-medium text-[#184268]">
+            已选择 {selectedIds.length} 名学生
+          </p>
           <div className="flex gap-3">
-            <button type="button" onClick={() => setSelectedIds([])} className="min-h-9 px-3 text-sm text-[#52677a]">取消选择</button>
-            <button type="button" onClick={() => setIsBatchOpen(true)} className="min-h-9 bg-[#184268] px-4 text-sm font-semibold text-white">批量安排</button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="min-h-9 px-3 text-sm text-[#52677a]"
+            >
+              取消选择
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBatchOpen(true)}
+              className="min-h-9 bg-[#184268] px-4 text-sm font-semibold text-white"
+            >
+              批量安排
+            </button>
           </div>
         </div>
       ) : null}
@@ -259,7 +343,9 @@ export function HrStudentList() {
           className="grid gap-4 px-4 py-4 sm:grid-cols-2 sm:px-5 lg:grid-cols-12 lg:items-end"
           onSubmit={handleSearch}
         >
-          <div className="sm:col-span-2 lg:col-span-4">
+          <div
+            className={`sm:col-span-2 ${isAdmin ? "lg:col-span-2" : "lg:col-span-4"}`}
+          >
             <label
               className="mb-2 block text-xs font-semibold text-[#52677a]"
               htmlFor="student-keyword"
@@ -305,6 +391,36 @@ export function HrStudentList() {
             </select>
           </div>
 
+          {isAdmin ? (
+            <div className="lg:col-span-2">
+              <label
+                className="mb-2 block text-xs font-semibold text-[#52677a]"
+                htmlFor="student-owner"
+              >
+                录入 HR
+              </label>
+              <select
+                id="student-owner"
+                value={ownerHrId}
+                onChange={(event) => {
+                  setIsLoading(true);
+                  setErrorMessage("");
+                  setOwnerHrId(event.target.value);
+                  setSelectedIds([]);
+                  setPage(1);
+                }}
+                className="h-11 w-full border border-[#b9c9d7] bg-white px-3 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
+              >
+                <option value="">全部 HR</option>
+                {hrUsers.map((hrUser) => (
+                  <option key={hrUser.id} value={hrUser.id}>
+                    {hrUser.name}（{hrUser.role === "admin" ? "管理员" : "HR"}）
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
           <div className="lg:col-span-2">
             <label
               className="mb-2 block text-xs font-semibold text-[#52677a]"
@@ -328,6 +444,7 @@ export function HrStudentList() {
               <option value="candidate">候选学生</option>
               <option value="pending_onboarding">待入职</option>
               <option value="onboarded">已入职</option>
+              <option value="departed">已离职</option>
             </select>
           </div>
 
@@ -344,9 +461,7 @@ export function HrStudentList() {
               onChange={(event) => {
                 setIsLoading(true);
                 setErrorMessage("");
-                setFormStatus(
-                  event.target.value as FormSubmissionStatus | "",
-                );
+                setFormStatus(event.target.value as FormSubmissionStatus | "");
                 setSelectedIds([]);
                 setPage(1);
               }}
@@ -402,15 +517,35 @@ export function HrStudentList() {
               <thead className="bg-[#f3f7fa] text-xs font-semibold text-[#52677a]">
                 <tr>
                   <th className="w-12 border-b border-[#d5e0e9] px-4 py-3">
-                    <input type="checkbox" aria-label="选择当前页可安排学生" checked={allPageItemsSelected} onChange={togglePageSelection} />
+                    <input
+                      type="checkbox"
+                      aria-label="选择当前页可安排学生"
+                      checked={allPageItemsSelected}
+                      onChange={togglePageSelection}
+                    />
                   </th>
                   <th className="border-b border-[#d5e0e9] px-5 py-3">学生</th>
-                  <th className="border-b border-[#d5e0e9] px-4 py-3">联系电话</th>
+                  {isAdmin ? (
+                    <th className="border-b border-[#d5e0e9] px-4 py-3">
+                      录入 HR
+                    </th>
+                  ) : null}
+                  <th className="border-b border-[#d5e0e9] px-4 py-3">
+                    联系电话
+                  </th>
                   <th className="border-b border-[#d5e0e9] px-4 py-3">状态</th>
-                  <th className="border-b border-[#d5e0e9] px-4 py-3">工作地点</th>
-                  <th className="border-b border-[#d5e0e9] px-4 py-3">入职开始日期</th>
-                  <th className="border-b border-[#d5e0e9] px-4 py-3">实习结束日期</th>
-                  <th className="border-b border-[#d5e0e9] px-5 py-3">登记提交</th>
+                  <th className="border-b border-[#d5e0e9] px-4 py-3">
+                    工作地点
+                  </th>
+                  <th className="border-b border-[#d5e0e9] px-4 py-3">
+                    入职开始日期
+                  </th>
+                  <th className="border-b border-[#d5e0e9] px-4 py-3">
+                    实习结束日期
+                  </th>
+                  <th className="border-b border-[#d5e0e9] px-5 py-3">
+                    登记提交
+                  </th>
                   <th className="border-b border-[#d5e0e9] px-5 py-3">操作</th>
                 </tr>
               </thead>
@@ -418,7 +553,7 @@ export function HrStudentList() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={isAdmin ? 10 : 9}
                       className="px-5 py-14 text-center text-[#5f7285]"
                     >
                       正在加载学生列表...
@@ -427,7 +562,7 @@ export function HrStudentList() {
                 ) : data.items.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={isAdmin ? 10 : 9}
                       className="px-5 py-14 text-center text-[#5f7285]"
                     >
                       {hasFilters ? "没有符合条件的学生" : "暂无学生记录"}
@@ -443,9 +578,18 @@ export function HrStudentList() {
                         <input
                           type="checkbox"
                           aria-label={`选择 ${student.name}`}
-                          disabled={student.onboardingStatus === "onboarded"}
+                          disabled={
+                            student.onboardingStatus === "onboarded" ||
+                            student.onboardingStatus === "departed"
+                          }
                           checked={selectedIds.includes(student.id)}
-                          onChange={() => setSelectedIds((ids) => ids.includes(student.id) ? ids.filter((id) => id !== student.id) : [...ids, student.id])}
+                          onChange={() =>
+                            setSelectedIds((ids) =>
+                              ids.includes(student.id)
+                                ? ids.filter((id) => id !== student.id)
+                                : [...ids, student.id],
+                            )
+                          }
                         />
                       </td>
                       <td className="px-5 py-4">
@@ -459,6 +603,13 @@ export function HrStudentList() {
                           {student.email}
                         </p>
                       </td>
+                      {isAdmin ? (
+                        <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
+                          {student.ownerHrId
+                            ? (hrUserNames.get(student.ownerHrId) ?? "未知 HR")
+                            : "尚未分配"}
+                        </td>
+                      ) : null}
                       <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
                         {student.phone ?? "未填写"}
                       </td>
@@ -497,7 +648,10 @@ export function HrStudentList() {
                           >
                             安排
                           </button>
-                          <Link href={`/hr/students/${student.id}`} className="inline-flex min-h-9 items-center rounded-md border border-[#aabed0] px-3 text-sm font-medium text-[#244b70] hover:border-[#184268] hover:bg-[#edf4fa]">
+                          <Link
+                            href={`/hr/students/${student.id}`}
+                            className="inline-flex min-h-9 items-center rounded-md border border-[#aabed0] px-3 text-sm font-medium text-[#244b70] hover:border-[#184268] hover:bg-[#edf4fa]"
+                          >
                             查看
                           </Link>
                         </div>

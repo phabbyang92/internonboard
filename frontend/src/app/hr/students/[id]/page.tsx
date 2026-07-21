@@ -17,7 +17,7 @@ export default function HrStudentDetailPage() {
 
   return (
     <HrShell user={user}>
-      <HrStudentDetail studentId={params.id} />
+      <HrStudentDetail studentId={params.id} currentUser={user} />
     </HrShell>
   );
 }

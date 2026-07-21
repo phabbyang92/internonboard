@@ -1,3 +1,5 @@
+import { HrRole } from '../auth/enums/hr-role.enum';
+import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
 import { OperationAction } from '../operation-log/enums/operation-action.enum';
 import { OperationLogService } from '../operation-log/operation-log.service';
 import {
@@ -12,17 +14,18 @@ import { HrStudentManagementService } from './hr-student-management.service';
 const STUDENT_ID = '6a574ec45bd0f7b2a8b65a02';
 const SECOND_STUDENT_ID = '6a5898b91231f75de80eec8e';
 const HR_ID = '6a574ec45bd0f7b2a8b65b99';
+const HR_ACCESS: HrAccessContext = { hrUserId: HR_ID, role: HrRole.Hr };
 
 describe('HrStudentManagementService', () => {
   function createDependencies() {
     const studentService = {
       create: jest.fn(),
       updateProfile: jest.fn(),
-      findOneById: jest.fn(),
+      findOneByIdForHr: jest.fn(),
       updateArrangement: jest.fn(),
       batchUpdateArrangement: jest.fn(),
       softDelete: jest.fn(),
-      ensureStudentExistsIncludingDeleted: jest.fn(),
+      ensureStudentExistsIncludingDeletedForHr: jest.fn(),
     };
     const operationLogService = {
       record: jest.fn().mockResolvedValue(undefined),
@@ -33,7 +36,6 @@ describe('HrStudentManagementService', () => {
       findByStudentId: jest.fn(),
       closeCurrentAssignment: jest.fn().mockResolvedValue(undefined),
     };
-
     return {
       studentService,
       operationLogService,
@@ -58,7 +60,7 @@ describe('HrStudentManagementService', () => {
     };
     studentService.updateProfile.mockResolvedValue({ id: STUDENT_ID });
 
-    await service.updateProfile(STUDENT_ID, dto, HR_ID);
+    await service.updateProfile(STUDENT_ID, dto, HR_ACCESS);
 
     expect(operationLogService.record).toHaveBeenCalledWith({
       operatorHrId: HR_ID,
@@ -81,7 +83,7 @@ describe('HrStudentManagementService', () => {
   it('records a separate arrangement audit entry for every batch student', async () => {
     const { service, studentService, operationLogService } =
       createDependencies();
-    studentService.findOneById
+    studentService.findOneByIdForHr
       .mockResolvedValueOnce({
         workLocation: WorkLocation.BeijingOffice,
         onboardingStartAt: new Date('2026-08-01T00:00:00.000Z'),
@@ -105,7 +107,7 @@ describe('HrStudentManagementService', () => {
         workLocation: WorkLocation.Online,
         onboardingStartAt: '2026-09-01T00:00:00.000Z',
       },
-      HR_ID,
+      HR_ACCESS,
     );
 
     expect(operationLogService.record).toHaveBeenCalledTimes(2);
@@ -130,7 +132,7 @@ describe('HrStudentManagementService', () => {
       workLocationHistoryService,
     } = createDependencies();
     const deletedAt = new Date('2026-09-01T00:00:00.000Z');
-    studentService.findOneById.mockResolvedValue({
+    studentService.findOneByIdForHr.mockResolvedValue({
       onboardingStatus: OnboardingStatus.PendingOnboarding,
       workLocation: WorkLocation.ShanghaiOffice,
     });
@@ -142,7 +144,7 @@ describe('HrStudentManagementService', () => {
     await service.softDeleteStudent(
       STUDENT_ID,
       { reason: '  offer 发生变动  ' },
-      HR_ID,
+      HR_ACCESS,
     );
 
     expect(

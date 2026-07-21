@@ -8,7 +8,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { Student, StudentDocument } from './schemas/student.schema';
-import { isValidObjectId } from 'mongoose';
+import { isValidObjectId, Types } from 'mongoose';
 import type { Model, QueryFilter } from 'mongoose';
 import { ListStudentsQueryDto } from './dto/list-students-query.dto';
 import { UpdateStudentArrangementDto } from './dto/update-student-arrangement.dto';
@@ -21,6 +21,8 @@ import { BatchUpdateStudentArrangementDto } from './dto/batch-update-student-arr
 import { SubmitStudentFormDto } from './dto/submit-student-form.dto';
 import { UpdateStudentProfileDto } from '../hr/dto/update-student-profile.dto';
 import { normalizeUploadedFileName } from '../file/filename/normalize-uploaded-file-name';
+import { HrRole } from '../auth/enums/hr-role.enum';
+import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
 
 interface AttachmentMetadataInput {
   type: AttachmentType;
@@ -63,7 +65,7 @@ export class StudentService {
     }
   }
 
-  async findAll(query: ListStudentsQueryDto) {
+  async findAll(query: ListStudentsQueryDto, access: HrAccessContext) {
     // MVP 阶段由 HR 列表请求触发到期状态更新；未来定时任务可复用同一方法。
     await this.updateDueOnboardingStatuses();
 
@@ -73,7 +75,12 @@ export class StudentService {
     // Soft-deleted students must not appear in the normal HR list.
     const filter: QueryFilter<Student> = {
       isDeleted: false,
+      ...this.getHrAccessFilter(access),
     };
+
+    if (access.role === HrRole.Admin && query.ownerHrId) {
+      filter.ownerHrId = new Types.ObjectId(query.ownerHrId);
+    }
 
     const keyword = query.keyword?.trim();
 
@@ -107,36 +114,59 @@ export class StudentService {
     }
 
     // 列表总数受筛选条件影响，顶部统计始终基于全部有效学生。
-    const [students, total, all, notSubmitted, pendingOnboarding, onboarded] =
-      await Promise.all([
-        this.studentModel
-          .find(filter)
-          .sort({ createdAt: -1 })
-          .skip((page - 1) * limit)
-          .limit(limit)
-          .exec(),
-        this.studentModel.countDocuments(filter).exec(),
-        this.studentModel.countDocuments({ isDeleted: false }).exec(),
-        this.studentModel
-          .countDocuments({ isDeleted: false, submittedAt: null })
-          .exec(),
-        this.studentModel
-          .countDocuments({
-            isDeleted: false,
-            onboardingStatus: OnboardingStatus.PendingOnboarding,
-          })
-          .exec(),
-        this.studentModel
-          .countDocuments({
-            isDeleted: false,
-            onboardingStatus: OnboardingStatus.Onboarded,
-          })
-          .exec(),
-      ]);
+    const statsScope: QueryFilter<Student> = {
+      isDeleted: false,
+      ...this.getHrAccessFilter(access),
+    };
+
+    if (access.role === HrRole.Admin && query.ownerHrId) {
+      statsScope.ownerHrId = new Types.ObjectId(query.ownerHrId);
+    }
+
+    const [
+      students,
+      total,
+      all,
+      notSubmitted,
+      pendingOnboarding,
+      onboarded,
+      departed,
+    ] = await Promise.all([
+      this.studentModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
+      this.studentModel.countDocuments(filter).exec(),
+      this.studentModel.countDocuments(statsScope).exec(),
+      this.studentModel
+        .countDocuments({ ...statsScope, submittedAt: null })
+        .exec(),
+      this.studentModel
+        .countDocuments({
+          ...statsScope,
+          onboardingStatus: OnboardingStatus.PendingOnboarding,
+        })
+        .exec(),
+      this.studentModel
+        .countDocuments({
+          ...statsScope,
+          onboardingStatus: OnboardingStatus.Onboarded,
+        })
+        .exec(),
+      this.studentModel
+        .countDocuments({
+          ...statsScope,
+          onboardingStatus: OnboardingStatus.Departed,
+        })
+        .exec(),
+    ]);
 
     return {
       items: students.map((student) => ({
         id: student._id.toString(),
+        ownerHrId: student.ownerHrId?.toString() ?? null,
         name: student.name,
         email: student.email,
         phone: student.phone ?? null,
@@ -158,6 +188,7 @@ export class StudentService {
         notSubmitted,
         pendingOnboarding,
         onboarded,
+        departed,
       },
     };
   }
@@ -168,7 +199,7 @@ export class StudentService {
       chinaTodayStart.getTime() + 24 * 60 * 60 * 1000,
     );
 
-    const result = await this.studentModel
+    const onboardedResult = await this.studentModel
       .updateMany(
         {
           isDeleted: false,
@@ -187,15 +218,49 @@ export class StudentService {
       )
       .exec();
 
-    if (result.modifiedCount > 0) {
+    if (onboardedResult.modifiedCount > 0) {
       this.logger.log(
-        `Automatically marked ${result.modifiedCount} students as onboarded`,
+        `Automatically marked ${onboardedResult.modifiedCount} students as onboarded`,
+      );
+    }
+
+    // 结束日期按中国时区的自然日计算；结束日期次日才视为已离职。
+    // 同时允许刚由上一步更新为已入职的记录继续转为已离职。
+    const departedResult = await this.studentModel
+      .updateMany(
+        {
+          isDeleted: false,
+          onboardingStatus: {
+            $in: [
+              OnboardingStatus.PendingOnboarding,
+              OnboardingStatus.Onboarded,
+            ],
+          },
+          onboardingEndAt: { $ne: null, $lt: chinaTodayStart },
+        },
+        {
+          $set: {
+            onboardingStatus: OnboardingStatus.Departed,
+          },
+        },
+        {
+          runValidators: true,
+        },
+      )
+      .exec();
+
+    if (departedResult.modifiedCount > 0) {
+      this.logger.log(
+        `Automatically marked ${departedResult.modifiedCount} students as departed`,
       );
     }
 
     return {
-      matchedCount: result.matchedCount,
-      modifiedCount: result.modifiedCount,
+      matchedCount: onboardedResult.matchedCount + departedResult.matchedCount,
+      modifiedCount:
+        onboardedResult.modifiedCount + departedResult.modifiedCount,
+      onboardedCount: onboardedResult.modifiedCount,
+      departedCount: departedResult.modifiedCount,
       effectiveDate: chinaTodayStart,
     };
   }
@@ -257,6 +322,7 @@ export class StudentService {
   async addAttachmentMetadataByHr(
     id: string,
     attachment: AttachmentMetadataInput,
+    access: HrAccessContext,
   ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('学生 ID 格式错误');
@@ -267,6 +333,7 @@ export class StudentService {
         {
           _id: id,
           isDeleted: false,
+          ...this.getHrAccessFilter(access),
 
           // 这里故意不检查 submittedAt 和 onboardingStatus。
           // HR 可以为已提交、已入职学生补充或更正附件。
@@ -353,10 +420,36 @@ export class StudentService {
   async findOneById(id: string) {
     // Reuse the shared lookup to validate the ID and exclude deleted students.
     const student = await this.findActiveStudentById(id);
+    return this.serializeStudent(student);
+  }
+
+  async findOneByIdForHr(id: string, access: HrAccessContext) {
+    const student = await this.findActiveStudentByIdForHr(id, access);
+    return this.serializeStudent(student);
+  }
+
+  async ensureStudentExistsIncludingDeletedForHr(
+    id: string,
+    access: HrAccessContext,
+  ): Promise<void> {
+    this.validateStudentId(id);
+
+    const exists = await this.studentModel.exists({
+      _id: id,
+      ...this.getHrAccessFilter(access),
+    });
+
+    if (!exists) {
+      throw new NotFoundException('学生不存在');
+    }
+  }
+
+  private serializeStudent(student: StudentDocument) {
     const hasSubmitted = Boolean(student.submittedAt);
 
     return {
       id: student._id.toString(),
+      ownerHrId: student.ownerHrId?.toString() ?? null,
 
       name: student.name,
       email: student.email,
@@ -499,11 +592,11 @@ export class StudentService {
   async updateProfile(
     id: string,
     dto: UpdateStudentProfileDto,
-    hrUserId: string,
+    access: HrAccessContext,
   ) {
     // 检查 ID、学生是否存在以及是否已经软删除。
     // 不检查 submittedAt 或 onboardingStatus，因此已提交、已入职学生也能由 HR 修改。
-    const student = await this.findActiveStudentById(id);
+    const student = await this.findActiveStudentByIdForHr(id, access);
 
     const updates: Record<string, unknown> = {};
 
@@ -616,6 +709,7 @@ export class StudentService {
           {
             _id: id,
             isDeleted: false,
+            ...this.getHrAccessFilter(access),
           },
           {
             $set: updates,
@@ -633,12 +727,12 @@ export class StudentService {
 
       // 日志只记录字段名，避免把身份证号等敏感内容写入日志。
       this.logger.log(
-        `HR ${hrUserId} updated student ${id} profile fields: ${Object.keys(
+        `HR ${access.hrUserId} updated student ${id} profile fields: ${Object.keys(
           updates,
         ).join(', ')}`,
       );
 
-      return this.findOneById(id);
+      return this.findOneByIdForHr(id, access);
     } catch (error: unknown) {
       if (this.isDuplicateKeyError(error)) {
         throw new ConflictException('该姓名和邮箱的学生已存在');
@@ -651,9 +745,9 @@ export class StudentService {
   async updateArrangement(
     id: string,
     dto: UpdateStudentArrangementDto,
-    hrUserId: string,
+    access: HrAccessContext,
   ) {
-    const student = await this.findActiveStudentById(id);
+    const student = await this.findActiveStudentByIdForHr(id, access);
 
     const changedFields: string[] = [];
 
@@ -666,12 +760,12 @@ export class StudentService {
       throw new BadRequestException('没有提供需要修改的入职安排');
     }
 
-    // 已入职后，开始日期成为历史数据，不允许再修改。
+    // 实习开始后，开始日期成为历史数据，不允许再修改。
     if (
-      student.onboardingStatus === OnboardingStatus.Onboarded &&
+      this.hasStartedInternship(student.onboardingStatus) &&
       dto.onboardingStartAt !== undefined
     ) {
-      throw new ConflictException('已入职学生不能修改入职开始日期');
+      throw new ConflictException('已入职或已离职学生不能修改入职开始日期');
     }
 
     // 使用修改后的值和数据库原值共同进行日期校验。
@@ -721,19 +815,30 @@ export class StudentService {
     }
 
     // 学生拥有地点和开始日期后才具备登录填表资格。
-    // 已入职学生修改地点或结束日期时，不能退回待入职状态。
+    // 已入职或已离职学生修改地点或结束日期时，不能退回待入职状态。
     if (
-      student.onboardingStatus !== OnboardingStatus.Onboarded &&
+      !this.hasStartedInternship(student.onboardingStatus) &&
       student.workLocation &&
       student.onboardingStartAt
     ) {
       student.onboardingStatus = OnboardingStatus.PendingOnboarding;
     }
 
+    if (
+      dto.onboardingEndAt !== undefined &&
+      this.hasStartedInternship(student.onboardingStatus)
+    ) {
+      const chinaTodayStart = this.getChinaTodayStart();
+      student.onboardingStatus =
+        effectiveEndAt && effectiveEndAt < chinaTodayStart
+          ? OnboardingStatus.Departed
+          : OnboardingStatus.Onboarded;
+    }
+
     await student.save();
 
     this.logger.log(
-      `HR ${hrUserId} updated onboarding arrangement for student ${id}: ${changedFields.join(
+      `HR ${access.hrUserId} updated onboarding arrangement for student ${id}: ${changedFields.join(
         ', ',
       )}`,
     );
@@ -752,13 +857,14 @@ export class StudentService {
 
   async batchUpdateArrangement(
     dto: BatchUpdateStudentArrangementDto,
-    hrUserId: string,
+    access: HrAccessContext,
   ) {
     // Check all selected students before changing any record.
     const students = await this.studentModel
       .find({
         _id: { $in: dto.studentIds },
         isDeleted: false,
+        ...this.getHrAccessFilter(access),
       })
       .select('_id onboardingStatus')
       .exec();
@@ -767,12 +873,12 @@ export class StudentService {
       throw new NotFoundException('部分学生不存在或已删除');
     }
 
-    const containsOnboardedStudent = students.some(
-      (student) => student.onboardingStatus === OnboardingStatus.Onboarded,
+    const containsStartedStudent = students.some((student) =>
+      this.hasStartedInternship(student.onboardingStatus),
     );
 
-    if (containsOnboardedStudent) {
-      throw new ConflictException('已入职学生不能重新安排入职开始日期');
+    if (containsStartedStudent) {
+      throw new ConflictException('已入职或已离职学生不能重新安排入职开始日期');
     }
 
     const workLocation = dto.workLocation;
@@ -790,6 +896,7 @@ export class StudentService {
         {
           _id: { $in: dto.studentIds },
           isDeleted: false,
+          ...this.getHrAccessFilter(access),
         },
         {
           $set: {
@@ -806,7 +913,7 @@ export class StudentService {
 
     // Record the operator and affected record count.
     this.logger.log(
-      `HR ${hrUserId} arranged onboarding for ${result.matchedCount} students`,
+      `HR ${access.hrUserId} arranged onboarding for ${result.matchedCount} students`,
     );
 
     return {
@@ -819,7 +926,7 @@ export class StudentService {
     };
   }
 
-  async softDelete(id: string, hrUserId: string) {
+  async softDelete(id: string, access: HrAccessContext) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('学生 ID 格式错误');
     }
@@ -830,6 +937,7 @@ export class StudentService {
         {
           _id: id,
           isDeleted: false,
+          ...this.getHrAccessFilter(access),
         },
         {
           $set: {
@@ -848,7 +956,7 @@ export class StudentService {
       throw new NotFoundException('学生不存在或已经被删除');
     }
 
-    this.logger.log(`HR ${hrUserId} soft-deleted student ${id}`);
+    this.logger.log(`HR ${access.hrUserId} soft-deleted student ${id}`);
 
     return {
       id: student._id.toString(),
@@ -859,9 +967,14 @@ export class StudentService {
     };
   }
 
-  async create(dto: CreateStudentDto) {
+  async create(dto: CreateStudentDto, ownerHrId: string) {
+    if (!isValidObjectId(ownerHrId)) {
+      throw new BadRequestException('录入 HR ID 格式错误');
+    }
+
     try {
       const student = await this.studentModel.create({
+        ownerHrId: new Types.ObjectId(ownerHrId),
         name: dto.name.trim(),
         email: dto.email.trim().toLowerCase(),
         phone: dto.phone?.trim(),
@@ -871,6 +984,7 @@ export class StudentService {
 
       return {
         id: student._id.toString(),
+        ownerHrId: student.ownerHrId.toString(),
         name: student.name,
         email: student.email,
         phone: student.phone ?? null,
@@ -973,6 +1087,13 @@ export class StudentService {
     return this.normalizeOnboardingStartDate(referenceDate.toISOString());
   }
 
+  private hasStartedInternship(status: OnboardingStatus): boolean {
+    return (
+      status === OnboardingStatus.Onboarded ||
+      status === OnboardingStatus.Departed
+    );
+  }
+
   private isDuplicateKeyError(error: unknown): boolean {
     if (typeof error !== 'object' || error === null) {
       return false;
@@ -987,9 +1108,7 @@ export class StudentService {
   }
 
   private async findActiveStudentById(id: string): Promise<StudentDocument> {
-    if (!isValidObjectId(id)) {
-      throw new BadRequestException('学生 ID 格式错误');
-    }
+    this.validateStudentId(id);
 
     // Deleted students are treated as unavailable.
     const student = await this.studentModel
@@ -1004,5 +1123,40 @@ export class StudentService {
     }
 
     return student;
+  }
+
+  private async findActiveStudentByIdForHr(
+    id: string,
+    access: HrAccessContext,
+  ): Promise<StudentDocument> {
+    this.validateStudentId(id);
+
+    const student = await this.studentModel
+      .findOne({
+        _id: id,
+        isDeleted: false,
+        ...this.getHrAccessFilter(access),
+      })
+      .exec();
+
+    if (!student) {
+      throw new NotFoundException('学生不存在');
+    }
+
+    return student;
+  }
+
+  getHrAccessFilter(access: HrAccessContext): QueryFilter<Student> {
+    if (access.role === HrRole.Admin) {
+      return {};
+    }
+
+    return { ownerHrId: new Types.ObjectId(access.hrUserId) };
+  }
+
+  private validateStudentId(id: string): void {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('学生 ID 格式错误');
+    }
   }
 }
