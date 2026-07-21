@@ -29,7 +29,7 @@ export function StudentPageHeader({
   }
 
   return (
-    <header className="border-b border-[#d8e0dd] bg-white">
+    <header className="border-b border-[#d5e0e9] bg-white">
       <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-5 px-5 sm:px-8">
         <div className="flex min-w-0 items-center">
           <Image
@@ -40,23 +40,23 @@ export function StudentPageHeader({
             priority
             className="h-10 w-auto shrink-0"
           />
-          <span className="ml-4 hidden truncate border-l border-[#d8e0dd] pl-4 text-sm font-semibold text-[#33443f] md:inline">
+          <span className="ml-4 hidden truncate border-l border-[#d5e0e9] pl-4 text-sm font-semibold text-[#30475b] md:inline">
             实习生入职登记系统
           </span>
         </div>
 
         <div className="flex min-w-0 items-center gap-4">
           <div className="hidden min-w-0 text-right sm:block">
-            <p className="truncate text-sm font-medium text-[#263632]">
+            <p className="truncate text-sm font-medium text-[#263a4b]">
               {studentName}
             </p>
-            <p className="truncate text-xs text-[#75817d]">{studentEmail}</p>
+            <p className="truncate text-xs text-[#6b7f92]">{studentEmail}</p>
           </div>
           <button
             type="button"
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="shrink-0 border border-[#bdcac6] bg-white px-3 py-2 text-sm font-medium text-[#33443f] transition hover:border-[#147565] hover:text-[#147565] focus:outline-none focus:ring-2 focus:ring-[#147565]/30 disabled:cursor-not-allowed disabled:opacity-60"
+            className="shrink-0 border border-[#b9c9d7] bg-white px-3 py-2 text-sm font-medium text-[#30475b] transition hover:border-[#184268] hover:text-[#184268] focus:outline-none focus:ring-2 focus:ring-[#184268]/30 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoggingOut ? "正在退出" : "退出登录"}
           </button>

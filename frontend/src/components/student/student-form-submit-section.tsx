@@ -29,9 +29,9 @@ export function StudentFormSubmitSection({
 }: StudentFormSubmitSectionProps) {
   return (
     <>
-      <section className="mt-6 border border-[#d5dedb] bg-white">
-        <div className="border-b border-[#d5dedb] px-5 py-6 sm:px-8">
-          <p className="text-xs font-semibold text-[#147565]">08</p>
+      <section className="mt-6 overflow-hidden rounded-lg border border-[#d2dee8] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
+        <div className="border-b border-[#d2dee8] px-5 py-6 sm:px-8">
+          <p className="text-xs font-semibold text-[#184268]">08</p>
           <h2 className="mt-2 text-xl font-semibold">提交登记表</h2>
         </div>
 
@@ -52,7 +52,7 @@ export function StudentFormSubmitSection({
           <div className="mt-6 flex justify-end">
             <button
               type="submit"
-              className="min-h-12 bg-[#147565] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0f6255] focus:outline-none focus:ring-2 focus:ring-[#147565]/25 disabled:cursor-not-allowed disabled:bg-[#8a9d97]"
+              className="min-h-12 bg-[#184268] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#123653] focus:outline-none focus:ring-2 focus:ring-[#184268]/25 disabled:cursor-not-allowed disabled:bg-[#8da3b6]"
               disabled={isAttachmentBusy || isSubmitting}
             >
               {isAttachmentBusy ? "附件处理中..." : "核对并提交"}
@@ -72,14 +72,14 @@ export function StudentFormSubmitSection({
             aria-modal="true"
             aria-labelledby="submission-confirmation-title"
           >
-            <div className="border-b border-[#d5dedb] px-5 py-5 sm:px-7">
+            <div className="border-b border-[#d2dee8] px-5 py-5 sm:px-7">
               <h2
                 id="submission-confirmation-title"
                 className="text-xl font-semibold"
               >
                 确认提交登记表
               </h2>
-              <p className="mt-2 text-sm leading-6 text-[#66736f]">
+              <p className="mt-2 text-sm leading-6 text-[#5f7285]">
                 请最后核对以下关键信息。确认后登记表将变为只读。
               </p>
             </div>
@@ -99,9 +99,9 @@ export function StudentFormSubmitSection({
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  className="border-b border-[#e5ebe9] px-5 py-4 odd:sm:border-r sm:px-7"
+                  className="border-b border-[#e3eaf0] px-5 py-4 odd:sm:border-r sm:px-7"
                 >
-                  <dt className="text-xs font-medium text-[#75817d]">
+                  <dt className="text-xs font-medium text-[#6b7f92]">
                     {label}
                   </dt>
                   <dd className="mt-1.5 break-words text-sm font-medium">
@@ -114,7 +114,7 @@ export function StudentFormSubmitSection({
             <div className="flex flex-col-reverse gap-3 px-5 py-5 sm:flex-row sm:justify-end sm:px-7">
               <button
                 type="button"
-                className="min-h-11 border border-[#bdc9c5] px-5 py-2 text-sm font-semibold text-[#44514d] disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-11 border border-[#b9c8d5] px-5 py-2 text-sm font-semibold text-[#425a6e] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSubmitting}
                 onClick={onCloseConfirmation}
               >
@@ -122,7 +122,7 @@ export function StudentFormSubmitSection({
               </button>
               <button
                 type="button"
-                className="min-h-11 bg-[#147565] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#0f6255] disabled:cursor-not-allowed disabled:bg-[#8a9d97]"
+                className="min-h-11 bg-[#184268] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#123653] disabled:cursor-not-allowed disabled:bg-[#8da3b6]"
                 disabled={isSubmitting}
                 onClick={onConfirmSubmission}
               >

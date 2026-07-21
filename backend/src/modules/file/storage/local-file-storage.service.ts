@@ -15,8 +15,8 @@ import type { FileStorage, SaveFileInput } from './file-storage.interface';
 // 数据库枚举和本地目录名称分开，避免业务值依赖文件系统格式。
 const ATTACHMENT_DIRECTORIES: Record<AttachmentType, string> = {
   [AttachmentType.Resume]: 'resume',
-  [AttachmentType.IdCard]: 'id-card',
-  [AttachmentType.Other]: 'other',
+  [AttachmentType.IdCardFront]: 'id-card-front',
+  [AttachmentType.IdCardBack]: 'id-card-back',
 };
 
 @Injectable()

@@ -113,7 +113,7 @@ MVP 阶段可以先使用姓名 + 邮箱。
 - 填写入职结束日期时间
 - 填写补充信息
 - 上传简历
-- 上传身份证件或其他附件
+- 上传身份证正面和身份证反面
 - 提交一次登记表
 - 提交后不能再次修改登记表或附件
 
@@ -331,8 +331,8 @@ HR 已安排信息：
 附件字段：
 
 - 简历
-- 身份证件
-- 其他附件
+- 身份证正面
+- 身份证反面
 
 ### 5.3 HR 学生列表页
 
@@ -519,7 +519,9 @@ MVP 可选两种方式：
 
 - 需要部署环境支持定时任务。
 
-第一版建议先用方式 A，后续根据公司部署环境改成定时任务。
+当前 MVP 同时实现方式 A 和方式 B：NestJS Cron 每天在中国时间 00:05 执行，
+HR 查询列表时使用同一个幂等方法补漏。正式多实例部署后，需要根据部署架构决定
+是否增加分布式锁或改用云平台定时触发器。
 
 ## 8. 数据模型设计
 
@@ -593,7 +595,7 @@ MVP 可选两种方式：
 
   attachments: [
     {
-      type: "resume" | "id_card" | "other",
+      type: "resume" | "id_card_front" | "id_card_back",
       originalName: String,
       storageKey: String
     }
@@ -714,8 +716,8 @@ uploads/
   students/
     {studentId}/
       resume/
-      id-card/
-      other/
+      id-card-front/
+      id-card-back/
 ```
 
 MongoDB 中只保存：

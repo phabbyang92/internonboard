@@ -43,10 +43,12 @@ describe('LocalFileStorageService', () => {
   it('creates a readable stream for an existing file', async () => {
     const storageKey = await service.save({
       studentId: 'student-id',
-      type: AttachmentType.IdCard,
+      type: AttachmentType.IdCardFront,
       originalName: 'identity.png',
       buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]),
     });
+
+    expect(storageKey).toContain('/id-card-front/');
 
     const stream = await service.createReadStream(storageKey);
 

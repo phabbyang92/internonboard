@@ -25,10 +25,10 @@ export function InternshipExperiencesSection({
   onRemove,
 }: InternshipExperiencesSectionProps) {
   return (
-    <section className="mt-6 border border-[#d5dedb] bg-white">
-      <div className="flex flex-col gap-4 border-b border-[#d5dedb] px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+    <section className="mt-6 overflow-hidden rounded-lg border border-[#d2dee8] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
+      <div className="flex flex-col gap-4 border-b border-[#d2dee8] px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div>
-          <p className="text-xs font-semibold text-[#147565]">04</p>
+          <p className="text-xs font-semibold text-[#184268]">04</p>
           <h2 className="mt-2 text-xl font-semibold">校外实习或兼职经历</h2>
         </div>
         <button
@@ -43,7 +43,7 @@ export function InternshipExperiencesSection({
 
       {experiences.length === 0 ? (
         <div className="px-5 py-10 text-center sm:px-8">
-          <p className="text-sm text-[#66736f]">暂无校外实习或兼职经历</p>
+          <p className="text-sm text-[#5f7285]">暂无校外实习或兼职经历</p>
           <button
             type="button"
             className={`${primaryButtonClassName} mt-4`}
@@ -63,10 +63,10 @@ export function InternshipExperiencesSection({
             return (
               <fieldset
                 key={index}
-                className="border-b border-[#e1e7e5] px-5 py-6 last:border-b-0 sm:px-8"
+                className="border-b border-[#dee7ee] px-5 py-6 last:border-b-0 sm:px-8"
               >
                 <div className="mb-5 flex items-center justify-between gap-4">
-                  <legend className="text-sm font-semibold text-[#26332f]">
+                  <legend className="text-sm font-semibold text-[#263746]">
                     实习或兼职经历 {index + 1}
                   </legend>
                   <button

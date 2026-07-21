@@ -38,18 +38,18 @@ const attachmentRules: AttachmentRule[] = [
     formats: "PDF、DOC、DOCX",
   },
   {
-    type: "id_card",
-    label: "身份证件",
+    type: "id_card_front",
+    label: "身份证正面",
     required: true,
     accept: ".pdf,.jpg,.jpeg,.png",
     formats: "PDF、JPG、PNG",
   },
   {
-    type: "other",
-    label: "其他材料",
-    required: false,
-    accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png",
-    formats: "PDF、DOC、DOCX、JPG、PNG",
+    type: "id_card_back",
+    label: "身份证反面",
+    required: true,
+    accept: ".pdf,.jpg,.jpeg,.png",
+    formats: "PDF、JPG、PNG",
   },
 ];
 
@@ -104,11 +104,10 @@ export function AttachmentsSection({
     setNotice(null);
 
     try {
-      // 必需附件采用先上传后删除旧文件的顺序，避免替换失败时丢失原文件。
-      const oldAttachments =
-        type === "other"
-          ? []
-          : attachments.filter((attachment) => attachment.type === type);
+      // 每类必需附件只保留一份；先上传新文件，成功后再删除旧文件。
+      const oldAttachments = attachments.filter(
+        (attachment) => attachment.type === type,
+      );
       const response = await uploadStudentAttachment(type, file);
 
       onAttachmentsChange((current) => [...current, response.attachment]);
@@ -174,17 +173,20 @@ export function AttachmentsSection({
   }
 
   return (
-    <section className="mt-6 border border-[#d5dedb] bg-white">
-      <div className="border-b border-[#d5dedb] px-5 py-6 sm:px-8">
-        <p className="text-xs font-semibold text-[#147565]">07</p>
+    <section className="mt-6 overflow-hidden rounded-lg border border-[#d2dee8] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
+      <div className="border-b border-[#d2dee8] px-5 py-6 sm:px-8">
+        <p className="text-xs font-semibold text-[#184268]">07</p>
         <h2 className="mt-2 text-xl font-semibold">附件资料</h2>
+        <p className="mt-2 text-sm leading-6 text-[#5f7285]">
+          请在上传前将文件分别命名为：姓名_个人简历、姓名_身份证正面、姓名_身份证反面。
+        </p>
       </div>
 
       {notice ? (
         <div
           className={`mx-5 mt-6 border-l-4 px-4 py-3 text-sm sm:mx-8 ${
             notice.tone === "success"
-              ? "border-[#147565] bg-[#f1f7f5] text-[#28594f]"
+              ? "border-[#184268] bg-[#eff5fa] text-[#244b70]"
               : "border-[#b44532] bg-[#fff3f0] text-[#873426]"
           }`}
           role={notice.tone === "error" ? "alert" : "status"}
@@ -204,12 +206,12 @@ export function AttachmentsSection({
           return (
             <div
               key={rule.type}
-              className="flex min-h-64 flex-col border border-[#d5dedb] bg-[#fbfcfc] p-5"
+              className="flex min-h-64 flex-col border border-[#d2dee8] bg-[#fbfcfc] p-5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-base font-semibold">{rule.label}</h3>
-                  <p className="mt-1 text-xs leading-5 text-[#75817d]">
+                  <p className="mt-1 text-xs leading-5 text-[#6b7f92]">
                     {rule.formats}，不超过 10 MB
                   </p>
                 </div>
@@ -217,7 +219,7 @@ export function AttachmentsSection({
                   className={`border px-2 py-1 text-xs font-medium ${
                     rule.required
                       ? "border-[#d7b4aa] bg-[#fff3f0] text-[#9a4736]"
-                      : "border-[#ccd7d3] bg-white text-[#66736f]"
+                      : "border-[#ccd7d3] bg-white text-[#5f7285]"
                   }`}
                 >
                   {rule.required ? "必需" : "选填"}
@@ -226,17 +228,17 @@ export function AttachmentsSection({
 
               <div className="mt-5 flex-1 space-y-3">
                 {matchingAttachments.length === 0 ? (
-                  <p className="border border-dashed border-[#cbd6d2] px-3 py-5 text-center text-sm text-[#75817d]">
+                  <p className="border border-dashed border-[#c7d6e2] px-3 py-5 text-center text-sm text-[#6b7f92]">
                     尚未上传
                   </p>
                 ) : (
                   matchingAttachments.map((attachment) => (
                     <div
                       key={attachment.storageKey}
-                      className="border border-[#d8e0dd] bg-white px-3 py-3"
+                      className="border border-[#d5e0e9] bg-white px-3 py-3"
                     >
                       <p
-                        className="break-all text-sm font-medium text-[#26332f]"
+                        className="break-all text-sm font-medium text-[#263746]"
                         title={attachment.originalName}
                       >
                         {attachment.originalName}
@@ -256,7 +258,7 @@ export function AttachmentsSection({
                             </button>
                             <button
                               type="button"
-                              className="min-h-9 border border-[#c7d1ce] px-3 py-1.5 text-xs font-medium text-[#52605c]"
+                              className="min-h-9 border border-[#c5d3de] px-3 py-1.5 text-xs font-medium text-[#52677a]"
                               onClick={() => setConfirmingStorageKey(null)}
                             >
                               取消
@@ -283,19 +285,17 @@ export function AttachmentsSection({
               <label
                 className={`mt-5 flex min-h-11 items-center justify-center border px-4 py-2 text-center text-sm font-semibold transition ${
                   isBusy
-                    ? "cursor-wait border-[#b9c3c0] bg-[#eef1f0] text-[#7b8582]"
-                    : "cursor-pointer border-[#147565] text-[#147565] hover:bg-[#eef7f4]"
+                    ? "cursor-wait border-[#b6c4d0] bg-[#eef3f7] text-[#728394]"
+                    : "cursor-pointer border-[#184268] text-[#184268] hover:bg-[#edf4fa]"
                 }`}
               >
                 {isBusy
                   ? isUploading
                     ? "上传中..."
                     : "请稍候..."
-                  : rule.type === "other"
-                    ? "添加文件"
-                    : hasAttachment
-                      ? "替换文件"
-                      : "选择文件"}
+                  : hasAttachment
+                    ? "替换文件"
+                    : "选择文件"}
                 <input
                   className="sr-only"
                   type="file"

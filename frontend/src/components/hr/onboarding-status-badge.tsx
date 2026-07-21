@@ -6,7 +6,7 @@ const statusConfig: Record<
 > = {
   candidate: {
     label: "候选学生",
-    className: "border-[#c9d2cf] bg-[#f4f6f5] text-[#56625e]",
+    className: "border-[#c8d4df] bg-[#f2f5f8] text-[#52677a]",
   },
   pending_onboarding: {
     label: "待入职",
@@ -27,7 +27,7 @@ export function OnboardingStatusBadge({
 
   return (
     <span
-      className={`inline-flex whitespace-nowrap border px-2 py-1 text-xs font-semibold ${config.className}`}
+      className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${config.className}`}
     >
       {config.label}
     </span>

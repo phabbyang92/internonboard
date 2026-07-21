@@ -351,7 +351,10 @@ candidate -> pending_onboarding -> onboarded
 
 - `candidate`：HR 已预录入，但尚未完成入职安排。
 - `pending_onboarding`：HR 已设置工作地点和入职开始日期。
-- `onboarded`：已到入职时间，自动更新逻辑尚未实现。
+- `onboarded`：入职开始日期已到；系统每天自动更新，并在 HR 获取列表时补漏。
+
+状态更新使用中国自然日判断并采用幂等数据库条件。NestJS Cron 每天在
+`Asia/Shanghai 00:05` 执行，HR 获取学生列表时也会调用同一方法作为兜底。
 
 ## 技术栈
 

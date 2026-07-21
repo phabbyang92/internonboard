@@ -68,9 +68,14 @@ function createStudent(
         storageKey: 'students/test/resume.pdf',
       },
       {
-        type: AttachmentType.IdCard,
-        originalName: 'id-card.pdf',
-        storageKey: 'students/test/id-card.pdf',
+        type: AttachmentType.IdCardFront,
+        originalName: 'id-card-front.pdf',
+        storageKey: 'students/test/id-card-front.pdf',
+      },
+      {
+        type: AttachmentType.IdCardBack,
+        originalName: 'id-card-back.pdf',
+        storageKey: 'students/test/id-card-back.pdf',
       },
     ],
     educationExperiences: [],
@@ -141,6 +146,9 @@ describe('StudentService', () => {
       listQuery.skip.mockReturnValue(listQuery);
       listQuery.limit.mockReturnValue(listQuery);
       model.find.mockReturnValue(listQuery);
+      model.updateMany.mockReturnValue(
+        queryResult({ matchedCount: 0, modifiedCount: 0 }),
+      );
       model.countDocuments
         .mockReturnValueOnce(queryResult(1))
         .mockReturnValueOnce(queryResult(24))
@@ -190,6 +198,61 @@ describe('StudentService', () => {
     });
   });
 
+  describe('updateDueOnboardingStatuses', () => {
+    it('marks active pending students whose China start date has arrived', async () => {
+      const model = createModelMock();
+      model.updateMany.mockReturnValue(
+        queryResult({ matchedCount: 2, modifiedCount: 2 }),
+      );
+
+      const result = await createService(model).updateDueOnboardingStatuses(
+        new Date('2026-08-05T12:00:00.000Z'),
+      );
+
+      expect(model.updateMany).toHaveBeenCalledWith(
+        {
+          isDeleted: false,
+          onboardingStatus: OnboardingStatus.PendingOnboarding,
+          onboardingStartAt: {
+            $ne: null,
+            $lt: new Date('2026-08-05T16:00:00.000Z'),
+          },
+        },
+        {
+          $set: {
+            onboardingStatus: OnboardingStatus.Onboarded,
+          },
+        },
+        {
+          runValidators: true,
+        },
+      );
+      expect(result).toEqual({
+        matchedCount: 2,
+        modifiedCount: 2,
+        effectiveDate: new Date('2026-08-04T16:00:00.000Z'),
+      });
+    });
+
+    it('is safe to repeat because the database filter only targets pending students', async () => {
+      const model = createModelMock();
+      model.updateMany
+        .mockReturnValueOnce(queryResult({ matchedCount: 1, modifiedCount: 1 }))
+        .mockReturnValueOnce(
+          queryResult({ matchedCount: 0, modifiedCount: 0 }),
+        );
+      const service = createService(model);
+      const referenceDate = new Date('2026-08-05T12:00:00.000Z');
+
+      await service.updateDueOnboardingStatuses(referenceDate);
+      const repeatedResult =
+        await service.updateDueOnboardingStatuses(referenceDate);
+
+      expect(model.updateMany).toHaveBeenCalledTimes(2);
+      expect(repeatedResult.modifiedCount).toBe(0);
+    });
+  });
+
   describe('submitForm', () => {
     it.each([
       {
@@ -197,8 +260,12 @@ describe('StudentService', () => {
         expectedMessage: '请先上传必需附件：简历',
       },
       {
-        missingType: AttachmentType.IdCard,
-        expectedMessage: '请先上传必需附件：身份证件',
+        missingType: AttachmentType.IdCardFront,
+        expectedMessage: '请先上传必需附件：身份证正面',
+      },
+      {
+        missingType: AttachmentType.IdCardBack,
+        expectedMessage: '请先上传必需附件：身份证反面',
       },
     ])(
       'rejects submission when $missingType is missing',
@@ -275,7 +342,11 @@ describe('StudentService', () => {
           isDeleted: false,
           submittedAt: null,
           'attachments.type': {
-            $all: [AttachmentType.Resume, AttachmentType.IdCard],
+            $all: [
+              AttachmentType.Resume,
+              AttachmentType.IdCardFront,
+              AttachmentType.IdCardBack,
+            ],
           },
         }),
         expect.any(Object),
@@ -308,19 +379,19 @@ describe('StudentService', () => {
     it('rechecks required attachments if the atomic update loses a race', async () => {
       const model = createModelMock();
       const completeStudent = createStudent();
-      const studentMissingIdCard = createStudent({
+      const studentMissingIdCardBack = createStudent({
         attachments: completeStudent.attachments.filter(
-          (attachment) => attachment.type !== AttachmentType.IdCard,
+          (attachment) => attachment.type !== AttachmentType.IdCardBack,
         ),
       });
       model.findOne
         .mockReturnValueOnce(queryResult(completeStudent))
-        .mockReturnValueOnce(queryResult(studentMissingIdCard));
+        .mockReturnValueOnce(queryResult(studentMissingIdCardBack));
       model.findOneAndUpdate.mockReturnValue(queryResult(null));
 
       await expect(
         createService(model).submitForm(STUDENT_ID, createValidFormDto()),
-      ).rejects.toThrow('请先上传必需附件：身份证件');
+      ).rejects.toThrow('请先上传必需附件：身份证反面');
     });
   });
 

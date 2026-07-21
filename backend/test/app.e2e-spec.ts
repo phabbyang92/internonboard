@@ -32,7 +32,7 @@ interface FormResponse {
 }
 
 interface AttachmentMetadata {
-  type: 'resume' | 'id_card' | 'other';
+  type: 'resume' | 'id_card_front' | 'id_card_back';
   originalName: string;
   storageKey: string;
 }
@@ -232,7 +232,8 @@ describe('Intern onboarding API (e2e)', () => {
     expect(initialForm.workLocation).toBe('上海办公室');
 
     const resume = Buffer.from('%PDF-1.7 E2E original resume');
-    const idCard = Buffer.from('%PDF-1.7 E2E identity document');
+    const idCardFront = Buffer.from('%PDF-1.7 E2E identity document front');
+    const idCardBack = Buffer.from('%PDF-1.7 E2E identity document back');
 
     await studentAgent
       .post('/api/student/attachments')
@@ -244,9 +245,17 @@ describe('Intern onboarding API (e2e)', () => {
       .expect(201);
     await studentAgent
       .post('/api/student/attachments')
-      .field('type', 'id_card')
-      .attach('file', idCard, {
-        filename: 'identity.pdf',
+      .field('type', 'id_card_front')
+      .attach('file', idCardFront, {
+        filename: 'identity-front.pdf',
+        contentType: 'application/pdf',
+      })
+      .expect(201);
+    await studentAgent
+      .post('/api/student/attachments')
+      .field('type', 'id_card_back')
+      .attach('file', idCardBack, {
+        filename: 'identity-back.pdf',
         contentType: 'application/pdf',
       })
       .expect(201);
@@ -263,9 +272,9 @@ describe('Intern onboarding API (e2e)', () => {
       .expect(409);
     await studentAgent
       .post('/api/student/attachments')
-      .field('type', 'other')
+      .field('type', 'id_card_back')
       .attach('file', resume, {
-        filename: 'other.pdf',
+        filename: 'identity-back-replacement.pdf',
         contentType: 'application/pdf',
       })
       .expect(409);

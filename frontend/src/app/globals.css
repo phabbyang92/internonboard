@@ -1,8 +1,15 @@
 @import "tailwindcss";
+@import "@daypicker/react/style.css";
 
 :root {
+  color-scheme: light;
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #172735;
+  --brand: #184268;
+  --brand-strong: #123653;
+  --brand-soft: #edf4fa;
+  --page-background: #f3f7fa;
+  --border: #d5e0e9;
 }
 
 @theme inline {
@@ -10,15 +17,56 @@
   --color-foreground: var(--foreground);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  border-radius: 6px;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  border-radius: 3px;
+}
+
+.intern-date-picker .rdp-root {
+  --rdp-accent-color: #184268;
+  --rdp-accent-background-color: #edf4fa;
+  --rdp-day-height: 38px;
+  --rdp-day-width: 38px;
+  --rdp-day_button-height: 36px;
+  --rdp-day_button-width: 36px;
+  margin: 0;
+}
+
+.intern-date-picker .rdp-dropdown {
+  cursor: pointer;
+}
+
+.intern-date-picker .rdp-dropdowns {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.intern-date-picker .rdp-day_button:hover:not(:disabled) {
+  background: #edf4fa;
+}
+
+::selection {
+  background: #d7e6f2;
+  color: #123653;
 }

@@ -23,7 +23,11 @@ export const WORK_LOCATIONS = [
 
 export type WorkLocation = (typeof WORK_LOCATIONS)[number];
 
-export const ATTACHMENT_TYPES = ["resume", "id_card", "other"] as const;
+export const ATTACHMENT_TYPES = [
+  "resume",
+  "id_card_front",
+  "id_card_back",
+] as const;
 
 export type AttachmentType = (typeof ATTACHMENT_TYPES)[number];
 

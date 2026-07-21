@@ -15,6 +15,7 @@ import {
 import { InternshipExperiencesSection } from "@/components/student/internship-experiences-section";
 import { StudentFormSubmitSection } from "@/components/student/student-form-submit-section";
 import { SupplementaryInfoSection } from "@/components/student/supplementary-info-section";
+import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { ApiError } from "@/lib/api/client";
 import { submitStudentForm } from "@/lib/api/student-form";
 import {
@@ -248,7 +249,8 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
     );
     const missingAttachments = [
       !attachmentTypes.has("resume") ? "个人简历" : null,
-      !attachmentTypes.has("id_card") ? "身份证件" : null,
+      !attachmentTypes.has("id_card_front") ? "身份证正面" : null,
+      !attachmentTypes.has("id_card_back") ? "身份证反面" : null,
     ].filter((label): label is string => label !== null);
 
     if (missingAttachments.length > 0) {
@@ -300,9 +302,9 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
 
   return (
     <form className="mt-8" onSubmit={handleSubmitRequest}>
-      <section className="border border-[#d5dedb] bg-white">
-        <div className="border-b border-[#d5dedb] px-5 py-6 sm:px-8">
-          <p className="text-xs font-semibold text-[#147565]">01</p>
+      <section className="overflow-hidden rounded-lg border border-[#d2dee8] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
+        <div className="border-b border-[#d2dee8] px-5 py-6 sm:px-8">
+          <p className="text-xs font-semibold text-[#184268]">01</p>
           <h2 className="mt-2 text-xl font-semibold">个人信息</h2>
         </div>
 
@@ -410,10 +412,9 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
           </FormField>
 
           <FormField htmlFor="birth-date" label="出生日期" required>
-            <input
+            <DatePickerInput
               id="birth-date"
               className={inputClassName}
-              type="date"
               max={new Date().toISOString().slice(0, 10)}
               required
               value={draft.basicInfo.birthDate}
@@ -545,10 +546,10 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
         </div>
       </section>
 
-      <section className="mt-6 border border-[#d5dedb] bg-white">
-        <div className="flex flex-col gap-4 border-b border-[#d5dedb] px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <section className="mt-6 overflow-hidden rounded-lg border border-[#d2dee8] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
+        <div className="flex flex-col gap-4 border-b border-[#d2dee8] px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div>
-            <p className="text-xs font-semibold text-[#147565]">02</p>
+            <p className="text-xs font-semibold text-[#184268]">02</p>
             <h2 className="mt-2 text-xl font-semibold">教育经历</h2>
           </div>
           <button
@@ -563,7 +564,7 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
 
         {draft.educationExperiences.length === 0 ? (
           <div className="px-5 py-10 text-center sm:px-8">
-            <p className="text-sm text-[#66736f]">暂无教育经历</p>
+            <p className="text-sm text-[#5f7285]">暂无教育经历</p>
             <button
               type="button"
               className={`${primaryButtonClassName} mt-4`}
@@ -583,10 +584,10 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
               return (
                 <fieldset
                   key={index}
-                  className="border-b border-[#e1e7e5] px-5 py-6 last:border-b-0 sm:px-8"
+                  className="border-b border-[#dee7ee] px-5 py-6 last:border-b-0 sm:px-8"
                 >
                   <div className="mb-5 flex items-center justify-between gap-4">
-                    <legend className="text-sm font-semibold text-[#26332f]">
+                    <legend className="text-sm font-semibold text-[#263746]">
                       教育经历 {index + 1}
                     </legend>
                     <button

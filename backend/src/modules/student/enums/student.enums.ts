@@ -11,8 +11,8 @@ export enum FormSubmissionStatus {
 
 export enum AttachmentType {
   Resume = 'resume',
-  IdCard = 'id_card',
-  Other = 'other',
+  IdCardFront = 'id_card_front',
+  IdCardBack = 'id_card_back',
 }
 export enum ApplicationDirection {
   Consulting = '咨询',

@@ -204,21 +204,21 @@ export function HrStudentList() {
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-7 sm:px-8 sm:py-9">
-      <div className="flex flex-col gap-4 border-b border-[#cdd8d4] pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-[#c8d6e1] pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#147565]">学生管理</p>
+          <p className="text-sm font-semibold text-[#184268]">学生管理</p>
           <h1 className="mt-2 text-2xl font-semibold">学生列表</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-[#66736f]">当前显示 {data.pagination.total} 名学生</span>
-          <button type="button" onClick={() => setIsCreateOpen(true)} className="min-h-10 bg-[#147565] px-4 text-sm font-semibold text-white hover:bg-[#0f6255]">
+          <span className="text-sm text-[#5f7285]">当前显示 {data.pagination.total} 名学生</span>
+          <button type="button" onClick={() => setIsCreateOpen(true)} className="min-h-10 bg-[#184268] px-4 text-sm font-semibold text-white hover:bg-[#123653]">
             新增学生
           </button>
         </div>
       </div>
 
       <section
-        className="mt-6 grid overflow-hidden border border-[#d3ddda] bg-white sm:grid-cols-2 lg:grid-cols-4"
+        className="mt-6 grid overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_4px_18px_rgba(24,66,104,0.05)] sm:grid-cols-2 lg:grid-cols-4"
         aria-label="学生统计与快捷筛选"
       >
         {summaryItems.map((item) => (
@@ -227,17 +227,17 @@ export function HrStudentList() {
             type="button"
             aria-pressed={item.isActive}
             onClick={item.onClick}
-            className={`min-h-32 border-b border-[#d8e0dd] px-5 py-5 text-left transition last:border-b-0 hover:bg-[#f4f8f7] sm:[&:nth-child(odd)]:border-r lg:border-b-0 lg:border-r lg:last:border-r-0 ${
-              item.isActive ? "bg-[#edf7f4] shadow-[inset_0_3px_0_#147565]" : ""
+            className={`min-h-32 rounded-none border-b border-[#d5e0e9] px-5 py-5 text-left transition last:border-b-0 hover:bg-[#f3f7fb] sm:[&:nth-child(odd)]:border-r lg:border-b-0 lg:border-r lg:last:border-r-0 ${
+              item.isActive ? "bg-[#edf4fa] shadow-[inset_0_3px_0_#184268]" : ""
             }`}
           >
-            <span className="block text-sm font-semibold text-[#52615d]">
+            <span className="block text-sm font-semibold text-[#52677a]">
               {item.label}
             </span>
-            <span className="mt-2 block text-3xl font-semibold text-[#17231f]">
+            <span className="mt-2 block text-3xl font-semibold text-[#172735]">
               {item.value}
             </span>
-            <span className="mt-1 block text-xs text-[#75817d]">
+            <span className="mt-1 block text-xs text-[#6b7f92]">
               {item.description}
             </span>
           </button>
@@ -245,23 +245,23 @@ export function HrStudentList() {
       </section>
 
       {selectedIds.length > 0 ? (
-        <div className="mt-5 flex flex-col gap-3 border border-[#a9c9c1] bg-[#edf7f4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-medium text-[#175e51]">已选择 {selectedIds.length} 名学生</p>
+        <div className="mt-5 flex flex-col gap-3 rounded-lg border border-[#aac2d5] bg-[#edf4fa] px-4 py-3 shadow-[0_3px_12px_rgba(24,66,104,0.04)] sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-medium text-[#184268]">已选择 {selectedIds.length} 名学生</p>
           <div className="flex gap-3">
-            <button type="button" onClick={() => setSelectedIds([])} className="min-h-9 px-3 text-sm text-[#52615d]">取消选择</button>
-            <button type="button" onClick={() => setIsBatchOpen(true)} className="min-h-9 bg-[#147565] px-4 text-sm font-semibold text-white">批量安排</button>
+            <button type="button" onClick={() => setSelectedIds([])} className="min-h-9 px-3 text-sm text-[#52677a]">取消选择</button>
+            <button type="button" onClick={() => setIsBatchOpen(true)} className="min-h-9 bg-[#184268] px-4 text-sm font-semibold text-white">批量安排</button>
           </div>
         </div>
       ) : null}
 
-      <section className="mt-6 border-y border-[#d3ddda] bg-white">
+      <section className="mt-6 rounded-lg border border-[#cfdae4] bg-white shadow-[0_4px_18px_rgba(24,66,104,0.05)]">
         <form
           className="grid gap-4 px-4 py-4 sm:grid-cols-2 sm:px-5 lg:grid-cols-12 lg:items-end"
           onSubmit={handleSearch}
         >
           <div className="sm:col-span-2 lg:col-span-4">
             <label
-              className="mb-2 block text-xs font-semibold text-[#52615d]"
+              className="mb-2 block text-xs font-semibold text-[#52677a]"
               htmlFor="student-keyword"
             >
               搜索学生
@@ -273,13 +273,13 @@ export function HrStudentList() {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="姓名、邮箱、手机号或学校"
-              className="h-11 w-full border border-[#bdcac6] px-3 text-sm outline-none focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
+              className="h-11 w-full border border-[#b9c9d7] px-3 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
             />
           </div>
 
           <div className="lg:col-span-2">
             <label
-              className="mb-2 block text-xs font-semibold text-[#52615d]"
+              className="mb-2 block text-xs font-semibold text-[#52677a]"
               htmlFor="student-work-location"
             >
               工作地点
@@ -294,7 +294,7 @@ export function HrStudentList() {
                 setSelectedIds([]);
                 setPage(1);
               }}
-              className="h-11 w-full border border-[#bdcac6] bg-white px-3 text-sm outline-none focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
+              className="h-11 w-full border border-[#b9c9d7] bg-white px-3 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
             >
               <option value="">全部地点</option>
               {WORK_LOCATIONS.map((location) => (
@@ -307,7 +307,7 @@ export function HrStudentList() {
 
           <div className="lg:col-span-2">
             <label
-              className="mb-2 block text-xs font-semibold text-[#52615d]"
+              className="mb-2 block text-xs font-semibold text-[#52677a]"
               htmlFor="student-status"
             >
               入职状态
@@ -322,7 +322,7 @@ export function HrStudentList() {
                 setSelectedIds([]);
                 setPage(1);
               }}
-              className="h-11 w-full border border-[#bdcac6] bg-white px-3 text-sm outline-none focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
+              className="h-11 w-full border border-[#b9c9d7] bg-white px-3 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
             >
               <option value="">全部状态</option>
               <option value="candidate">候选学生</option>
@@ -333,7 +333,7 @@ export function HrStudentList() {
 
           <div className="lg:col-span-2">
             <label
-              className="mb-2 block text-xs font-semibold text-[#52615d]"
+              className="mb-2 block text-xs font-semibold text-[#52677a]"
               htmlFor="student-form-status"
             >
               表单状态
@@ -350,7 +350,7 @@ export function HrStudentList() {
                 setSelectedIds([]);
                 setPage(1);
               }}
-              className="h-11 w-full border border-[#bdcac6] bg-white px-3 text-sm outline-none focus:border-[#147565] focus:ring-2 focus:ring-[#147565]/15"
+              className="h-11 w-full border border-[#b9c9d7] bg-white px-3 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
             >
               <option value="">全部表单状态</option>
               <option value="not_submitted">待填写</option>
@@ -361,14 +361,14 @@ export function HrStudentList() {
           <div className="flex gap-3 sm:col-span-2 lg:col-span-2">
             <button
               type="submit"
-              className="h-11 flex-1 bg-[#147565] px-4 text-sm font-semibold text-white transition hover:bg-[#0f6255] focus:outline-none focus:ring-2 focus:ring-[#147565]/25"
+              className="h-11 flex-1 bg-[#184268] px-4 text-sm font-semibold text-white transition hover:bg-[#123653] focus:outline-none focus:ring-2 focus:ring-[#184268]/25"
             >
               查询
             </button>
 
             <button
               type="button"
-              className="h-11 flex-1 border border-[#bdcac6] px-4 text-sm font-medium text-[#52615d] transition hover:border-[#147565] hover:text-[#147565] disabled:cursor-not-allowed disabled:opacity-45"
+              className="h-11 flex-1 border border-[#b9c9d7] px-4 text-sm font-medium text-[#52677a] transition hover:border-[#184268] hover:text-[#184268] disabled:cursor-not-allowed disabled:opacity-45"
               disabled={!hasFilters && searchInput === ""}
               onClick={clearFilters}
             >
@@ -378,7 +378,7 @@ export function HrStudentList() {
         </form>
       </section>
 
-      <section className="mt-5 overflow-hidden border border-[#d3ddda] bg-white">
+      <section className="mt-5 overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_4px_18px_rgba(24,66,104,0.05)]">
         {errorMessage ? (
           <div className="px-5 py-12 text-center">
             <p className="text-sm text-[#9d3426]" role="alert">
@@ -386,7 +386,7 @@ export function HrStudentList() {
             </p>
             <button
               type="button"
-              className="mt-4 min-h-10 border border-[#bdcac6] px-4 text-sm font-medium text-[#44514d]"
+              className="mt-4 min-h-10 border border-[#b9c9d7] px-4 text-sm font-medium text-[#425a6e]"
               onClick={() => {
                 setIsLoading(true);
                 setErrorMessage("");
@@ -399,19 +399,19 @@ export function HrStudentList() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1160px] border-collapse text-left">
-              <thead className="bg-[#f4f7f6] text-xs font-semibold text-[#52615d]">
+              <thead className="bg-[#f3f7fa] text-xs font-semibold text-[#52677a]">
                 <tr>
-                  <th className="w-12 border-b border-[#d8e0dd] px-4 py-3">
+                  <th className="w-12 border-b border-[#d5e0e9] px-4 py-3">
                     <input type="checkbox" aria-label="选择当前页可安排学生" checked={allPageItemsSelected} onChange={togglePageSelection} />
                   </th>
-                  <th className="border-b border-[#d8e0dd] px-5 py-3">学生</th>
-                  <th className="border-b border-[#d8e0dd] px-4 py-3">联系电话</th>
-                  <th className="border-b border-[#d8e0dd] px-4 py-3">状态</th>
-                  <th className="border-b border-[#d8e0dd] px-4 py-3">工作地点</th>
-                  <th className="border-b border-[#d8e0dd] px-4 py-3">入职开始日期</th>
-                  <th className="border-b border-[#d8e0dd] px-4 py-3">实习结束日期</th>
-                  <th className="border-b border-[#d8e0dd] px-5 py-3">登记提交</th>
-                  <th className="border-b border-[#d8e0dd] px-5 py-3">操作</th>
+                  <th className="border-b border-[#d5e0e9] px-5 py-3">学生</th>
+                  <th className="border-b border-[#d5e0e9] px-4 py-3">联系电话</th>
+                  <th className="border-b border-[#d5e0e9] px-4 py-3">状态</th>
+                  <th className="border-b border-[#d5e0e9] px-4 py-3">工作地点</th>
+                  <th className="border-b border-[#d5e0e9] px-4 py-3">入职开始日期</th>
+                  <th className="border-b border-[#d5e0e9] px-4 py-3">实习结束日期</th>
+                  <th className="border-b border-[#d5e0e9] px-5 py-3">登记提交</th>
+                  <th className="border-b border-[#d5e0e9] px-5 py-3">操作</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -419,7 +419,7 @@ export function HrStudentList() {
                   <tr>
                     <td
                       colSpan={9}
-                      className="px-5 py-14 text-center text-[#66736f]"
+                      className="px-5 py-14 text-center text-[#5f7285]"
                     >
                       正在加载学生列表...
                     </td>
@@ -428,7 +428,7 @@ export function HrStudentList() {
                   <tr>
                     <td
                       colSpan={9}
-                      className="px-5 py-14 text-center text-[#66736f]"
+                      className="px-5 py-14 text-center text-[#5f7285]"
                     >
                       {hasFilters ? "没有符合条件的学生" : "暂无学生记录"}
                     </td>
@@ -437,7 +437,7 @@ export function HrStudentList() {
                   data.items.map((student) => (
                     <tr
                       key={student.id}
-                      className="border-b border-[#e4eae8] last:border-b-0 hover:bg-[#f8faf9]"
+                      className="border-b border-[#e2e9ef] last:border-b-0 hover:bg-[#f8fafc]"
                     >
                       <td className="px-4 py-4">
                         <input
@@ -449,14 +449,17 @@ export function HrStudentList() {
                         />
                       </td>
                       <td className="px-5 py-4">
-                        <p className="font-semibold text-[#25332f]">
+                        <Link
+                          href={`/hr/students/${student.id}`}
+                          className="inline-block font-semibold text-[#243648] transition-colors hover:text-[#006eb6] focus-visible:text-[#006eb6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268]"
+                        >
                           {student.name}
-                        </p>
-                        <p className="mt-1 max-w-64 truncate text-xs text-[#75817d]">
+                        </Link>
+                        <p className="mt-1 max-w-64 truncate text-xs text-[#6b7f92]">
                           {student.email}
                         </p>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-[#44514d]">
+                      <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
                         {student.phone ?? "未填写"}
                       </td>
                       <td className="px-4 py-4">
@@ -464,20 +467,20 @@ export function HrStudentList() {
                           status={student.onboardingStatus}
                         />
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-[#44514d]">
+                      <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
                         {student.workLocation ?? "未安排"}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-[#44514d]">
+                      <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
                         {formatDateOnly(student.onboardingStartAt)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-[#44514d]">
+                      <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
                         {formatDateOnly(student.onboardingEndAt)}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4">
                         {student.submittedAt ? (
                           <div>
                             <p className="font-medium text-[#176555]">已提交</p>
-                            <p className="mt-1 text-xs text-[#75817d]">
+                            <p className="mt-1 text-xs text-[#6b7f92]">
                               {formatDateTime(student.submittedAt)}
                             </p>
                           </div>
@@ -490,11 +493,11 @@ export function HrStudentList() {
                           <button
                             type="button"
                             onClick={() => setArrangingStudent(student)}
-                            className="inline-flex min-h-9 items-center border border-[#aebdb8] px-3 text-sm font-medium text-[#285c51] hover:border-[#147565]"
+                            className="inline-flex min-h-9 items-center rounded-md border border-[#aabed0] px-3 text-sm font-medium text-[#244b70] hover:border-[#184268] hover:bg-[#edf4fa]"
                           >
                             安排
                           </button>
-                          <Link href={`/hr/students/${student.id}`} className="inline-flex min-h-9 items-center border border-[#aebdb8] px-3 text-sm font-medium text-[#285c51] hover:border-[#147565]">
+                          <Link href={`/hr/students/${student.id}`} className="inline-flex min-h-9 items-center rounded-md border border-[#aabed0] px-3 text-sm font-medium text-[#244b70] hover:border-[#184268] hover:bg-[#edf4fa]">
                             查看
                           </Link>
                         </div>
@@ -507,8 +510,8 @@ export function HrStudentList() {
           </div>
         )}
 
-        <div className="flex flex-col gap-4 border-t border-[#d8e0dd] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3 text-sm text-[#66736f]">
+        <div className="flex flex-col gap-4 border-t border-[#d5e0e9] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 text-sm text-[#5f7285]">
             <label htmlFor="page-size">每页</label>
             <select
               id="page-size"
@@ -519,7 +522,7 @@ export function HrStudentList() {
                 setLimit(Number(event.target.value));
                 setPage(1);
               }}
-              className="h-9 border border-[#bdcac6] bg-white px-2 outline-none focus:border-[#147565]"
+              className="h-9 border border-[#b9c9d7] bg-white px-2 outline-none focus:border-[#184268]"
             >
               <option value={20}>20</option>
               <option value={50}>50</option>
@@ -531,7 +534,7 @@ export function HrStudentList() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="min-h-10 border border-[#bdcac6] px-4 text-sm font-medium text-[#44514d] disabled:cursor-not-allowed disabled:opacity-45"
+              className="min-h-10 border border-[#b9c9d7] px-4 text-sm font-medium text-[#425a6e] disabled:cursor-not-allowed disabled:opacity-45"
               disabled={page <= 1 || isLoading}
               onClick={() => {
                 setIsLoading(true);
@@ -540,12 +543,12 @@ export function HrStudentList() {
             >
               上一页
             </button>
-            <span className="min-w-24 text-center text-sm text-[#66736f]">
+            <span className="min-w-24 text-center text-sm text-[#5f7285]">
               第 {data.pagination.page} / {pageCount} 页
             </span>
             <button
               type="button"
-              className="min-h-10 border border-[#bdcac6] px-4 text-sm font-medium text-[#44514d] disabled:cursor-not-allowed disabled:opacity-45"
+              className="min-h-10 border border-[#b9c9d7] px-4 text-sm font-medium text-[#425a6e] disabled:cursor-not-allowed disabled:opacity-45"
               disabled={page >= pageCount || isLoading}
               onClick={() => {
                 setIsLoading(true);

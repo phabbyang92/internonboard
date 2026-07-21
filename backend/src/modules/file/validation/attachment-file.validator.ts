@@ -18,19 +18,13 @@ const ALLOWED_FILE_RULES: Record<AttachmentType, AllowedFileRule> = {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ],
   },
-  [AttachmentType.IdCard]: {
+  [AttachmentType.IdCardFront]: {
     extensions: ['.pdf', '.jpg', '.jpeg', '.png'],
     mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
   },
-  [AttachmentType.Other]: {
-    extensions: ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'],
-    mimeTypes: [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg',
-      'image/png',
-    ],
+  [AttachmentType.IdCardBack]: {
+    extensions: ['.pdf', '.jpg', '.jpeg', '.png'],
+    mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
   },
 };
 

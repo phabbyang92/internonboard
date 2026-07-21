@@ -2,6 +2,7 @@
 
 import { FormField } from "@/components/student/form-field";
 import { inputClassName } from "@/components/student/form-control-styles";
+import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { toChinaDateInput } from "@/lib/format-date";
 import type { StudentFormDraft } from "@/types/student-form-draft";
 
@@ -71,9 +72,9 @@ export function SupplementaryInfoSection({
 
   return (
     <>
-      <section className="mt-6 border border-[#d5dedb] bg-white">
-        <div className="border-b border-[#d5dedb] px-5 py-6 sm:px-8">
-          <p className="text-xs font-semibold text-[#147565]">05</p>
+      <section className="mt-6 overflow-hidden rounded-lg border border-[#d2dee8] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
+        <div className="border-b border-[#d2dee8] px-5 py-6 sm:px-8">
+          <p className="text-xs font-semibold text-[#184268]">05</p>
           <h2 className="mt-2 text-xl font-semibold">补充信息</h2>
         </div>
 
@@ -83,10 +84,9 @@ export function SupplementaryInfoSection({
             label="实习结束日期"
             required
           >
-            <input
+            <DatePickerInput
               id="onboarding-end-at"
               className={inputClassName}
-              type="date"
               min={minimumEndDate || undefined}
               required
               aria-invalid={hasInvalidEndDate}
@@ -161,13 +161,13 @@ export function SupplementaryInfoSection({
           </FormField>
 
           <fieldset className="sm:col-span-2">
-            <legend className="mb-2 text-sm font-semibold text-[#26332f]">
+            <legend className="mb-2 text-sm font-semibold text-[#263746]">
               身份证件材料和服务协议是否齐全
               <span className="ml-1 text-[#b44532]" aria-hidden="true">
                 *
               </span>
             </legend>
-            <div className="flex min-h-11 flex-wrap items-center gap-x-7 gap-y-3 border border-[#bccbc6] px-4 py-2.5">
+            <div className="flex min-h-11 flex-wrap items-center gap-x-7 gap-y-3 border border-[#b7c7d4] px-4 py-2.5">
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="radio"
@@ -197,10 +197,9 @@ export function SupplementaryInfoSection({
               label="服务协议签署日期"
               required
             >
-              <input
+              <DatePickerInput
                 id="agreement-signed-at"
                 className={inputClassName}
-                type="date"
                 max={today}
                 required
                 value={draft.agreementSignedAt}
@@ -227,14 +226,14 @@ export function SupplementaryInfoSection({
         </div>
       </section>
 
-      <section className="mt-6 border border-[#d5dedb] bg-white">
-        <div className="border-b border-[#d5dedb] px-5 py-6 sm:px-8">
-          <p className="text-xs font-semibold text-[#147565]">06</p>
+      <section className="mt-6 overflow-hidden rounded-lg border border-[#d2dee8] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
+        <div className="border-b border-[#d2dee8] px-5 py-6 sm:px-8">
+          <p className="text-xs font-semibold text-[#184268]">06</p>
           <h2 className="mt-2 text-xl font-semibold">申请人签署</h2>
         </div>
 
         <div className="px-5 py-6 sm:px-8 sm:py-8">
-          <p className="border-l-4 border-[#147565] bg-[#f1f7f5] px-4 py-3 text-sm leading-6 text-[#394742]">
+          <p className="border-l-4 border-[#184268] bg-[#eff5fa] px-4 py-3 text-sm leading-6 text-[#344b5e]">
             本人确认所填各项信息真实、准确。如有不实或虚构，公司有权按相关规定处理。
           </p>
 
@@ -263,10 +262,9 @@ export function SupplementaryInfoSection({
               label="签署日期"
               required
             >
-              <input
+              <DatePickerInput
                 id="applicant-signed-at"
                 className={inputClassName}
-                type="date"
                 max={today}
                 required
                 value={draft.applicantSignedAt}

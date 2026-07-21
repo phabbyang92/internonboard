@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 import { HrModal } from "@/components/hr/hr-modal";
+import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { ApiError } from "@/lib/api/client";
 import { updateHrStudentArrangement } from "@/lib/api/hr-students";
 import {
@@ -42,7 +43,14 @@ export function HrSingleArrangementModal({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!student || !workLocation) return;
+    if (
+      !student ||
+      !workLocation ||
+      (student.onboardingStatus !== "onboarded" && !startAt)
+    ) {
+      setError("请选择工作地点和入职开始日期");
+      return;
+    }
 
     setError("");
     setIsSaving(true);
@@ -80,7 +88,7 @@ export function HrSingleArrangementModal({
       description="工作地点和实习结束日期后续仍可由 HR 修改。"
     >
       <form className="space-y-4 px-5 py-5 sm:px-6" onSubmit={submit}>
-        <label className="block text-sm font-medium text-[#35453f]">
+        <label className="block text-sm font-medium text-[#31485c]">
           工作地点
           <select
             required
@@ -88,7 +96,7 @@ export function HrSingleArrangementModal({
             onChange={(event) =>
               setWorkLocation(event.target.value as WorkLocation)
             }
-            className="mt-2 h-11 w-full border border-[#bdcac6] bg-white px-3"
+            className="mt-2 h-11 w-full border border-[#b9c9d7] bg-white px-3"
           >
             <option value="">请选择</option>
             {WORK_LOCATIONS.map((location) => (
@@ -97,26 +105,24 @@ export function HrSingleArrangementModal({
           </select>
         </label>
 
-        <label className="block text-sm font-medium text-[#35453f]">
+        <label className="block text-sm font-medium text-[#31485c]">
           入职开始日期
-          <input
+          <DatePickerInput
             required={!isOnboarded}
             disabled={isOnboarded}
             min={getChinaTodayInput()}
-            type="date"
             value={startAt}
             onChange={(event) => setStartAt(event.target.value)}
-            className="mt-2 h-11 w-full border border-[#bdcac6] px-3 disabled:bg-[#f0f3f2] disabled:text-[#75817d]"
+            className="mt-2 h-11 w-full border border-[#b9c9d7] px-3 disabled:bg-[#f0f4f7] disabled:text-[#6b7f92]"
           />
         </label>
 
-        <label className="block text-sm font-medium text-[#35453f]">
+        <label className="block text-sm font-medium text-[#31485c]">
           实习结束日期（选填）
-          <input
-            type="date"
+          <DatePickerInput
             value={endAt}
             onChange={(event) => setEndAt(event.target.value)}
-            className="mt-2 h-11 w-full border border-[#bdcac6] px-3"
+            className="mt-2 h-11 w-full border border-[#b9c9d7] px-3"
           />
         </label>
 
@@ -135,13 +141,13 @@ export function HrSingleArrangementModal({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 border border-[#bdcac6] px-5 text-sm"
+            className="min-h-11 border border-[#b9c9d7] px-5 text-sm"
           >
             取消
           </button>
           <button
             disabled={isSaving}
-            className="min-h-11 bg-[#147565] px-5 text-sm font-semibold text-white disabled:opacity-50"
+            className="min-h-11 bg-[#184268] px-5 text-sm font-semibold text-white disabled:opacity-50"
           >
             {isSaving ? "正在保存..." : "保存安排"}
           </button>

@@ -33,8 +33,8 @@ export function HrShell({ user, children }: HrShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#edf2f0] text-[#17221f]">
-      <header className="border-b border-[#d3ddda] bg-white">
+    <div className="min-h-screen bg-[#eef3f8] text-[#172735]">
+      <header className="border-b border-[#cfdae4] bg-white">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-5 px-5 sm:px-8">
           <div className="flex min-w-0 items-center">
             <Image
@@ -45,23 +45,23 @@ export function HrShell({ user, children }: HrShellProps) {
               priority
               className="h-9 w-auto shrink-0"
             />
-            <span className="ml-4 hidden truncate border-l border-[#d8e0dd] pl-4 text-sm font-semibold text-[#33443f] md:inline">
+            <span className="ml-4 hidden truncate border-l border-[#d5e0e9] pl-4 text-sm font-semibold text-[#30475b] md:inline">
               HR 后台
             </span>
           </div>
 
           <div className="flex min-w-0 items-center gap-3 sm:gap-5">
             <div className="hidden min-w-0 text-right sm:block">
-              <p className="truncate text-sm font-medium text-[#263632]">
+              <p className="truncate text-sm font-medium text-[#263a4b]">
                 {user.name}
               </p>
-              <p className="truncate text-xs text-[#75817d]">
+              <p className="truncate text-xs text-[#6b7f92]">
                 {roleLabels[user.role]} · {user.email}
               </p>
             </div>
             <button
               type="button"
-              className="shrink-0 border border-[#bdcac6] bg-white px-3 py-2 text-sm font-medium text-[#33443f] transition hover:border-[#147565] hover:text-[#147565] focus:outline-none focus:ring-2 focus:ring-[#147565]/30 disabled:cursor-not-allowed disabled:opacity-60"
+              className="shrink-0 border border-[#b9c9d7] bg-white px-3 py-2 text-sm font-medium text-[#30475b] transition hover:border-[#184268] hover:text-[#184268] focus:outline-none focus:ring-2 focus:ring-[#184268]/30 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isLoggingOut}
               onClick={handleLogout}
             >
@@ -70,9 +70,9 @@ export function HrShell({ user, children }: HrShellProps) {
           </div>
         </div>
 
-        <nav className="border-t border-[#edf1f0]" aria-label="HR 后台导航">
+        <nav className="border-t border-[#edf2f6]" aria-label="HR 后台导航">
           <div className="mx-auto flex min-h-11 max-w-7xl items-end px-5 sm:px-8">
-            <span className="border-b-2 border-[#147565] px-1 pb-2.5 text-sm font-semibold text-[#147565]">
+            <span className="border-b-2 border-[#184268] px-1 pb-2.5 text-sm font-semibold text-[#184268]">
               学生管理
             </span>
           </div>

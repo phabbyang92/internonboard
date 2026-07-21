@@ -54,7 +54,7 @@ describe('validateAttachmentFile', () => {
   it('rejects an extension or MIME type that is not allowed', () => {
     expect(() =>
       validateAttachmentFile(
-        AttachmentType.IdCard,
+        AttachmentType.IdCardFront,
         createFile(validPdf, 'identity.exe', 'application/octet-stream'),
       ),
     ).toThrow('该附件类型不支持文件格式 .exe');

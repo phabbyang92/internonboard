@@ -64,6 +64,9 @@ export class StudentService {
   }
 
   async findAll(query: ListStudentsQueryDto) {
+    // MVP 阶段由 HR 列表请求触发到期状态更新；未来定时任务可复用同一方法。
+    await this.updateDueOnboardingStatuses();
+
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
@@ -156,6 +159,44 @@ export class StudentService {
         pendingOnboarding,
         onboarded,
       },
+    };
+  }
+
+  async updateDueOnboardingStatuses(referenceDate = new Date()) {
+    const chinaTodayStart = this.getChinaTodayStart(referenceDate);
+    const chinaTomorrowStart = new Date(
+      chinaTodayStart.getTime() + 24 * 60 * 60 * 1000,
+    );
+
+    const result = await this.studentModel
+      .updateMany(
+        {
+          isDeleted: false,
+          onboardingStatus: OnboardingStatus.PendingOnboarding,
+          // 使用次日零点作为上界，兼容仍保存了具体时间的旧测试数据。
+          onboardingStartAt: { $ne: null, $lt: chinaTomorrowStart },
+        },
+        {
+          $set: {
+            onboardingStatus: OnboardingStatus.Onboarded,
+          },
+        },
+        {
+          runValidators: true,
+        },
+      )
+      .exec();
+
+    if (result.modifiedCount > 0) {
+      this.logger.log(
+        `Automatically marked ${result.modifiedCount} students as onboarded`,
+      );
+    }
+
+    return {
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+      effectiveDate: chinaTodayStart,
     };
   }
 
@@ -386,7 +427,11 @@ export class StudentService {
 
           // 防止附件在提交请求执行期间被另一个请求删除。
           'attachments.type': {
-            $all: [AttachmentType.Resume, AttachmentType.IdCard],
+            $all: [
+              AttachmentType.Resume,
+              AttachmentType.IdCardFront,
+              AttachmentType.IdCardBack,
+            ],
           },
         },
         {
@@ -852,8 +897,12 @@ export class StudentService {
       missingAttachments.push('简历');
     }
 
-    if (!attachmentTypes.has(AttachmentType.IdCard)) {
-      missingAttachments.push('身份证件');
+    if (!attachmentTypes.has(AttachmentType.IdCardFront)) {
+      missingAttachments.push('身份证正面');
+    }
+
+    if (!attachmentTypes.has(AttachmentType.IdCardBack)) {
+      missingAttachments.push('身份证反面');
     }
 
     if (missingAttachments.length > 0) {
@@ -920,8 +969,8 @@ export class StudentService {
     );
   }
 
-  private getChinaTodayStart(): Date {
-    return this.normalizeOnboardingStartDate(new Date().toISOString());
+  private getChinaTodayStart(referenceDate = new Date()): Date {
+    return this.normalizeOnboardingStartDate(referenceDate.toISOString());
   }
 
   private isDuplicateKeyError(error: unknown): boolean {

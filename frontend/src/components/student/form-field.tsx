@@ -21,7 +21,7 @@ export function FormField({
     <div className={className}>
       <label
         htmlFor={htmlFor}
-        className="mb-2 block text-sm font-semibold text-[#26332f]"
+        className="mb-2 block text-sm font-semibold text-[#263746]"
       >
         {label}
         {required ? (
@@ -31,7 +31,7 @@ export function FormField({
         ) : null}
       </label>
       {children}
-      {hint ? <p className="mt-2 text-xs text-[#75817d]">{hint}</p> : null}
+      {hint ? <p className="mt-2 text-xs text-[#6b7f92]">{hint}</p> : null}
     </div>
   );
 }

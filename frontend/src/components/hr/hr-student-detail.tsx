@@ -26,9 +26,9 @@ function display(value: string | number | null | undefined): string {
 
 function DetailItem({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="min-w-0 border-b border-[#e3e9e7] pb-3">
-      <dt className="text-xs font-medium text-[#75817d]">{label}</dt>
-      <dd className="mt-1.5 break-words text-sm font-medium text-[#2c3b37]">
+    <div className="min-w-0 border-b border-[#e1e8ef] pb-3">
+      <dt className="text-xs font-medium text-[#6b7f92]">{label}</dt>
+      <dd className="mt-1.5 break-words text-sm font-medium text-[#2b3e50]">
         {children}
       </dd>
     </div>
@@ -45,11 +45,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="border border-[#d3ddda] bg-white">
-      <header className="border-b border-[#d8e0dd] px-5 py-4 sm:px-6">
-        <h2 className="font-semibold text-[#22322d]">{title}</h2>
+    <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
+      <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
+        <h2 className="font-semibold text-[#223548]">{title}</h2>
         {description ? (
-          <p className="mt-1 text-xs text-[#75817d]">{description}</p>
+          <p className="mt-1 text-xs text-[#6b7f92]">{description}</p>
         ) : null}
       </header>
       {children}
@@ -58,7 +58,7 @@ function Section({
 }
 
 function EmptySection({ message }: { message: string }) {
-  return <p className="px-5 py-8 text-sm text-[#75817d] sm:px-6">{message}</p>;
+  return <p className="px-5 py-8 text-sm text-[#6b7f92] sm:px-6">{message}</p>;
 }
 
 export function HrStudentDetail({ studentId }: Props) {
@@ -104,7 +104,7 @@ export function HrStudentDetail({ studentId }: Props) {
 
   if (isLoading) {
     return (
-      <main className="mx-auto max-w-7xl px-5 py-16 text-center text-sm text-[#66736f] sm:px-8">
+      <main className="mx-auto max-w-7xl px-5 py-16 text-center text-sm text-[#5f7285] sm:px-8">
         正在加载学生详情...
       </main>
     );
@@ -117,10 +117,10 @@ export function HrStudentDetail({ studentId }: Props) {
           {errorMessage || "学生不存在"}
         </p>
         <div className="mt-5 flex justify-center gap-3">
-          <Link href="/hr/students" className="border border-[#bdcac6] px-4 py-2 text-sm">
+          <Link href="/hr/students" className="border border-[#b9c9d7] px-4 py-2 text-sm">
             返回列表
           </Link>
-          <button type="button" onClick={reload} className="bg-[#147565] px-4 py-2 text-sm font-medium text-white">
+          <button type="button" onClick={reload} className="bg-[#184268] px-4 py-2 text-sm font-medium text-white">
             重新加载
           </button>
         </div>
@@ -132,31 +132,39 @@ export function HrStudentDetail({ studentId }: Props) {
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-7 sm:px-8 sm:py-9">
-      <Link href="/hr/students" className="text-sm font-medium text-[#147565] hover:underline">
-        返回学生列表
-      </Link>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <Link
+          href="/hr/students"
+          className="inline-flex min-h-10 w-fit items-center rounded-md border border-[#aac2d5] bg-white px-4 text-sm font-medium text-[#244b70] shadow-sm transition hover:border-[#184268] hover:bg-[#edf4fa] hover:text-[#184268] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268]"
+        >
+          返回学生列表
+        </Link>
 
-      <div className="mt-5 flex flex-col gap-4 border-b border-[#cdd8d4] pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="text-left text-xs text-[#5f7285] sm:text-right">
+          <p>登记提交时间</p>
+          <p className="mt-1 text-sm font-medium text-[#31485c]">
+            {student.submittedAt ? formatDateTime(student.submittedAt) : "尚未提交"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-4 border-b border-[#c8d6e1] pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="truncate text-2xl font-semibold text-[#17221f]">{student.name}</h1>
+            <h1 className="truncate text-2xl font-semibold text-[#172735]">{student.name}</h1>
             <OnboardingStatusBadge status={student.onboardingStatus} />
           </div>
-          <p className="mt-2 break-all text-sm text-[#66736f]">{student.email} · {display(student.phone)}</p>
+          <p className="mt-2 break-all text-sm text-[#5f7285]">{student.email} · {display(student.phone)}</p>
         </div>
         <div className="flex flex-col items-start gap-3 sm:items-end">
-          <div className="text-left text-xs text-[#66736f] sm:text-right">
-            <p>登记提交时间（填表日期）</p>
-            <p className="mt-1 text-sm font-medium text-[#35453f]">{student.submittedAt ? formatDateTime(student.submittedAt) : "尚未提交"}</p>
-          </div>
-          <button type="button" onClick={() => { setSuccessMessage(""); setIsProfileEditing(true); }} className="min-h-10 bg-[#147565] px-4 text-sm font-semibold text-white hover:bg-[#0f6255]">
+          <button type="button" onClick={() => { setSuccessMessage(""); setIsProfileEditing(true); }} className="min-h-10 cursor-pointer bg-[#184268] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#123653] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268]">
             修改登记信息
           </button>
         </div>
       </div>
 
       {successMessage ? (
-        <p className="mt-5 border border-[#a9c9c1] bg-[#edf7f4] px-4 py-3 text-sm text-[#175e51]" role="status">
+        <p className="mt-5 border border-[#b8d6cf] bg-[#eef8f4] px-4 py-3 text-sm text-[#175e51]" role="status">
           {successMessage}
         </p>
       ) : null}
@@ -190,8 +198,8 @@ export function HrStudentDetail({ studentId }: Props) {
             {student.educationExperiences.length ? (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[700px] border-collapse text-left text-sm">
-                  <thead className="bg-[#f4f7f6] text-xs text-[#52615d]"><tr><th className="px-5 py-3">起始年</th><th className="px-4 py-3">结束年</th><th className="px-4 py-3">学校</th><th className="px-4 py-3">专业</th><th className="px-4 py-3">导师/班主任</th><th className="px-5 py-3">联系电话</th></tr></thead>
-                  <tbody>{student.educationExperiences.map((item, index) => <tr key={`${item.school}-${index}`} className="border-t border-[#e3e9e7]"><td className="px-5 py-3">{item.startYear}</td><td className="px-4 py-3">{item.endYear}</td><td className="px-4 py-3 font-medium">{item.school}</td><td className="px-4 py-3">{item.major}</td><td className="px-4 py-3">{display(item.advisor)}</td><td className="px-5 py-3">{display(item.phone)}</td></tr>)}</tbody>
+                  <thead className="bg-[#f3f7fa] text-xs text-[#52677a]"><tr><th className="px-5 py-3">起始年</th><th className="px-4 py-3">结束年</th><th className="px-4 py-3">学校</th><th className="px-4 py-3">专业</th><th className="px-4 py-3">导师/班主任</th><th className="px-5 py-3">联系电话</th></tr></thead>
+                  <tbody>{student.educationExperiences.map((item, index) => <tr key={`${item.school}-${index}`} className="border-t border-[#e1e8ef]"><td className="px-5 py-3">{item.startYear}</td><td className="px-4 py-3">{item.endYear}</td><td className="px-4 py-3 font-medium">{item.school}</td><td className="px-4 py-3">{item.major}</td><td className="px-4 py-3">{display(item.advisor)}</td><td className="px-5 py-3">{display(item.phone)}</td></tr>)}</tbody>
                 </table>
               </div>
             ) : <EmptySection message="暂无教育经历。" />}
@@ -199,13 +207,13 @@ export function HrStudentDetail({ studentId }: Props) {
 
           <Section title="家庭成员">
             {student.familyMembers.length ? (
-              <div className="overflow-x-auto"><table className="w-full min-w-[560px] border-collapse text-left text-sm"><thead className="bg-[#f4f7f6] text-xs text-[#52615d]"><tr><th className="px-5 py-3">关系</th><th className="px-4 py-3">姓名</th><th className="px-4 py-3">工作单位</th><th className="px-5 py-3">联系电话</th></tr></thead><tbody>{student.familyMembers.map((item, index) => <tr key={`${item.name}-${index}`} className="border-t border-[#e3e9e7]"><td className="px-5 py-3">{item.relation}</td><td className="px-4 py-3 font-medium">{item.name}</td><td className="px-4 py-3">{display(item.employer)}</td><td className="px-5 py-3">{display(item.phone)}</td></tr>)}</tbody></table></div>
+              <div className="overflow-x-auto"><table className="w-full min-w-[560px] border-collapse text-left text-sm"><thead className="bg-[#f3f7fa] text-xs text-[#52677a]"><tr><th className="px-5 py-3">关系</th><th className="px-4 py-3">姓名</th><th className="px-4 py-3">工作单位</th><th className="px-5 py-3">联系电话</th></tr></thead><tbody>{student.familyMembers.map((item, index) => <tr key={`${item.name}-${index}`} className="border-t border-[#e1e8ef]"><td className="px-5 py-3">{item.relation}</td><td className="px-4 py-3 font-medium">{item.name}</td><td className="px-4 py-3">{display(item.employer)}</td><td className="px-5 py-3">{display(item.phone)}</td></tr>)}</tbody></table></div>
             ) : <EmptySection message="暂无家庭成员信息。" />}
           </Section>
 
           <Section title="校外实习或兼职经历">
             {student.internshipExperiences.length ? (
-              <div className="overflow-x-auto"><table className="w-full min-w-[620px] border-collapse text-left text-sm"><thead className="bg-[#f4f7f6] text-xs text-[#52615d]"><tr><th className="px-5 py-3">起始年</th><th className="px-4 py-3">结束年</th><th className="px-4 py-3">公司</th><th className="px-4 py-3">证明人</th><th className="px-5 py-3">联系电话</th></tr></thead><tbody>{student.internshipExperiences.map((item, index) => <tr key={`${item.company}-${index}`} className="border-t border-[#e3e9e7]"><td className="px-5 py-3">{item.startYear}</td><td className="px-4 py-3">{item.endYear}</td><td className="px-4 py-3 font-medium">{item.company}</td><td className="px-4 py-3">{display(item.referenceName)}</td><td className="px-5 py-3">{display(item.phone)}</td></tr>)}</tbody></table></div>
+              <div className="overflow-x-auto"><table className="w-full min-w-[620px] border-collapse text-left text-sm"><thead className="bg-[#f3f7fa] text-xs text-[#52677a]"><tr><th className="px-5 py-3">起始年</th><th className="px-4 py-3">结束年</th><th className="px-4 py-3">公司</th><th className="px-4 py-3">证明人</th><th className="px-5 py-3">联系电话</th></tr></thead><tbody>{student.internshipExperiences.map((item, index) => <tr key={`${item.company}-${index}`} className="border-t border-[#e1e8ef]"><td className="px-5 py-3">{item.startYear}</td><td className="px-4 py-3">{item.endYear}</td><td className="px-4 py-3 font-medium">{item.company}</td><td className="px-4 py-3">{display(item.referenceName)}</td><td className="px-5 py-3">{display(item.phone)}</td></tr>)}</tbody></table></div>
             ) : <EmptySection message="暂无校外实习或兼职经历。" />}
           </Section>
 

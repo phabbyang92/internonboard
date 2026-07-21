@@ -11,7 +11,7 @@ export class ReplaceHrAttachmentDto {
   oldStorageKey!: string;
 
   @IsEnum(AttachmentType, {
-    message: '附件类型只能是 resume、id_card 或 other',
+    message: '附件类型只能是 resume、id_card_front 或 id_card_back',
   })
   type!: AttachmentType;
 }
