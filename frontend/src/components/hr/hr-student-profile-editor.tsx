@@ -90,11 +90,6 @@ export function HrStudentProfileEditor({ student, onSaved, onCancel }: Props) {
         ? { emergencyContactRelation: draft.emergencyContactRelation }
         : {}),
       ...(draft.hasIdCopyAndAgreement !== null ? { hasIdCopyAndAgreement: draft.hasIdCopyAndAgreement } : {}),
-      ...(draft.agreementSignedAt
-        ? { agreementSignedAt: draft.agreementSignedAt }
-        : student.agreementSignedAt
-          ? { agreementSignedAt: null }
-          : {}),
       notes: draft.notes,
       ...(draft.applicantSignature.trim()
         ? { applicantSignature: draft.applicantSignature }
@@ -131,7 +126,7 @@ export function HrStudentProfileEditor({ student, onSaved, onCancel }: Props) {
           <Field label="投递方向"><select value={draft.basicInfo.applicationDirection} onChange={(e) => updateBasic("applicationDirection", e.target.value)} className={inputClass}><option value="">未填写</option>{APPLICATION_DIRECTIONS.map((item) => <option key={item}>{item}</option>)}</select></Field>
           <Field label="性别"><input value={draft.basicInfo.gender} onChange={(e) => updateBasic("gender", e.target.value)} className={inputClass} /></Field>
           <Field label="出生日期"><DatePickerInput value={draft.basicInfo.birthDate} onChange={(e) => updateBasic("birthDate", e.target.value)} className={inputClass} /></Field>
-          <Field label="身份证号"><input value={draft.basicInfo.idNumber} onChange={(e) => updateBasic("idNumber", e.target.value)} className={inputClass} /></Field>
+          <Field label="身份证号码（或外籍护照号）"><input value={draft.basicInfo.idNumber} onChange={(e) => updateBasic("idNumber", e.target.value)} className={inputClass} /></Field>
           <Field label="户籍"><input value={draft.basicInfo.householdRegistration} onChange={(e) => updateBasic("householdRegistration", e.target.value)} className={inputClass} /></Field>
           <Field label="婚姻状况"><input value={draft.basicInfo.maritalStatus} onChange={(e) => updateBasic("maritalStatus", e.target.value)} className={inputClass} /></Field>
           <Field label="当前学校"><input value={draft.basicInfo.currentSchool} onChange={(e) => updateBasic("currentSchool", e.target.value)} className={inputClass} /></Field>
@@ -186,7 +181,6 @@ export function HrStudentProfileEditor({ student, onSaved, onCancel }: Props) {
           <Field label="紧急联系电话"><input value={draft.emergencyContactPhone} onChange={(e) => setDraft({ ...draft, emergencyContactPhone: e.target.value })} className={inputClass} /></Field>
           <Field label="关系"><input value={draft.emergencyContactRelation} onChange={(e) => setDraft({ ...draft, emergencyContactRelation: e.target.value })} className={inputClass} /></Field>
           <Field label="身份证复印件和协议"><select value={draft.hasIdCopyAndAgreement === null ? "" : String(draft.hasIdCopyAndAgreement)} onChange={(e) => setDraft({ ...draft, hasIdCopyAndAgreement: e.target.value === "" ? null : e.target.value === "true" })} className={inputClass}><option value="">未填写</option><option value="true">是</option><option value="false">否</option></select></Field>
-          <Field label="协议签署日期"><DatePickerInput value={draft.agreementSignedAt} onChange={(e) => setDraft({ ...draft, agreementSignedAt: e.target.value })} className={inputClass} /></Field>
           <Field label="申请人签名"><input value={draft.applicantSignature} onChange={(e) => setDraft({ ...draft, applicantSignature: e.target.value })} className={inputClass} /></Field>
           <Field label="申请人签署日期"><DatePickerInput value={draft.applicantSignedAt} onChange={(e) => setDraft({ ...draft, applicantSignedAt: e.target.value })} className={inputClass} /></Field>
         </div>

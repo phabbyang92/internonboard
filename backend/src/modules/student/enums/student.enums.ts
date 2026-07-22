@@ -10,6 +10,12 @@ export enum FormSubmissionStatus {
   Submitted = 'submitted',
 }
 
+export enum StudentListSort {
+  CreatedAtDesc = 'created_at_desc',
+  OnboardingStartAtDesc = 'onboarding_start_at_desc',
+  OnboardingStartAtAsc = 'onboarding_start_at_asc',
+}
+
 export enum AttachmentType {
   Resume = 'resume',
   IdCardFront = 'id_card_front',

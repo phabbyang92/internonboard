@@ -51,7 +51,7 @@ export interface StudentBasicInfo {
   major: string;
   degree: string;
   politicalStatus?: string;
-  sourceChannel?: string;
+  sourceChannel: string;
   homeAddress: string;
   homePhone?: string;
 }
@@ -157,7 +157,6 @@ export interface SubmitStudentFormPayload {
   emergencyContactRelation: string;
 
   hasIdCopyAndAgreement: boolean;
-  agreementSignedAt?: string;
   notes?: string;
 
   applicantSignature: string;

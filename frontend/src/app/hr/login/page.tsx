@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -78,16 +77,8 @@ export default function HrLoginPage() {
     <main className="min-h-screen bg-[#eef3f8] text-[#172735]">
       <header className="border-b border-[#d5e0e9] bg-white">
         <div className="mx-auto flex min-h-16 max-w-6xl items-center px-5 sm:px-8">
-          <Image
-            src="/frost-sullivan-logo.svg"
-            alt="Frost & Sullivan 沙利文"
-            width={189}
-            height={60}
-            priority
-            className="h-11 w-auto"
-          />
-          <span className="ml-4 hidden border-l border-[#d5e0e9] pl-4 text-sm font-semibold text-[#30475b] sm:inline">
-            实习生入职管理系统
+          <span className="text-sm font-semibold text-[#30475b]">
+            学生入职管理系统
           </span>
         </div>
       </header>
@@ -96,7 +87,7 @@ export default function HrLoginPage() {
         <div className="max-w-xl pt-2 lg:pt-10">
           <p className="text-sm font-semibold text-[#184268]">HR 后台</p>
           <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
-            实习生信息管理
+            学生信息管理
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7 text-[#52677a]">
             登录后查看学生登记资料、入职安排和附件信息。
@@ -146,7 +137,6 @@ export default function HrLoginPage() {
                 id="hr-password"
                 type="password"
                 autoComplete="current-password"
-                minLength={8}
                 maxLength={128}
                 required
                 value={password}

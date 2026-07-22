@@ -34,7 +34,7 @@ export default function StudentFormPage() {
           <div>
             <p className="text-sm font-semibold text-[#184268]">入职登记</p>
             <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
-              实习生工作登记表
+              学生工作登记表
             </h1>
           </div>
           <span className="w-fit rounded-full border border-[#e8b78f] bg-[#fff7ef] px-3 py-1.5 text-sm font-medium text-[#9a5527]">

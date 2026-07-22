@@ -16,6 +16,7 @@ import type {
   FormSubmissionStatus,
   HrStudentListItem,
   HrStudentListResponse,
+  HrStudentListSort,
   HrUser,
 } from "@/types/hr";
 import {
@@ -36,6 +37,15 @@ const emptyResponse: HrStudentListResponse = {
   },
 };
 
+const currentYear = new Date().getFullYear();
+const onboardingYearOptions = Array.from(
+  { length: 201 },
+  (_, index) => currentYear - 100 + index,
+);
+const onboardingMonthOptions = Array.from({ length: 12 }, (_, index) =>
+  String(index + 1).padStart(2, "0"),
+);
+
 interface Props {
   user: HrUser;
 }
@@ -47,7 +57,15 @@ export function HrStudentList({ user }: Props) {
   const [status, setStatus] = useState<OnboardingStatus | "">("");
   const [workLocation, setWorkLocation] = useState<WorkLocation | "">("");
   const [formStatus, setFormStatus] = useState<FormSubmissionStatus | "">("");
+  const [onboardingStartMonth, setOnboardingStartMonth] = useState("");
+  const [onboardingStartYearInput, setOnboardingStartYearInput] = useState(
+    String(currentYear),
+  );
+  const [onboardingStartMonthInput, setOnboardingStartMonthInput] =
+    useState("");
   const [ownerHrId, setOwnerHrId] = useState("");
+  const [sortBy, setSortBy] =
+    useState<HrStudentListSort>("onboarding_start_at_asc");
   const [hrUsers, setHrUsers] = useState<HrUser[]>([]);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -94,7 +112,9 @@ export function HrStudentList({ user }: Props) {
       status,
       workLocation,
       formStatus,
+      onboardingStartMonth,
       ownerHrId: isAdmin ? ownerHrId : undefined,
+      sortBy,
     })
       .then((response) => {
         if (isActive) {
@@ -131,20 +151,35 @@ export function HrStudentList({ user }: Props) {
     isAdmin,
     keyword,
     limit,
+    onboardingStartMonth,
     ownerHrId,
     page,
     refreshKey,
     router,
+    sortBy,
     status,
     workLocation,
   ]);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (
+      onboardingStartMonthInput &&
+      !/^\d{4}$/.test(onboardingStartYearInput)
+    ) {
+      return;
+    }
+
     setIsLoading(true);
     setErrorMessage("");
     setPage(1);
     setKeyword(searchInput.trim());
+    setOnboardingStartMonth(
+      onboardingStartYearInput && onboardingStartMonthInput
+        ? `${onboardingStartYearInput}-${onboardingStartMonthInput}`
+        : "",
+    );
     setSelectedIds([]);
     setRefreshKey((current) => current + 1);
   }
@@ -157,6 +192,9 @@ export function HrStudentList({ user }: Props) {
     setStatus("");
     setWorkLocation("");
     setFormStatus("");
+    setOnboardingStartMonth("");
+    setOnboardingStartYearInput(String(currentYear));
+    setOnboardingStartMonthInput("");
     setOwnerHrId("");
     setSelectedIds([]);
     setPage(1);
@@ -165,7 +203,11 @@ export function HrStudentList({ user }: Props) {
 
   const pageCount = Math.max(1, data.pagination.totalPages);
   const hasRecordFilters =
-    keyword !== "" || status !== "" || workLocation !== "" || formStatus !== "";
+    keyword !== "" ||
+    status !== "" ||
+    workLocation !== "" ||
+    formStatus !== "" ||
+    onboardingStartMonth !== "";
   const hasFilters = hasRecordFilters || (isAdmin && ownerHrId !== "");
   const hrUserNames = new Map(
     hrUsers.map((hrUser) => [hrUser.id, hrUser.name]),
@@ -208,6 +250,9 @@ export function HrStudentList({ user }: Props) {
     setStatus(nextStatus);
     setWorkLocation("");
     setFormStatus(nextFormStatus);
+    setOnboardingStartMonth("");
+    setOnboardingStartYearInput(String(currentYear));
+    setOnboardingStartMonthInput("");
     setSelectedIds([]);
     setPage(1);
   }
@@ -228,6 +273,7 @@ export function HrStudentList({ user }: Props) {
         formStatus === "not_submitted" &&
         status === "" &&
         workLocation === "" &&
+        onboardingStartMonth === "" &&
         keyword === "",
       onClick: () => applyQuickFilter("", "not_submitted"),
     },
@@ -239,6 +285,7 @@ export function HrStudentList({ user }: Props) {
         status === "pending_onboarding" &&
         formStatus === "" &&
         workLocation === "" &&
+        onboardingStartMonth === "" &&
         keyword === "",
       onClick: () => applyQuickFilter("pending_onboarding", ""),
     },
@@ -250,6 +297,7 @@ export function HrStudentList({ user }: Props) {
         status === "onboarded" &&
         formStatus === "" &&
         workLocation === "" &&
+        onboardingStartMonth === "" &&
         keyword === "",
       onClick: () => applyQuickFilter("onboarded", ""),
     },
@@ -261,6 +309,7 @@ export function HrStudentList({ user }: Props) {
         status === "departed" &&
         formStatus === "" &&
         workLocation === "" &&
+        onboardingStartMonth === "" &&
         keyword === "",
       onClick: () => applyQuickFilter("departed", ""),
     },
@@ -340,7 +389,7 @@ export function HrStudentList({ user }: Props) {
 
       <section className="mt-6 rounded-lg border border-[#cfdae4] bg-white shadow-[0_4px_18px_rgba(24,66,104,0.05)]">
         <form
-          className="grid gap-4 px-4 py-4 sm:grid-cols-2 sm:px-5 lg:grid-cols-12 lg:items-end"
+          className="grid gap-4 px-4 py-4 sm:grid-cols-2 sm:px-5 lg:grid-cols-[repeat(14,minmax(0,1fr))] lg:items-end"
           onSubmit={handleSearch}
         >
           <div
@@ -389,6 +438,45 @@ export function HrStudentList({ user }: Props) {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="lg:col-span-2">
+            <span className="mb-2 block text-xs font-semibold text-[#52677a]">
+              实习开始时间
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                id="student-onboarding-start-year"
+                aria-label="实习开始年份"
+                value={onboardingStartYearInput}
+                onChange={(event) =>
+                  setOnboardingStartYearInput(event.target.value)
+                }
+                className="h-11 w-full cursor-pointer border border-[#b9c9d7] bg-white px-2 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
+              >
+                {onboardingYearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="实习开始月份"
+                value={onboardingStartMonthInput}
+                disabled={!onboardingStartYearInput}
+                onChange={(event) =>
+                  setOnboardingStartMonthInput(event.target.value)
+                }
+                className="h-11 w-full cursor-pointer border border-[#b9c9d7] bg-white px-2 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15 disabled:cursor-not-allowed disabled:bg-[#f3f6f8] disabled:text-[#94a3af]"
+              >
+                <option value="">月份</option>
+                {onboardingMonthOptions.map((month) => (
+                  <option key={month} value={month}>
+                    {Number(month)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {isAdmin ? (
@@ -484,7 +572,12 @@ export function HrStudentList({ user }: Props) {
             <button
               type="button"
               className="h-11 flex-1 border border-[#b9c9d7] px-4 text-sm font-medium text-[#52677a] transition hover:border-[#184268] hover:text-[#184268] disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={!hasFilters && searchInput === ""}
+              disabled={
+                !hasFilters &&
+                searchInput === "" &&
+                onboardingStartYearInput === String(currentYear) &&
+                onboardingStartMonthInput === ""
+              }
               onClick={clearFilters}
             >
               清除
@@ -494,6 +587,34 @@ export function HrStudentList({ user }: Props) {
       </section>
 
       <section className="mt-5 overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_4px_18px_rgba(24,66,104,0.05)]">
+        <div className="flex items-center justify-end gap-3 border-b border-[#d5e0e9] bg-[#f8fafc] px-4 py-3 sm:px-5">
+          <label
+            className="text-sm font-medium text-[#52677a]"
+            htmlFor="student-sort"
+          >
+            排序方式
+          </label>
+          <select
+            id="student-sort"
+            value={sortBy}
+            onChange={(event) => {
+              setIsLoading(true);
+              setErrorMessage("");
+              setSortBy(event.target.value as HrStudentListSort);
+              setSelectedIds([]);
+              setPage(1);
+            }}
+            className="h-10 cursor-pointer rounded-md border border-[#b9c9d7] bg-white px-3 text-sm text-[#31485c] outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
+          >
+            <option value="created_at_desc">按添加顺序（最新优先）</option>
+            <option value="onboarding_start_at_desc">
+              开始工作时间由远及近（较晚优先）
+            </option>
+            <option value="onboarding_start_at_asc">
+              开始工作时间由近及远（较早优先）
+            </option>
+          </select>
+        </div>
         {errorMessage ? (
           <div className="px-5 py-12 text-center">
             <p className="text-sm text-[#9d3426]" role="alert">
@@ -513,10 +634,25 @@ export function HrStudentList({ user }: Props) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1160px] border-collapse text-left">
+            <table
+              className={`w-full table-fixed border-collapse text-left ${
+                isAdmin ? "min-w-[1060px]" : "min-w-[950px]"
+              }`}
+            >
+              <colgroup>
+                <col className="w-12" />
+                <col className="w-[156px]" />
+                {isAdmin ? <col className="w-28" /> : null}
+                <col className="w-24" />
+                <col className="w-[230px]" />
+                <col className="w-32" />
+                <col className="w-32" />
+                <col className="w-28" />
+                <col className="w-32" />
+              </colgroup>
               <thead className="bg-[#f3f7fa] text-xs font-semibold text-[#52677a]">
                 <tr>
-                  <th className="w-12 border-b border-[#d5e0e9] px-4 py-3">
+                  <th className="w-12 border-b border-[#d5e0e9] px-3 py-3">
                     <input
                       type="checkbox"
                       aria-label="选择当前页可安排学生"
@@ -524,36 +660,33 @@ export function HrStudentList({ user }: Props) {
                       onChange={togglePageSelection}
                     />
                   </th>
-                  <th className="border-b border-[#d5e0e9] px-5 py-3">学生</th>
+                  <th className="border-b border-[#d5e0e9] px-3 py-3">学生</th>
                   {isAdmin ? (
-                    <th className="border-b border-[#d5e0e9] px-4 py-3">
+                    <th className="border-b border-[#d5e0e9] px-3 py-3">
                       录入 HR
                     </th>
                   ) : null}
-                  <th className="border-b border-[#d5e0e9] px-4 py-3">
-                    联系电话
-                  </th>
-                  <th className="border-b border-[#d5e0e9] px-4 py-3">状态</th>
-                  <th className="border-b border-[#d5e0e9] px-4 py-3">
+                  <th className="border-b border-[#d5e0e9] px-3 py-3">状态</th>
+                  <th className="border-b border-[#d5e0e9] px-3 py-3">
                     工作地点
                   </th>
-                  <th className="border-b border-[#d5e0e9] px-4 py-3">
-                    入职开始日期
+                  <th className="border-b border-[#d5e0e9] px-3 py-3">
+                    实习开始日期
                   </th>
-                  <th className="border-b border-[#d5e0e9] px-4 py-3">
+                  <th className="border-b border-[#d5e0e9] px-3 py-3">
                     实习结束日期
                   </th>
-                  <th className="border-b border-[#d5e0e9] px-5 py-3">
+                  <th className="border-b border-[#d5e0e9] px-3 py-3">
                     登记提交
                   </th>
-                  <th className="border-b border-[#d5e0e9] px-5 py-3">操作</th>
+                  <th className="border-b border-[#d5e0e9] px-3 py-3">操作</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={isAdmin ? 10 : 9}
+                      colSpan={isAdmin ? 9 : 8}
                       className="px-5 py-14 text-center text-[#5f7285]"
                     >
                       正在加载学生列表...
@@ -562,7 +695,7 @@ export function HrStudentList({ user }: Props) {
                 ) : data.items.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={isAdmin ? 10 : 9}
+                      colSpan={isAdmin ? 9 : 8}
                       className="px-5 py-14 text-center text-[#5f7285]"
                     >
                       {hasFilters ? "没有符合条件的学生" : "暂无学生记录"}
@@ -574,7 +707,7 @@ export function HrStudentList({ user }: Props) {
                       key={student.id}
                       className="border-b border-[#e2e9ef] last:border-b-0 hover:bg-[#f8fafc]"
                     >
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-4">
                         <input
                           type="checkbox"
                           aria-label={`选择 ${student.name}`}
@@ -592,42 +725,56 @@ export function HrStudentList({ user }: Props) {
                           }
                         />
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="min-w-0 px-3 py-4 align-top">
                         <Link
                           href={`/hr/students/${student.id}`}
-                          className="inline-block font-semibold text-[#243648] transition-colors hover:text-[#006eb6] focus-visible:text-[#006eb6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268]"
+                          className="inline-block max-w-full break-words font-semibold text-[#243648] transition-colors hover:text-[#006eb6] focus-visible:text-[#006eb6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268]"
                         >
                           {student.name}
                         </Link>
-                        <p className="mt-1 max-w-64 truncate text-xs text-[#6b7f92]">
+                        <p className="mt-1 max-w-full break-all text-xs leading-5 text-[#6b7f92]">
                           {student.email}
                         </p>
                       </td>
                       {isAdmin ? (
-                        <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
+                        <td className="whitespace-nowrap px-3 py-4 text-[#425a6e]">
                           {student.ownerHrId
                             ? (hrUserNames.get(student.ownerHrId) ?? "未知 HR")
                             : "尚未分配"}
                         </td>
                       ) : null}
-                      <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
-                        {student.phone ?? "未填写"}
-                      </td>
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-4">
                         <OnboardingStatusBadge
                           status={student.onboardingStatus}
                         />
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
-                        {student.workLocation ?? "未安排"}
+                      <td className="px-3 py-4 align-top text-[#425a6e]">
+                        {student.workLocationTimeline.length ? (
+                          <div>
+                            <p className="break-words font-medium leading-5 text-[#31485c]">
+                              {student.workLocationTimeline
+                                .map((item) => item.workLocation)
+                                .join(" → ")}
+                            </p>
+                            <p className="mt-1 break-words text-xs leading-5 text-[#6b7f92]">
+                              {student.workLocationTimeline
+                                .map((item) =>
+                                  formatDateOnly(item.effectiveFrom),
+                                )
+                                .join(" → ")}
+                            </p>
+                          </div>
+                        ) : (
+                          "未安排"
+                        )}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
+                      <td className="whitespace-nowrap px-3 py-4 text-[#425a6e]">
                         {formatDateOnly(student.onboardingStartAt)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-[#425a6e]">
+                      <td className="whitespace-nowrap px-3 py-4 text-[#425a6e]">
                         {formatDateOnly(student.onboardingEndAt)}
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4">
+                      <td className="whitespace-nowrap px-3 py-4">
                         {student.submittedAt ? (
                           <div>
                             <p className="font-medium text-[#176555]">已提交</p>
@@ -639,18 +786,18 @@ export function HrStudentList({ user }: Props) {
                           <span className="text-[#8a5a35]">未提交</span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4">
+                      <td className="whitespace-nowrap px-3 py-4">
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => setArrangingStudent(student)}
-                            className="inline-flex min-h-9 items-center rounded-md border border-[#aabed0] px-3 text-sm font-medium text-[#244b70] hover:border-[#184268] hover:bg-[#edf4fa]"
+                            className="inline-flex min-h-9 items-center rounded-md border border-[#aabed0] px-2 text-sm font-medium text-[#244b70] hover:border-[#184268] hover:bg-[#edf4fa]"
                           >
                             安排
                           </button>
                           <Link
                             href={`/hr/students/${student.id}`}
-                            className="inline-flex min-h-9 items-center rounded-md border border-[#aabed0] px-3 text-sm font-medium text-[#244b70] hover:border-[#184268] hover:bg-[#edf4fa]"
+                            className="inline-flex min-h-9 items-center rounded-md border border-[#aabed0] px-2 text-sm font-medium text-[#244b70] hover:border-[#184268] hover:bg-[#edf4fa]"
                           >
                             查看
                           </Link>

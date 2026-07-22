@@ -75,11 +75,11 @@ export class BasicInfoDto {
   @MaxLength(50)
   politicalStatus?: string;
 
-  @IsOptional()
   @TrimString()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
-  sourceChannel?: string;
+  sourceChannel!: string;
 
   @TrimString()
   @IsString()

@@ -12,7 +12,6 @@ type SupplementaryField =
   | "emergencyContactPhone"
   | "emergencyContactRelation"
   | "hasIdCopyAndAgreement"
-  | "agreementSignedAt"
   | "notes"
   | "applicantSignature"
   | "applicantSignedAt";
@@ -61,15 +60,6 @@ export function SupplementaryInfoSection({
     minimumEndDate !== "" &&
     draft.onboardingEndAt < minimumEndDate;
 
-  function updateAgreementStatus(value: boolean) {
-    onUpdate("hasIdCopyAndAgreement", value);
-
-    // 选择“否”时清除已经不适用的协议签署日期。
-    if (!value) {
-      onUpdate("agreementSignedAt", "");
-    }
-  }
-
   return (
     <>
       <section className="mt-6 overflow-hidden rounded-lg border border-[#d2dee8] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
@@ -83,6 +73,7 @@ export function SupplementaryInfoSection({
             htmlFor="onboarding-end-at"
             label="实习结束日期"
             required
+            className="sm:col-span-2 lg:col-span-3"
           >
             <DatePickerInput
               id="onboarding-end-at"
@@ -145,7 +136,7 @@ export function SupplementaryInfoSection({
 
           <FormField
             htmlFor="emergency-contact-relation"
-            label="与紧急联系人的关系"
+            label="紧急联系人关系"
             required
           >
             <input
@@ -162,7 +153,7 @@ export function SupplementaryInfoSection({
 
           <fieldset className="sm:col-span-2">
             <legend className="mb-2 text-sm font-semibold text-[#263746]">
-              身份证件材料和服务协议是否齐全
+              身份证复印件和学生证是否齐全
               <span className="ml-1 text-[#b44532]" aria-hidden="true">
                 *
               </span>
@@ -174,7 +165,7 @@ export function SupplementaryInfoSection({
                   name="has-id-copy-and-agreement"
                   required
                   checked={draft.hasIdCopyAndAgreement === true}
-                  onChange={() => updateAgreementStatus(true)}
+                  onChange={() => onUpdate("hasIdCopyAndAgreement", true)}
                 />
                 是
               </label>
@@ -184,31 +175,12 @@ export function SupplementaryInfoSection({
                   name="has-id-copy-and-agreement"
                   required
                   checked={draft.hasIdCopyAndAgreement === false}
-                  onChange={() => updateAgreementStatus(false)}
+                  onChange={() => onUpdate("hasIdCopyAndAgreement", false)}
                 />
                 否
               </label>
             </div>
           </fieldset>
-
-          {draft.hasIdCopyAndAgreement === true ? (
-            <FormField
-              htmlFor="agreement-signed-at"
-              label="服务协议签署日期"
-              required
-            >
-              <DatePickerInput
-                id="agreement-signed-at"
-                className={inputClassName}
-                max={today}
-                required
-                value={draft.agreementSignedAt}
-                onChange={(event) =>
-                  onUpdate("agreementSignedAt", event.target.value)
-                }
-              />
-            </FormField>
-          ) : null}
 
           <FormField
             htmlFor="notes"
@@ -234,7 +206,7 @@ export function SupplementaryInfoSection({
 
         <div className="px-5 py-6 sm:px-8 sm:py-8">
           <p className="border-l-4 border-[#184268] bg-[#eff5fa] px-4 py-3 text-sm leading-6 text-[#344b5e]">
-            本人确认所填各项信息真实、准确。如有不实或虚构，公司有权按相关规定处理。
+            本人所填上列各项属事实，若有不实或虚构，公司有权开除或作出相应的处分
           </p>
 
           <div className="mt-6 grid gap-x-6 gap-y-5 sm:grid-cols-2">

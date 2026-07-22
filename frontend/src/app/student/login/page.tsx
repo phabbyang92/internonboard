@@ -2,7 +2,6 @@
 
 import { ApiError } from "@/lib/api/client";
 import { getCurrentStudent, loginStudent } from "@/lib/api/student-auth";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -85,16 +84,8 @@ export default function StudentLoginPage() {
     <main className="min-h-screen bg-[#f3f7fa] text-[#172735]">
       <header className="border-b border-[#d5e0e9] bg-white">
         <div className="mx-auto flex min-h-16 max-w-6xl items-center px-5 sm:px-8">
-          <Image
-            src="/frost-sullivan-logo.svg"
-            alt="Frost & Sullivan 沙利文"
-            width={189}
-            height={60}
-            priority
-            className="h-11 w-auto"
-          />
-          <span className="ml-4 hidden border-l border-[#d5e0e9] pl-4 text-sm font-semibold text-[#30475b] sm:inline">
-            实习生入职登记系统
+          <span className="text-sm font-semibold text-[#30475b]">
+            学生入职登记系统
           </span>
         </div>
       </header>
@@ -103,7 +94,7 @@ export default function StudentLoginPage() {
         <div className="max-w-xl pt-2 lg:pt-10">
           <p className="text-sm font-semibold text-[#184268]">学生入口</p>
           <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
-            实习生入职登记
+            学生入职登记
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7 text-[#52677a]">
             请使用 HR 预录入的姓名和邮箱进入登记系统。

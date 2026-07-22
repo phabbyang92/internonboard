@@ -1,7 +1,6 @@
 "use client";
 
 import { logoutStudent } from "@/lib/api/student-auth";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -32,16 +31,8 @@ export function StudentPageHeader({
     <header className="border-b border-[#d5e0e9] bg-white">
       <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-5 px-5 sm:px-8">
         <div className="flex min-w-0 items-center">
-          <Image
-            src="/frost-sullivan-logo.svg"
-            alt="Frost & Sullivan 沙利文"
-            width={189}
-            height={60}
-            priority
-            className="h-10 w-auto shrink-0"
-          />
-          <span className="ml-4 hidden truncate border-l border-[#d5e0e9] pl-4 text-sm font-semibold text-[#30475b] md:inline">
-            实习生入职登记系统
+          <span className="truncate text-sm font-semibold text-[#30475b]">
+            学生入职登记系统
           </span>
         </div>
 

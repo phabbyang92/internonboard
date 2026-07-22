@@ -1,6 +1,6 @@
-# internonboard — 实习生入职登记系统
+# internonboard — 学生入职登记系统
 
-实习生入职登记系统是一个基于 Next.js、NestJS 和 MongoDB 的全栈项目，用于完成实习生名单预录入、HR 入职安排、学生信息登记和附件管理。
+学生入职登记系统是一个基于 Next.js、NestJS 和 MongoDB 的全栈项目，用于完成学生名单预录入、HR 入职安排、学生信息登记和附件管理。
 
 系统的目标流程是：HR 登录后台并预先录入学生，设置工作地点和入职开始日期；学生通过统一入口使用姓名和邮箱登录，填写并一次性提交登记表；HR 在后台查看学生信息并下载附件。
 
@@ -8,47 +8,9 @@
 
 ## 已实现功能
 
-- MongoDB 和 Mongoose 数据库连接
-- 学生数据模型以及 `name + email` 联合唯一索引
-- 全局请求参数校验
-- 统一错误响应
-- HR 账号数据模型
-- 普通 HR 仅查看和管理自己负责的学生
-- 管理员 HR 查看全部学生并按录入 HR 筛选
-- bcrypt 密码哈希
-- HR 邮箱和密码登录
-- JWT + HttpOnly Cookie 登录状态
-- HR API 鉴权 Guard
-- 新增单个学生
-- 连续调用新增接口录入多名学生
-- 学生列表分页查询
-- 按姓名、邮箱、手机号或学校搜索学生
-- 按工作地点、入职状态和表单状态筛选学生
-- 学生总数、待填写、待入职、已入职和已离职统计及快捷筛选
-- HR 获取学生完整详情
-- HR 单独设置学生工作地点和入职开始日期
-- HR 批量设置学生工作地点和入职开始日期
-- 入职开始日期不可早于中国时区的当天日期
-- 安排完成后将学生状态更新为 `pending_onboarding`
-- 学生姓名和邮箱登录、JWT Cookie 鉴权
-- 学生获取并一次性提交登记表
-- 学生上传和删除未提交表单的附件
-- HR 修改学生登记信息和入职安排
-- HR 上传、替换、下载和删除学生附件
-- 本地文件存储抽象，可替换为阿里云 OSS 实现
-- HR 软删除学生
-- 工作地点生效历史记录
-- MongoDB 持久化操作日志及分页查询
-- NestJS Logger 记录服务运行日志
-- NestJS Cron 每日自动更新已到入职或实习结束日期的学生状态
-- Jest 单元测试和基于真实 HTTP、MongoDB 的端到端测试
-- 学生姓名和邮箱登录页面
-- 学生登记表、动态经历、附件上传和一次性提交页面
-- HR 登录、学生列表、搜索筛选和分页页面
-- HR 连续新增学生、单个安排和批量安排页面
-- HR 学生详情、登记信息编辑和附件管理页面
-- HR 工作地点历史、操作日志和软删除页面
-- 前后端 Cookie 鉴权及未登录页面跳转
+当前版本已完成可供 HR 和学生使用的前后端 MVP。HR 可以登录后台、连续录入学生、设置或批量设置入职安排、搜索筛选和排序学生、查看详情、修改登记资料、管理附件，以及维护可修改和撤销的工作地点时间线。普通 HR 仅能管理自己录入的学生，管理员可以查看全部学生并按录入 HR 筛选。
+
+学生可以通过姓名和邮箱登录，填写包含个人信息、教育经历、家庭成员、实习经历和补充信息的登记表，上传个人简历及身份证件正反面，并一次性提交。系统使用 JWT Cookie 鉴权、MongoDB 操作日志和本地文件存储，并通过 NestJS Cron 自动更新待入职、已入职和已离职状态。
 
 当前尚未实现打卡模块和阿里云 OSS 实现。
 
@@ -78,7 +40,7 @@ internonboard/
 │   ├── .env.example
 │   └── package.json
 ├── frontend/
-│   ├── public/                       # Logo 等静态资源
+│   ├── public/                       # 前端静态资源
 │   ├── src/app/                      # Next.js App Router 页面
 │   │   ├── hr/                       # HR 登录、列表和详情页
 │   │   └── student/                  # 学生登录、登记和提交成功页
@@ -177,6 +139,15 @@ DEFAULT_STUDENT_OWNER_EMAIL=hr@example.com npm run migrate:student-owners
 脚本优先根据最早的学生创建日志确定负责人；没有创建日志的旧记录使用
 `DEFAULT_STUDENT_OWNER_EMAIL` 指定的 HR。脚本只处理缺少 `ownerHrId` 的学生，
 不会覆盖已有负责人，可安全重复执行。
+
+旧学生已有当前地点和实习开始日期、但没有地点历史时，可执行：
+
+```bash
+npm run migrate:work-location-history
+```
+
+脚本会把当前地点和实习开始日期写成第一段地点历史，并清理旧版专用的
+`onlineOnboardingStartAt` 字段。已有地点历史的学生不会被重复处理，可安全重复执行。
 
 ### 6. 启动后端
 
@@ -305,6 +276,9 @@ E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
 | `GET`    | `/api/hr/students`                           | 获取学生列表           |
 | `GET`    | `/api/hr/students/:id`                       | 获取学生完整详情       |
 | `GET`    | `/api/hr/students/:id/work-location-history` | 获取工作地点历史       |
+| `POST`   | `/api/hr/students/:id/work-location-assignments` | 新增带生效日期的地点变更 |
+| `PATCH`  | `/api/hr/students/:id/work-location-assignments/:assignmentId` | 修改一段工作地点安排 |
+| `DELETE` | `/api/hr/students/:id/work-location-assignments/:assignmentId` | 撤销一段工作地点安排 |
 | `GET`    | `/api/hr/students/:id/operation-logs`        | 分页获取操作日志       |
 | `PATCH`  | `/api/hr/students/:id/profile`               | 修改学生登记信息       |
 | `PATCH`  | `/api/hr/students/:id/arrangement`           | 设置单个学生的入职安排 |
@@ -333,21 +307,27 @@ E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
 {
   "name": "测试学生",
   "email": "student@example.com",
-  "phone": "13800000000"
+  "phone": "13800000000",
+  "workLocation": "上海办公室",
+  "onboardingStartAt": "2026-08-01T00:00:00+08:00"
 }
 ```
 
+`phone`、`workLocation` 和 `onboardingStartAt` 为可选字段；如果录入时安排入职，工作地点和开始日期必须同时提供。
+
 学生列表支持以下 Query 参数：
 
-| 参数           | 类型     | 默认值 | 说明                                               |
-| -------------- | -------- | ------ | -------------------------------------------------- |
-| `page`         | number   | `1`    | 当前页码                                           |
-| `limit`        | number   | `20`   | 每页数量，最大 100                                 |
-| `keyword`      | string   | -      | 搜索姓名、邮箱、手机号或学校                       |
-| `status`       | string   | -      | 按学生状态筛选                                     |
-| `workLocation` | string   | -      | 按工作地点筛选                                     |
-| `formStatus`   | string   | -      | `not_submitted` 或 `submitted`                     |
-| `ownerHrId`    | ObjectId | -      | 管理员按录入 HR 筛选；普通 HR 始终只返回自己的学生 |
+| 参数                   | 类型     | 默认值          | 说明                                                   |
+| ---------------------- | -------- | --------------- | ------------------------------------------------------ |
+| `page`                 | number   | `1`             | 当前页码                                               |
+| `limit`                | number   | `20`            | 每页数量，最大 100                                     |
+| `keyword`              | string   | -               | 搜索姓名、邮箱、手机号或学校                           |
+| `status`               | string   | -               | 按学生状态筛选                                         |
+| `workLocation`         | string   | -               | 按工作地点筛选                                         |
+| `formStatus`           | string   | -               | `not_submitted` 或 `submitted`                         |
+| `onboardingStartMonth` | string   | -               | 按首次开始工作的月份筛选，格式为 `YYYY-MM`             |
+| `ownerHrId`            | ObjectId | -               | 管理员按录入 HR 筛选；普通 HR 始终只返回自己的学生     |
+| `sortBy`               | string   | `created_at_desc` | `created_at_desc`、`onboarding_start_at_asc` 或 `onboarding_start_at_desc` |
 
 单个安排请求体：
 
@@ -387,7 +367,7 @@ candidate -> pending_onboarding -> onboarded -> departed
 | 模块                 | 技术                                |
 | -------------------- | ----------------------------------- |
 | Frontend             | Next.js 16 + React 19 + TypeScript  |
-| UI                   | Tailwind CSS 4                      |
+| UI                   | Tailwind CSS 4 + DayPicker + Lucide |
 | Backend              | NestJS 11 + TypeScript              |
 | Runtime              | Node.js 20+                         |
 | Database             | MongoDB                             |

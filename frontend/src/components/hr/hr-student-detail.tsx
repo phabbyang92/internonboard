@@ -108,7 +108,8 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
   }, [refreshKey, router, studentId]);
 
   function reload() {
-    setIsLoading(true);
+    // 已有详情时在后台刷新，避免卸载子组件并丢失刚显示的成功提示。
+    if (!student) setIsLoading(true);
     setErrorMessage("");
     setRefreshKey((current) => current + 1);
   }
@@ -221,7 +222,7 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
                 <DetailItem label="出生日期">
                   {formatDateOnly(basic.birthDate)}
                 </DetailItem>
-                <DetailItem label="身份证号">
+                <DetailItem label="身份证号码（或外籍护照号）">
                   {display(basic.idNumber)}
                 </DetailItem>
                 <DetailItem label="户籍">
@@ -377,9 +378,6 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
                     ? "是"
                     : "否"}
               </DetailItem>
-              <DetailItem label="协议签署日期">
-                {formatDateOnly(student.agreementSignedAt)}
-              </DetailItem>
               <DetailItem label="申请人签名">
                 {display(student.applicantSignature)}
               </DetailItem>
@@ -397,20 +395,6 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
           <HrStudentOwnerCard currentUser={currentUser} student={student} />
 
           <HrAttachmentManager student={student} onChanged={reload} />
-
-          <Section title="记录信息">
-            <dl className="grid gap-4 px-5 py-5">
-              <DetailItem label="系统创建时间">
-                {formatDateTime(student.createdAt)}
-              </DetailItem>
-              <DetailItem label="最后更新时间">
-                {formatDateTime(student.updatedAt)}
-              </DetailItem>
-              <DetailItem label="学生提交状态">
-                {student.hasSubmitted ? "已提交，仅 HR 可修改" : "未提交"}
-              </DetailItem>
-            </dl>
-          </Section>
         </aside>
       </div>
 
@@ -418,6 +402,10 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
         studentId={student.id}
         studentName={student.name}
         refreshToken={student.updatedAt}
+        createdAt={student.createdAt}
+        updatedAt={student.updatedAt}
+        hasSubmitted={student.hasSubmitted}
+        onChanged={reload}
       />
 
       <HrModal

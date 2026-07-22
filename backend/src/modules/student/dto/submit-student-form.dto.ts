@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsDefined,
@@ -33,12 +34,14 @@ export class SubmitStudentFormDto {
   basicInfo!: BasicInfoDto;
 
   @IsArray()
+  @ArrayMinSize(1, { message: '教育经历至少填写一条' })
   @ArrayMaxSize(10)
   @ValidateNested({ each: true })
   @Type(() => EducationExperienceDto)
   educationExperiences!: EducationExperienceDto[];
 
   @IsArray()
+  @ArrayMinSize(1, { message: '家庭成员至少填写一位' })
   @ArrayMaxSize(10)
   @ValidateNested({ each: true })
   @Type(() => FamilyMemberDto)

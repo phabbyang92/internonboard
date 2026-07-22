@@ -8,7 +8,7 @@ import { ApiError } from "@/lib/api/client";
 import { updateHrStudentArrangement } from "@/lib/api/hr-students";
 import {
   chinaDateInputToIso,
-  getChinaTodayInput,
+  getEarliestOnboardingStartInput,
   toChinaDateInput,
 } from "@/lib/format-date";
 import type { HrStudentListItem } from "@/types/hr";
@@ -50,7 +50,7 @@ export function HrSingleArrangementModal({
         student.onboardingStatus !== "departed" &&
         !startAt)
     ) {
-      setError("请选择工作地点和入职开始日期");
+      setError("请选择工作地点和实习开始日期");
       return;
     }
 
@@ -59,7 +59,7 @@ export function HrSingleArrangementModal({
 
     try {
       await updateHrStudentArrangement(student.id, {
-        workLocation,
+        ...(!hasStarted ? { workLocation } : {}),
         ...(student.onboardingStatus !== "onboarded" &&
         student.onboardingStatus !== "departed" &&
         startAt
@@ -96,29 +96,31 @@ export function HrSingleArrangementModal({
       description="工作地点和实习结束日期后续仍可由 HR 修改。"
     >
       <form className="space-y-4 px-5 py-5 sm:px-6" onSubmit={submit}>
-        <label className="block text-sm font-medium text-[#31485c]">
-          工作地点
-          <select
-            required
-            value={workLocation}
-            onChange={(event) =>
-              setWorkLocation(event.target.value as WorkLocation)
-            }
-            className="mt-2 h-11 w-full border border-[#b9c9d7] bg-white px-3"
-          >
-            <option value="">请选择</option>
-            {WORK_LOCATIONS.map((location) => (
-              <option key={location}>{location}</option>
-            ))}
-          </select>
-        </label>
+        {!hasStarted ? (
+          <label className="block text-sm font-medium text-[#31485c]">
+            初始工作地点
+            <select
+              required
+              value={workLocation}
+              onChange={(event) =>
+                setWorkLocation(event.target.value as WorkLocation)
+              }
+              className="mt-2 h-11 w-full rounded-md border border-[#b9c9d7] bg-white px-3"
+            >
+              <option value="">请选择</option>
+              {WORK_LOCATIONS.map((location) => (
+                <option key={location}>{location}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
 
         <label className="block text-sm font-medium text-[#31485c]">
-          入职开始日期
+          实习开始日期
           <DatePickerInput
             required={!hasStarted}
             disabled={hasStarted}
-            min={getChinaTodayInput()}
+            min={getEarliestOnboardingStartInput()}
             value={startAt}
             onChange={(event) => setStartAt(event.target.value)}
             className="mt-2 h-11 w-full border border-[#b9c9d7] px-3 disabled:bg-[#f0f4f7] disabled:text-[#6b7f92]"
@@ -136,7 +138,7 @@ export function HrSingleArrangementModal({
 
         {hasStarted ? (
           <p className="text-xs text-[#8a5a35]">
-            该学生已经入职或离职，入职开始日期不可修改。
+            该学生已经入职或离职，初始地点和开始日期不可修改。地点变化请进入学生详情使用“变更工作地点”。
           </p>
         ) : null}
         {error ? (

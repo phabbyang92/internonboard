@@ -6,7 +6,10 @@ import { HrModal } from "@/components/hr/hr-modal";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { ApiError } from "@/lib/api/client";
 import { batchUpdateHrStudentArrangement } from "@/lib/api/hr-students";
-import { chinaDateInputToIso, getChinaTodayInput } from "@/lib/format-date";
+import {
+  chinaDateInputToIso,
+  getEarliestOnboardingStartInput,
+} from "@/lib/format-date";
 import { WORK_LOCATIONS, type WorkLocation } from "@/types/student";
 
 interface Props {
@@ -30,7 +33,7 @@ export function HrBatchArrangementModal({
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!workLocation || !startAt) {
-      setError("请选择工作地点和入职开始日期");
+      setError("请选择工作地点和实习开始日期");
       return;
     }
     setError("");
@@ -55,7 +58,7 @@ export function HrBatchArrangementModal({
       isOpen={isOpen}
       onClose={onClose}
       title="批量安排入职"
-      description={`将为已选择的 ${studentIds.length} 名学生设置相同地点和入职开始日期。`}
+      description={`将为已选择的 ${studentIds.length} 名学生设置相同的初始地点和实习开始日期。`}
     >
       <form className="space-y-4 px-5 py-5 sm:px-6" onSubmit={submit}>
         <label className="block text-sm font-medium">
@@ -73,10 +76,10 @@ export function HrBatchArrangementModal({
           </select>
         </label>
         <label className="block text-sm font-medium">
-          入职开始日期
+          实习开始日期
           <DatePickerInput
             required
-            min={getChinaTodayInput()}
+            min={getEarliestOnboardingStartInput()}
             value={startAt}
             onChange={(e) => setStartAt(e.target.value)}
             className="mt-2 h-11 w-full border border-[#b9c9d7] px-3"

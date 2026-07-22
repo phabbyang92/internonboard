@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 
 const attachmentLabels: Record<AttachmentType, string> = {
   resume: "个人简历",
-  id_card_front: "身份证正面",
-  id_card_back: "身份证反面",
+  id_card_front: "身份证正面（或外籍护照首页）",
+  id_card_back: "身份证反面（或外籍护照签证页）",
 };
 
 function display(value: string | number | null | undefined): string {
@@ -70,7 +70,9 @@ export function StudentSubmittedForm({ form }: { form: StudentForm }) {
             <ReadonlyItem label="投递渠道">{display(basic.sourceChannel)}</ReadonlyItem>
             <ReadonlyItem label="性别">{display(basic.gender)}</ReadonlyItem>
             <ReadonlyItem label="出生日期">{formatDateOnly(basic.birthDate)}</ReadonlyItem>
-            <ReadonlyItem label="身份证件号码">{display(basic.idNumber)}</ReadonlyItem>
+            <ReadonlyItem label="身份证号码（或外籍护照号）">
+              {display(basic.idNumber)}
+            </ReadonlyItem>
             <ReadonlyItem label="户籍">{display(basic.householdRegistration)}</ReadonlyItem>
             <ReadonlyItem label="婚姻状况">{display(basic.maritalStatus)}</ReadonlyItem>
             <ReadonlyItem label="学历">{display(basic.degree)}</ReadonlyItem>
@@ -193,7 +195,6 @@ export function StudentSubmittedForm({ form }: { form: StudentForm }) {
                 ? "是"
                 : "否"}
           </ReadonlyItem>
-          <ReadonlyItem label="服务协议签署日期">{formatDateOnly(form.agreementSignedAt)}</ReadonlyItem>
           <ReadonlyItem label="其他需要补充说明的情况">{display(form.notes)}</ReadonlyItem>
         </dl>
       </ReadonlySection>

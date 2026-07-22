@@ -249,8 +249,12 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
     );
     const missingAttachments = [
       !attachmentTypes.has("resume") ? "个人简历" : null,
-      !attachmentTypes.has("id_card_front") ? "身份证正面" : null,
-      !attachmentTypes.has("id_card_back") ? "身份证反面" : null,
+      !attachmentTypes.has("id_card_front")
+        ? "身份证正面（或外籍护照首页）"
+        : null,
+      !attachmentTypes.has("id_card_back")
+        ? "身份证反面（或外籍护照签证页）"
+        : null,
     ].filter((label): label is string => label !== null);
 
     if (missingAttachments.length > 0) {
@@ -384,11 +388,12 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
             </select>
           </FormField>
 
-          <FormField htmlFor="source-channel" label="投递渠道">
+          <FormField htmlFor="source-channel" label="投递渠道" required>
             <input
               id="source-channel"
               className={inputClassName}
               maxLength={100}
+              required
               value={draft.basicInfo.sourceChannel}
               onChange={(event) =>
                 updateBasicInfo("sourceChannel", event.target.value)
@@ -424,7 +429,11 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
             />
           </FormField>
 
-          <FormField htmlFor="id-number" label="身份证件号码" required>
+          <FormField
+            htmlFor="id-number"
+            label="身份证号码（或外籍护照号）"
+            required
+          >
             <input
               id="id-number"
               className={inputClassName}
@@ -466,14 +475,15 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
             </select>
           </FormField>
 
-          <FormField htmlFor="degree" label="学历" required>
+          <FormField htmlFor="political-status" label="政治面貌">
             <input
-              id="degree"
+              id="political-status"
               className={inputClassName}
               maxLength={50}
-              required
-              value={draft.basicInfo.degree}
-              onChange={(event) => updateBasicInfo("degree", event.target.value)}
+              value={draft.basicInfo.politicalStatus}
+              onChange={(event) =>
+                updateBasicInfo("politicalStatus", event.target.value)
+              }
             />
           </FormField>
 
@@ -501,15 +511,14 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
             />
           </FormField>
 
-          <FormField htmlFor="political-status" label="政治面貌">
+          <FormField htmlFor="degree" label="学历" required>
             <input
-              id="political-status"
+              id="degree"
               className={inputClassName}
               maxLength={50}
-              value={draft.basicInfo.politicalStatus}
-              onChange={(event) =>
-                updateBasicInfo("politicalStatus", event.target.value)
-              }
+              required
+              value={draft.basicInfo.degree}
+              onChange={(event) => updateBasicInfo("degree", event.target.value)}
             />
           </FormField>
 
@@ -550,7 +559,12 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
         <div className="flex flex-col gap-4 border-b border-[#d2dee8] px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div>
             <p className="text-xs font-semibold text-[#184268]">02</p>
-            <h2 className="mt-2 text-xl font-semibold">教育经历</h2>
+            <h2 className="mt-2 text-xl font-semibold">
+              教育经历 <span className="text-[#b44532]">*</span>
+            </h2>
+            <p className="mt-2 text-sm text-[#6b7f92]">
+              请从本科经历开始填写。
+            </p>
           </div>
           <button
             type="button"

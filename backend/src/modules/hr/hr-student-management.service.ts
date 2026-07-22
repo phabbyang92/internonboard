@@ -1,16 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
 import { OperationAction } from '../operation-log/enums/operation-action.enum';
 import { OperationLogService } from '../operation-log/operation-log.service';
 import { BatchUpdateStudentArrangementDto } from '../student/dto/batch-update-student-arrangement.dto';
 import { CreateStudentDto } from '../student/dto/create-student.dto';
+import { ListStudentsQueryDto } from '../student/dto/list-students-query.dto';
 import { UpdateStudentArrangementDto } from '../student/dto/update-student-arrangement.dto';
+import { OnboardingStatus } from '../student/enums/student.enums';
 import { StudentService } from '../student/student.service';
 import { WorkLocationAssignmentSource } from '../work-location/work-location-assignment-source.enum';
 import { WorkLocationHistoryService } from '../work-location/work-location-history.service';
+import { ChangeStudentWorkLocationDto } from './dto/change-student-work-location.dto';
 import { ListOperationLogsQueryDto } from './dto/list-operation-logs-query.dto';
 import { SoftDeleteStudentDto } from './dto/soft-delete-student.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { UpdateWorkLocationAssignmentDto } from './dto/update-work-location-assignment.dto';
 
 @Injectable()
 export class HrStudentManagementService {
@@ -20,8 +28,68 @@ export class HrStudentManagementService {
     private readonly workLocationHistoryService: WorkLocationHistoryService,
   ) {}
 
+  async findAll(query: ListStudentsQueryDto, access: HrAccessContext) {
+    await this.workLocationHistoryService.activateDueAssignments();
+    const result = await this.studentService.findAll(query, access);
+    const histories = await this.workLocationHistoryService.findByStudentIds(
+      result.items.map((student) => student.id),
+    );
+    const historyByStudent = new Map<
+      string,
+      Array<{
+        workLocation: string;
+        effectiveFrom: Date;
+        effectiveTo: Date | null;
+      }>
+    >();
+
+    for (const history of histories) {
+      const studentHistory = historyByStudent.get(history.studentId) ?? [];
+      studentHistory.push({
+        workLocation: history.workLocation,
+        effectiveFrom: history.effectiveFrom,
+        effectiveTo: history.effectiveTo,
+      });
+      historyByStudent.set(history.studentId, studentHistory);
+    }
+
+    return {
+      ...result,
+      items: result.items.map((student) => {
+        const timeline = historyByStudent.get(student.id) ?? [];
+
+        return {
+          ...student,
+          // 旧学生可能还没有历史集合，列表先用当前安排构造第一段。
+          workLocationTimeline:
+            timeline.length > 0
+              ? timeline
+              : student.workLocation && student.onboardingStartAt
+                ? [
+                    {
+                      workLocation: student.workLocation,
+                      effectiveFrom: student.onboardingStartAt,
+                      effectiveTo: null,
+                    },
+                  ]
+                : [],
+        };
+      }),
+    };
+  }
+
   async createStudent(dto: CreateStudentDto, access: HrAccessContext) {
     const result = await this.studentService.create(dto, access.hrUserId);
+
+    if (result.workLocation && result.onboardingStartAt) {
+      await this.workLocationHistoryService.recordAssignment({
+        studentId: result.id,
+        workLocation: result.workLocation,
+        onboardingStartAt: result.onboardingStartAt,
+        changedByHrId: access.hrUserId,
+        source: WorkLocationAssignmentSource.Create,
+      });
+    }
 
     await this.operationLogService.record({
       operatorHrId: access.hrUserId,
@@ -30,7 +98,14 @@ export class HrStudentManagementService {
 
       // 日志记录创建动作和字段，不复制姓名、邮箱、手机号等个人信息。
       changes: {
-        fields: ['name', 'email', ...(dto.phone ? ['phone'] : [])],
+        fields: [
+          'name',
+          'email',
+          ...(dto.phone ? ['phone'] : []),
+          ...(result.workLocation
+            ? ['workLocation', 'onboardingStartAt', 'onboardingStatus']
+            : []),
+        ],
         ownerHrId: access.hrUserId,
       },
     });
@@ -212,6 +287,85 @@ export class HrStudentManagementService {
     return result;
   }
 
+  async changeWorkLocation(
+    studentId: string,
+    dto: ChangeStudentWorkLocationDto,
+    access: HrAccessContext,
+  ) {
+    // 详情页可能长时间未刷新，先同步到期状态再判断是否已入职。
+    await this.studentService.updateDueOnboardingStatuses();
+    const before = await this.studentService.findOneByIdForHr(
+      studentId,
+      access,
+    );
+
+    if (
+      before.onboardingStatus !== OnboardingStatus.Onboarded &&
+      before.onboardingStatus !== OnboardingStatus.Departed
+    ) {
+      throw new ConflictException('学生入职后才能新增工作地点变更记录');
+    }
+
+    if (!before.workLocation || !before.onboardingStartAt) {
+      throw new BadRequestException('学生尚未设置初始工作地点和开始日期');
+    }
+
+    const effectiveFrom = this.normalizeChinaDate(dto.effectiveFrom);
+
+    const chinaToday = this.normalizeChinaDate(new Date().toISOString());
+
+    // 系统升级前的学生可能没有首段历史；已有时间线时不能重复回填。
+    const existingHistory =
+      await this.workLocationHistoryService.findByStudentId(studentId);
+    if (existingHistory.length === 0) {
+      await this.workLocationHistoryService.recordAssignment({
+        studentId,
+        workLocation: before.workLocation,
+        onboardingStartAt: before.onboardingStartAt,
+        changedByHrId: access.hrUserId,
+        source: WorkLocationAssignmentSource.Backfill,
+      });
+    }
+
+    const previousStartAt = existingHistory[0]?.effectiveFrom
+      ? this.normalizeChinaDate(existingHistory[0].effectiveFrom.toISOString())
+      : this.normalizeChinaDate(before.onboardingStartAt.toISOString());
+
+    if (effectiveFrom <= previousStartAt) {
+      throw new BadRequestException('新地点开始日期必须晚于上一段实习开始日期');
+    }
+
+    const assignment = await this.workLocationHistoryService.changeLocation({
+      studentId,
+      workLocation: dto.workLocation,
+      effectiveFrom,
+      changedByHrId: access.hrUserId,
+    });
+    await this.workLocationHistoryService.activateDueAssignments(
+      chinaToday,
+      studentId,
+    );
+    const student = await this.studentService.findOneByIdForHr(
+      studentId,
+      access,
+    );
+
+    await this.operationLogService.record({
+      operatorHrId: access.hrUserId,
+      studentId,
+      action: OperationAction.StudentArrangementUpdated,
+      changes: {
+        workLocation: {
+          before: before.workLocation,
+          after: dto.workLocation,
+        },
+        effectiveFrom,
+      },
+    });
+
+    return { student, assignment };
+  }
+
   async getWorkLocationHistory(studentId: string, access: HrAccessContext) {
     // 先确认学生存在且没有被软删除。
     await this.studentService.findOneByIdForHr(studentId, access);
@@ -219,6 +373,83 @@ export class HrStudentManagementService {
     return {
       items: await this.workLocationHistoryService.findByStudentId(studentId),
     };
+  }
+
+  async updateWorkLocationAssignment(
+    studentId: string,
+    assignmentId: string,
+    dto: UpdateWorkLocationAssignmentDto,
+    access: HrAccessContext,
+  ) {
+    await this.studentService.findOneByIdForHr(studentId, access);
+
+    const result = await this.workLocationHistoryService.updateAssignment({
+      studentId,
+      assignmentId,
+      workLocation: dto.workLocation,
+      effectiveFrom: this.normalizeChinaDate(dto.effectiveFrom),
+      changedByHrId: access.hrUserId,
+    });
+
+    const chinaToday = this.normalizeChinaDate(new Date().toISOString());
+    await this.workLocationHistoryService.activateDueAssignments(
+      chinaToday,
+      studentId,
+    );
+
+    await this.operationLogService.record({
+      operatorHrId: access.hrUserId,
+      studentId,
+      action: OperationAction.WorkLocationAssignmentUpdated,
+      changes: {
+        assignmentId,
+        workLocation: {
+          before: result.before.workLocation,
+          after: result.assignment.workLocation,
+        },
+        effectiveFrom: {
+          before: result.before.effectiveFrom,
+          after: result.assignment.effectiveFrom,
+        },
+      },
+    });
+
+    return {
+      message: '工作地点记录修改成功',
+      assignment: result.assignment,
+    };
+  }
+
+  async cancelWorkLocationAssignment(
+    studentId: string,
+    assignmentId: string,
+    access: HrAccessContext,
+  ) {
+    await this.studentService.findOneByIdForHr(studentId, access);
+
+    const result = await this.workLocationHistoryService.removeAssignment({
+      studentId,
+      assignmentId,
+    });
+
+    const chinaToday = this.normalizeChinaDate(new Date().toISOString());
+    await this.workLocationHistoryService.activateDueAssignments(
+      chinaToday,
+      studentId,
+    );
+
+    await this.operationLogService.record({
+      operatorHrId: access.hrUserId,
+      studentId,
+      action: OperationAction.WorkLocationAssignmentCancelled,
+      changes: {
+        assignmentId,
+        workLocation: result.removed.workLocation,
+        effectiveFrom: result.removed.effectiveFrom,
+      },
+    });
+
+    return { message: '工作地点记录已撤销' };
   }
 
   async getOperationLogs(
@@ -285,5 +516,21 @@ export class HrStudentManagementService {
     }
 
     return fields;
+  }
+
+  private normalizeChinaDate(value: string): Date {
+    const inputDate = new Date(value);
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(inputDate);
+    const getPart = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find((part) => part.type === type)?.value ?? '';
+
+    return new Date(
+      `${getPart('year')}-${getPart('month')}-${getPart('day')}T00:00:00+08:00`,
+    );
   }
 }

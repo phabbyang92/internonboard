@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
@@ -37,15 +36,7 @@ export function HrShell({ user, children }: HrShellProps) {
       <header className="border-b border-[#cfdae4] bg-white">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-5 px-5 sm:px-8">
           <div className="flex min-w-0 items-center">
-            <Image
-              src="/frost-sullivan-logo.svg"
-              alt="Frost & Sullivan 沙利文"
-              width={189}
-              height={60}
-              priority
-              className="h-9 w-auto shrink-0"
-            />
-            <span className="ml-4 hidden truncate border-l border-[#d5e0e9] pl-4 text-sm font-semibold text-[#30475b] md:inline">
+            <span className="truncate text-sm font-semibold text-[#30475b]">
               HR 后台
             </span>
           </div>

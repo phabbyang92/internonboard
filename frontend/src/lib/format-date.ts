@@ -64,3 +64,28 @@ export function chinaDateInputToIso(value: string): string {
 export function getChinaTodayInput(): string {
   return toChinaDateInput(new Date().toISOString());
 }
+
+export function getEarliestOnboardingStartInput(): string {
+  const chinaToday = getChinaTodayInput();
+  const earliestDate = new Date(`${chinaToday}T00:00:00+08:00`);
+  earliestDate.setUTCDate(earliestDate.getUTCDate() - 30);
+  return toChinaDateInput(earliestDate.toISOString());
+}
+
+export function getDayAfterChinaDateInput(value: string | null): string {
+  const chinaDate = toChinaDateInput(value);
+  if (!chinaDate) return "";
+
+  const nextDate = new Date(`${chinaDate}T00:00:00+08:00`);
+  nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+  return toChinaDateInput(nextDate.toISOString());
+}
+
+export function getDayBeforeChinaDateInput(value: string | null): string {
+  const chinaDate = toChinaDateInput(value);
+  if (!chinaDate) return "";
+
+  const previousDate = new Date(`${chinaDate}T00:00:00+08:00`);
+  previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+  return toChinaDateInput(previousDate.toISOString());
+}

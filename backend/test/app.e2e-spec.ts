@@ -166,7 +166,14 @@ describe('Intern onboarding API (e2e)', () => {
           major: '计算机科学',
         },
       ],
-      familyMembers: [],
+      familyMembers: [
+        {
+          relation: '母亲',
+          name: 'E2E 家庭成员',
+          employer: 'E2E 测试单位',
+          phone: '13800138002',
+        },
+      ],
       internshipExperiences: [],
       emergencyContactName: 'E2E 联系人',
       emergencyContactPhone: '13800138001',
@@ -220,6 +227,19 @@ describe('Intern onboarding API (e2e)', () => {
         onboardingStartAt: ONBOARDING_START_AT,
       })
       .expect(200);
+
+    await hrAgent
+      .patch(`/api/hr/students/${student.id}/arrangement`)
+      .send({ workLocation: '线上' })
+      .expect(200);
+
+    const listAfterOnlineChange = responseBody<{
+      items: StudentRecord[];
+    }>(await hrAgent.get('/api/hr/students').expect(200));
+    expect(listAfterOnlineChange.items[0].onboardingStartAt).toBe(
+      ONBOARDING_START_AT,
+    );
+    expect(listAfterOnlineChange.items[0].workLocation).toBe('线上');
 
     const studentLoginResponse = await loginStudent(studentAgent);
     expect(studentLoginResponse.status).toBe(200);

@@ -14,6 +14,7 @@ import {
   AttachmentType,
   FormSubmissionStatus,
   OnboardingStatus,
+  StudentListSort,
   WorkLocation,
 } from './enums/student.enums';
 import type { StudentDocument } from './schemas/student.schema';
@@ -30,9 +31,11 @@ const ADMIN_ACCESS: HrAccessContext = {
 };
 
 interface StudentModelMock {
+  create: jest.Mock;
   findOne: jest.Mock;
   findOneAndUpdate: jest.Mock;
   find: jest.Mock;
+  aggregate: jest.Mock;
   countDocuments: jest.Mock;
   updateMany: jest.Mock;
 }
@@ -45,9 +48,11 @@ function queryResult<T>(value: T) {
 
 function createModelMock(): StudentModelMock {
   return {
+    create: jest.fn(),
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn(),
     find: jest.fn(),
+    aggregate: jest.fn(),
     countDocuments: jest.fn(),
     updateMany: jest.fn(),
   };
@@ -89,7 +94,13 @@ function createStudent(
       },
     ],
     educationExperiences: [],
-    familyMembers: [],
+    familyMembers: [
+      {
+        relation: '家长',
+        name: '测试家长',
+        phone: '13800138002',
+      },
+    ],
     internshipExperiences: [],
     createdAt: new Date('2026-07-01T00:00:00.000Z'),
     updatedAt: new Date('2026-07-01T00:00:00.000Z'),
@@ -127,7 +138,13 @@ function createValidFormDto(
         major: '计算机科学',
       },
     ],
-    familyMembers: [],
+    familyMembers: [
+      {
+        relation: '家长',
+        name: '测试家长',
+        phone: '13800138002',
+      },
+    ],
     internshipExperiences: [],
     emergencyContactName: '紧急联系人',
     emergencyContactPhone: '13800138001',
@@ -142,6 +159,62 @@ function createValidFormDto(
 }
 
 describe('StudentService', () => {
+  describe('create', () => {
+    it('requires work location and start date to be provided together', async () => {
+      const model = createModelMock();
+
+      await expect(
+        createService(model).create(
+          {
+            name: '测试学生',
+            email: 'student@example.com',
+            workLocation: WorkLocation.ShanghaiOffice,
+          },
+          HR_ID,
+        ),
+      ).rejects.toThrow('工作地点和入职开始日期必须同时填写');
+      expect(model.create).not.toHaveBeenCalled();
+    });
+
+    it('creates a pending student with an initial online arrangement', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-21T04:00:00.000Z'));
+
+      try {
+        const model = createModelMock();
+        const onboardingStartAt = new Date('2026-06-20T16:00:00.000Z');
+        model.create.mockResolvedValue(
+          createStudent({
+            workLocation: WorkLocation.Online,
+            onboardingStartAt,
+          }),
+        );
+
+        await createService(model).create(
+          {
+            name: ' 测试学生 ',
+            email: ' STUDENT@example.com ',
+            workLocation: WorkLocation.Online,
+            onboardingStartAt: '2026-06-21T00:00:00+08:00',
+          },
+          HR_ID,
+        );
+
+        expect(model.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: '测试学生',
+            email: 'student@example.com',
+            workLocation: WorkLocation.Online,
+            onboardingStartAt,
+            onboardingStatus: OnboardingStatus.PendingOnboarding,
+          }),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
+
   describe('HR access scope', () => {
     it('scopes regular HR queries to their own students', () => {
       const service = createService(createModelMock());
@@ -191,6 +264,7 @@ describe('StudentService', () => {
           status: OnboardingStatus.PendingOnboarding,
           workLocation: WorkLocation.ShanghaiOffice,
           formStatus: FormSubmissionStatus.NotSubmitted,
+          onboardingStartMonth: '2026-08',
         },
         HR_ACCESS,
       );
@@ -200,6 +274,10 @@ describe('StudentService', () => {
         ownerHrId: new Types.ObjectId(HR_ID),
         onboardingStatus: OnboardingStatus.PendingOnboarding,
         workLocation: WorkLocation.ShanghaiOffice,
+        onboardingStartAt: {
+          $gte: new Date('2026-07-31T16:00:00.000Z'),
+          $lt: new Date('2026-08-31T16:00:00.000Z'),
+        },
         submittedAt: null,
         $or: [
           { name: { $regex: '测试\\.\\*', $options: 'i' } },
@@ -227,6 +305,44 @@ describe('StudentService', () => {
         departed: 2,
       });
       expect(result.pagination.total).toBe(1);
+    });
+
+    it('sorts scheduled students by start date and keeps missing dates last', async () => {
+      const model = createModelMock();
+      const student = createStudent();
+      model.aggregate.mockReturnValue(queryResult([student]));
+      model.updateMany.mockReturnValue(
+        queryResult({ matchedCount: 0, modifiedCount: 0 }),
+      );
+      model.countDocuments
+        .mockReturnValueOnce(queryResult(1))
+        .mockReturnValueOnce(queryResult(1))
+        .mockReturnValueOnce(queryResult(0))
+        .mockReturnValueOnce(queryResult(1))
+        .mockReturnValueOnce(queryResult(0))
+        .mockReturnValueOnce(queryResult(0));
+
+      await createService(model).findAll(
+        {
+          page: 1,
+          limit: 20,
+          sortBy: StudentListSort.OnboardingStartAtAsc,
+        },
+        HR_ACCESS,
+      );
+
+      expect(model.aggregate).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            $sort: {
+              __missingOnboardingStartAt: 1,
+              onboardingStartAt: 1,
+              createdAt: -1,
+            },
+          }),
+        ]),
+      );
+      expect(model.find).not.toHaveBeenCalled();
     });
   });
 
@@ -332,6 +448,32 @@ describe('StudentService', () => {
   });
 
   describe('submitForm', () => {
+    it('rejects submission without an education experience', async () => {
+      const model = createModelMock();
+      model.findOne.mockReturnValue(queryResult(createStudent()));
+
+      await expect(
+        createService(model).submitForm(
+          STUDENT_ID,
+          createValidFormDto({ educationExperiences: [] }),
+        ),
+      ).rejects.toThrow('教育经历至少填写一条');
+      expect(model.findOneAndUpdate).not.toHaveBeenCalled();
+    });
+
+    it('rejects submission without a family member', async () => {
+      const model = createModelMock();
+      model.findOne.mockReturnValue(queryResult(createStudent()));
+
+      await expect(
+        createService(model).submitForm(
+          STUDENT_ID,
+          createValidFormDto({ familyMembers: [] }),
+        ),
+      ).rejects.toThrow('家庭成员至少填写一位');
+      expect(model.findOneAndUpdate).not.toHaveBeenCalled();
+    });
+
     it.each([
       {
         missingType: AttachmentType.Resume,
@@ -388,16 +530,23 @@ describe('StudentService', () => {
       ).rejects.toThrow('出生日期必须早于当前时间');
     });
 
-    it('requires an agreement date when the agreement is confirmed', async () => {
+    it('does not require an agreement date when document materials are confirmed', async () => {
       const model = createModelMock();
       model.findOne.mockReturnValue(queryResult(createStudent()));
+      model.findOneAndUpdate.mockReturnValue(
+        queryResult(
+          createStudent({
+            submittedAt: new Date('2026-07-20T10:00:00.000Z'),
+          }),
+        ),
+      );
 
       await expect(
         createService(model).submitForm(
           STUDENT_ID,
           createValidFormDto({ agreementSignedAt: undefined }),
         ),
-      ).rejects.toThrow('请填写服务协议签署时间');
+      ).resolves.toEqual(expect.objectContaining({ hasSubmitted: true }));
     });
 
     it('uses an atomic filter and returns the successful submission', async () => {
@@ -501,19 +650,51 @@ describe('StudentService', () => {
       expect(save).toHaveBeenCalledTimes(1);
     });
 
-    it('rejects an onboarding start date before today', async () => {
-      const model = createModelMock();
-      const save = jest.fn().mockResolvedValue(undefined);
-      model.findOne.mockReturnValue(queryResult(createStudent({ save })));
+    it('allows an onboarding start date exactly 30 days before today', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-21T04:00:00.000Z'));
 
-      await expect(
-        createService(model).updateArrangement(
+      try {
+        const model = createModelMock();
+        const save = jest.fn().mockResolvedValue(undefined);
+        const student = createStudent({ save });
+        model.findOne.mockReturnValue(queryResult(student));
+
+        await createService(model).updateArrangement(
           STUDENT_ID,
-          { onboardingStartAt: '2000-01-01T00:00:00+08:00' },
+          { onboardingStartAt: '2026-06-21T00:00:00+08:00' },
           HR_ACCESS,
-        ),
-      ).rejects.toThrow('入职开始日期不能早于今天');
-      expect(save).not.toHaveBeenCalled();
+        );
+
+        expect(student.onboardingStartAt).toEqual(
+          new Date('2026-06-20T16:00:00.000Z'),
+        );
+        expect(save).toHaveBeenCalledTimes(1);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('rejects an onboarding start date more than 30 days before today', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-21T04:00:00.000Z'));
+
+      try {
+        const model = createModelMock();
+        const save = jest.fn().mockResolvedValue(undefined);
+        model.findOne.mockReturnValue(queryResult(createStudent({ save })));
+
+        await expect(
+          createService(model).updateArrangement(
+            STUDENT_ID,
+            { onboardingStartAt: '2026-06-20T00:00:00+08:00' },
+            HR_ACCESS,
+          ),
+        ).rejects.toThrow('入职开始日期不能早于今天前 30 天');
+        expect(save).not.toHaveBeenCalled();
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it.each([OnboardingStatus.Onboarded, OnboardingStatus.Departed])(
@@ -534,7 +715,7 @@ describe('StudentService', () => {
       },
     );
 
-    it('allows location and end time changes after onboarding', async () => {
+    it('allows end time changes after onboarding', async () => {
       const model = createModelMock();
       const save = jest.fn().mockResolvedValue(undefined);
       const student = createStudent({
@@ -546,15 +727,66 @@ describe('StudentService', () => {
       const result = await createService(model).updateArrangement(
         STUDENT_ID,
         {
-          workLocation: WorkLocation.Online,
           onboardingEndAt: '2026-12-31T00:00:00.000Z',
         },
         HR_ACCESS,
       );
 
       expect(save).toHaveBeenCalledTimes(1);
-      expect(result.workLocation).toBe(WorkLocation.Online);
       expect(result.onboardingStatus).toBe(OnboardingStatus.Onboarded);
+    });
+
+    it('requires the dated location-change flow after onboarding', async () => {
+      const model = createModelMock();
+      model.findOne.mockReturnValue(
+        queryResult(
+          createStudent({
+            onboardingStatus: OnboardingStatus.Onboarded,
+            workLocation: WorkLocation.ShanghaiOffice,
+          }),
+        ),
+      );
+
+      await expect(
+        createService(model).updateArrangement(
+          STUDENT_ID,
+          { workLocation: WorkLocation.Online },
+          HR_ACCESS,
+        ),
+      ).rejects.toThrow('请使用工作地点变更功能并填写生效日期');
+    });
+
+    it('uses the planned start date when a future arrangement is online', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-21T04:00:00.000Z'));
+
+      try {
+        const model = createModelMock();
+        const save = jest.fn().mockResolvedValue(undefined);
+        const student = createStudent({
+          onboardingStatus: OnboardingStatus.Candidate,
+          workLocation: undefined,
+          onboardingStartAt: null,
+          save,
+        });
+        model.findOne.mockReturnValue(queryResult(student));
+
+        await createService(model).updateArrangement(
+          STUDENT_ID,
+          {
+            workLocation: WorkLocation.Online,
+            onboardingStartAt: '2026-09-01T00:00:00+08:00',
+          },
+          HR_ACCESS,
+        );
+
+        expect(student.workLocation).toBe(WorkLocation.Online);
+        expect(student.onboardingStartAt).toEqual(
+          new Date('2026-08-31T16:00:00.000Z'),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 
@@ -601,24 +833,105 @@ describe('StudentService', () => {
       },
     );
 
-    it('rejects a batch start date before today', async () => {
-      const model = createModelMock();
-      model.find.mockReturnValue({
-        select: jest
-          .fn()
-          .mockReturnValue(queryResult([createStudent(), createStudent()])),
-      });
+    it('rejects a batch start date more than 30 days before today', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-21T04:00:00.000Z'));
 
-      await expect(
-        createService(model).batchUpdateArrangement(
+      try {
+        const model = createModelMock();
+        model.find.mockReturnValue({
+          select: jest
+            .fn()
+            .mockReturnValue(queryResult([createStudent(), createStudent()])),
+        });
+
+        await expect(
+          createService(model).batchUpdateArrangement(
+            {
+              ...batchDto(),
+              onboardingStartAt: '2026-06-20T00:00:00+08:00',
+            },
+            HR_ACCESS,
+          ),
+        ).rejects.toThrow('入职开始日期不能早于今天前 30 天');
+        expect(model.updateMany).not.toHaveBeenCalled();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('allows a batch start date exactly 30 days before today', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-21T04:00:00.000Z'));
+
+      try {
+        const model = createModelMock();
+        model.find.mockReturnValue({
+          select: jest
+            .fn()
+            .mockReturnValue(queryResult([createStudent(), createStudent()])),
+        });
+        model.updateMany.mockReturnValue(
+          queryResult({ matchedCount: 2, modifiedCount: 2 }),
+        );
+
+        const result = await createService(model).batchUpdateArrangement(
           {
             ...batchDto(),
-            onboardingStartAt: '2000-01-01T00:00:00+08:00',
+            onboardingStartAt: '2026-06-21T00:00:00+08:00',
           },
           HR_ACCESS,
-        ),
-      ).rejects.toThrow('入职开始日期不能早于今天');
-      expect(model.updateMany).not.toHaveBeenCalled();
+        );
+
+        expect(result.onboardingStartAt).toEqual(
+          new Date('2026-06-20T16:00:00.000Z'),
+        );
+        expect(model.updateMany).toHaveBeenCalledTimes(1);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('stores the shared start date for a successful online batch', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-21T04:00:00.000Z'));
+
+      try {
+        const model = createModelMock();
+        model.find.mockReturnValue({
+          select: jest
+            .fn()
+            .mockReturnValue(queryResult([createStudent(), createStudent()])),
+        });
+        model.updateMany.mockReturnValue(
+          queryResult({ matchedCount: 2, modifiedCount: 2 }),
+        );
+
+        await createService(model).batchUpdateArrangement(
+          {
+            ...batchDto(),
+            workLocation: WorkLocation.Online,
+            onboardingStartAt: '2026-09-01T00:00:00+08:00',
+          },
+          HR_ACCESS,
+        );
+
+        const normalizedStart = new Date('2026-08-31T16:00:00.000Z');
+        const updateArguments = model.updateMany.mock.calls[0] as unknown as [
+          unknown,
+          { $set: Record<string, unknown> },
+          unknown,
+        ];
+        expect(updateArguments[1].$set).toEqual(
+          expect.objectContaining({
+            workLocation: WorkLocation.Online,
+            onboardingStartAt: normalizedStart,
+          }),
+        );
+        expect(updateArguments[2]).toEqual({ runValidators: true });
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });

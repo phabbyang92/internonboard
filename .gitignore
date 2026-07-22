@@ -6,6 +6,7 @@ backend/dist/
 backend/coverage/
 backend/.env
 backend/uploads/
+prototype/
 **/*-cookie.txt
 *.log
 .env

@@ -45,6 +45,11 @@ export interface HrStudentListItem {
   workLocation: WorkLocation | null;
   onboardingStartAt: string | null;
   onboardingEndAt: string | null;
+  workLocationTimeline: Array<{
+    workLocation: string;
+    effectiveFrom: string;
+    effectiveTo: string | null;
+  }>;
   submittedAt: string | null;
   createdAt: string;
 }
@@ -56,10 +61,16 @@ export interface HrStudentListQuery {
   status?: OnboardingStatus | "";
   workLocation?: WorkLocation | "";
   formStatus?: FormSubmissionStatus | "";
+  onboardingStartMonth?: string;
   ownerHrId?: string;
+  sortBy?: HrStudentListSort;
 }
 
 export type FormSubmissionStatus = "not_submitted" | "submitted";
+export type HrStudentListSort =
+  | "created_at_desc"
+  | "onboarding_start_at_desc"
+  | "onboarding_start_at_asc";
 
 export interface HrStudentListResponse {
   items: HrStudentListItem[];
@@ -82,6 +93,8 @@ export interface CreateHrStudentPayload {
   name: string;
   email: string;
   phone?: string;
+  workLocation?: WorkLocation;
+  onboardingStartAt?: string;
 }
 
 export interface CreateHrStudentResponse {
@@ -91,6 +104,8 @@ export interface CreateHrStudentResponse {
   email: string;
   phone: string | null;
   onboardingStatus: OnboardingStatus;
+  workLocation: WorkLocation | null;
+  onboardingStartAt: string | null;
   createdAt: string;
 }
 
@@ -106,6 +121,14 @@ export interface BatchUpdateHrArrangementPayload {
   onboardingStartAt: string;
 }
 
+export interface ChangeHrWorkLocationPayload {
+  workLocation: WorkLocation;
+  effectiveFrom: string;
+}
+
+export type UpdateHrWorkLocationAssignmentPayload =
+  ChangeHrWorkLocationPayload;
+
 export interface UpdateHrProfilePayload {
   name?: string;
   email?: string;
@@ -118,7 +141,6 @@ export interface UpdateHrProfilePayload {
   emergencyContactPhone?: string;
   emergencyContactRelation?: string;
   hasIdCopyAndAgreement?: boolean;
-  agreementSignedAt?: string | null;
   notes?: string;
   applicantSignature?: string;
   applicantSignedAt?: string | null;
@@ -135,7 +157,7 @@ export interface WorkLocationHistoryItem {
   effectiveFrom: string;
   effectiveTo: string | null;
   changedByHrId: string;
-  source: "backfill" | "single" | "batch";
+  source: "create" | "backfill" | "single" | "batch" | "change";
   createdAt: string;
   updatedAt: string;
 }
@@ -148,6 +170,8 @@ export type OperationAction =
   | "student.created"
   | "student.profile.updated"
   | "student.arrangement.updated"
+  | "student.work_location_assignment.updated"
+  | "student.work_location_assignment.cancelled"
   | "student.attachment.uploaded"
   | "student.attachment.replaced"
   | "student.attachment.deleted"

@@ -89,7 +89,15 @@ export function DatePickerInput({
   const currentYear = new Date().getFullYear();
   const startMonth = minimumDate ?? new Date(currentYear - 100, 0, 1);
   const endMonth = maximumDate ?? new Date(currentYear + 20, 11, 31);
-  const defaultMonth = selectedDate ?? minimumDate ?? new Date();
+  const today = new Date();
+  const nearestAllowedDate =
+    minimumDate && today < minimumDate
+      ? minimumDate
+      : maximumDate && today > maximumDate
+        ? maximumDate
+        : today;
+  // 未填写时先打开今天所在月份；今天不可选时再定位到最近的边界日期。
+  const defaultMonth = selectedDate ?? nearestAllowedDate;
   const disabledMatchers: Matcher[] = [];
 
   if (minimumDate) disabledMatchers.push({ before: minimumDate });

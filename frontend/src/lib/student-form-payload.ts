@@ -40,7 +40,7 @@ export function buildStudentFormPayload(
       major: draft.basicInfo.major.trim(),
       degree: draft.basicInfo.degree.trim(),
       politicalStatus: optionalString(draft.basicInfo.politicalStatus),
-      sourceChannel: optionalString(draft.basicInfo.sourceChannel),
+      sourceChannel: draft.basicInfo.sourceChannel.trim(),
       homeAddress: draft.basicInfo.homeAddress.trim(),
       homePhone: optionalString(draft.basicInfo.homePhone),
     },
@@ -69,10 +69,6 @@ export function buildStudentFormPayload(
     emergencyContactPhone: draft.emergencyContactPhone.trim(),
     emergencyContactRelation: draft.emergencyContactRelation.trim(),
     hasIdCopyAndAgreement: draft.hasIdCopyAndAgreement,
-    agreementSignedAt:
-      draft.hasIdCopyAndAgreement && draft.agreementSignedAt
-        ? dateInputToIso(draft.agreementSignedAt)
-        : undefined,
     notes: optionalString(draft.notes),
     applicantSignature: draft.applicantSignature.trim(),
     applicantSignedAt: dateInputToIso(draft.applicantSignedAt),
@@ -83,16 +79,25 @@ export function buildStudentFormPayload(
 export function findIncompleteRequiredField(
   draft: StudentFormDraft,
 ): string | null {
+  if (draft.educationExperiences.length === 0) {
+    return "教育经历（至少一条）";
+  }
+
+  if (draft.familyMembers.length === 0) {
+    return "家庭成员（至少一位）";
+  }
+
   const requiredFields: Array<[label: string, value: string]> = [
     ["联系电话", draft.phone],
     ["申请职位", draft.basicInfo.position],
     ["性别", draft.basicInfo.gender],
     ["出生日期", draft.basicInfo.birthDate],
-    ["身份证件号码", draft.basicInfo.idNumber],
+    ["身份证号码（或外籍护照号）", draft.basicInfo.idNumber],
     ["户籍", draft.basicInfo.householdRegistration],
     ["在读学校", draft.basicInfo.currentSchool],
     ["专业", draft.basicInfo.major],
     ["学历", draft.basicInfo.degree],
+    ["投递渠道", draft.basicInfo.sourceChannel],
     ["家庭地址", draft.basicInfo.homeAddress],
     ["实习结束日期", draft.onboardingEndAt],
     ["紧急联系人姓名", draft.emergencyContactName],
@@ -124,10 +129,6 @@ export function findIncompleteRequiredField(
       [`实习经历 ${index + 1} 的结束年份`, experience.endYear],
       [`实习经历 ${index + 1} 的公司`, experience.company],
     );
-  }
-
-  if (draft.hasIdCopyAndAgreement === true) {
-    requiredFields.push(["服务协议签署日期", draft.agreementSignedAt]);
   }
 
   const incompleteField = requiredFields.find(

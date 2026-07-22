@@ -16,6 +16,8 @@ import {
   AttachmentType,
   FormSubmissionStatus,
   OnboardingStatus,
+  StudentListSort,
+  WorkLocation,
 } from './enums/student.enums';
 import { BatchUpdateStudentArrangementDto } from './dto/batch-update-student-arrangement.dto';
 import { SubmitStudentFormDto } from './dto/submit-student-form.dto';
@@ -29,6 +31,8 @@ interface AttachmentMetadataInput {
   originalName: string;
   storageKey: string;
 }
+
+const ONBOARDING_START_BACKFILL_DAYS = 30;
 
 @Injectable()
 export class StudentService {
@@ -107,6 +111,13 @@ export class StudentService {
       filter.workLocation = query.workLocation;
     }
 
+    if (query.onboardingStartMonth) {
+      const { start, end } = this.getChinaMonthRange(
+        query.onboardingStartMonth,
+      );
+      filter.onboardingStartAt = { $gte: start, $lt: end };
+    }
+
     if (query.formStatus === FormSubmissionStatus.Submitted) {
       filter.submittedAt = { $ne: null };
     } else if (query.formStatus === FormSubmissionStatus.NotSubmitted) {
@@ -123,6 +134,47 @@ export class StudentService {
       statsScope.ownerHrId = new Types.ObjectId(query.ownerHrId);
     }
 
+    const sortBy = query.sortBy ?? StudentListSort.CreatedAtDesc;
+    const studentsPromise =
+      sortBy === StudentListSort.CreatedAtDesc
+        ? this.studentModel
+            .find(filter)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .exec()
+        : this.studentModel
+            .aggregate<StudentDocument>([
+              { $match: filter },
+              {
+                // Keep students without a start date after scheduled students
+                // for both ascending and descending date sorting.
+                $addFields: {
+                  __missingOnboardingStartAt: {
+                    $cond: [
+                      {
+                        $eq: [{ $ifNull: ['$onboardingStartAt', null] }, null],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+              },
+              {
+                $sort: {
+                  __missingOnboardingStartAt: 1,
+                  onboardingStartAt:
+                    sortBy === StudentListSort.OnboardingStartAtDesc ? -1 : 1,
+                  createdAt: -1,
+                },
+              },
+              { $skip: (page - 1) * limit },
+              { $limit: limit },
+              { $project: { __missingOnboardingStartAt: 0 } },
+            ])
+            .exec();
+
     const [
       students,
       total,
@@ -132,12 +184,7 @@ export class StudentService {
       onboarded,
       departed,
     ] = await Promise.all([
-      this.studentModel
-        .find(filter)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .exec(),
+      studentsPromise,
       this.studentModel.countDocuments(filter).exec(),
       this.studentModel.countDocuments(statsScope).exec(),
       this.studentModel
@@ -495,9 +542,9 @@ export class StudentService {
     const student = await this.ensureFormIsEditable(id);
 
     this.validateRequiredAttachments(student);
+    this.validateRequiredCollections(dto);
     this.validateExperienceYears(dto);
     this.validateFormDates(dto);
-    this.validateAgreementInfo(dto);
 
     if (!student.onboardingStartAt) {
       throw new BadRequestException('HR 尚未安排入职开始日期');
@@ -768,6 +815,14 @@ export class StudentService {
       throw new ConflictException('已入职或已离职学生不能修改入职开始日期');
     }
 
+    if (
+      this.hasStartedInternship(student.onboardingStatus) &&
+      dto.workLocation !== undefined &&
+      dto.workLocation !== student.workLocation
+    ) {
+      throw new ConflictException('请使用工作地点变更功能并填写生效日期');
+    }
+
     // 使用修改后的值和数据库原值共同进行日期校验。
     const effectiveStartAt =
       dto.onboardingStartAt !== undefined
@@ -782,9 +837,9 @@ export class StudentService {
     if (
       dto.onboardingStartAt !== undefined &&
       effectiveStartAt &&
-      effectiveStartAt < this.getChinaTodayStart()
+      effectiveStartAt < this.getEarliestOnboardingStartDate()
     ) {
-      throw new BadRequestException('入职开始日期不能早于今天');
+      throw new BadRequestException('入职开始日期不能早于今天前 30 天');
     }
 
     if (dto.onboardingEndAt !== undefined && !effectiveStartAt) {
@@ -855,6 +910,31 @@ export class StudentService {
     };
   }
 
+  async changeCurrentWorkLocation(
+    id: string,
+    workLocation: WorkLocation,
+    access: HrAccessContext,
+  ) {
+    const student = await this.findActiveStudentByIdForHr(id, access);
+
+    if (!this.hasStartedInternship(student.onboardingStatus)) {
+      throw new ConflictException('学生入职后才能新增工作地点变更记录');
+    }
+
+    if (student.workLocation === workLocation) {
+      throw new BadRequestException('新工作地点不能与当前地点相同');
+    }
+
+    student.workLocation = workLocation;
+    await student.save();
+
+    this.logger.log(
+      `HR ${access.hrUserId} changed current work location for student ${id}`,
+    );
+
+    return this.serializeStudent(student);
+  }
+
   async batchUpdateArrangement(
     dto: BatchUpdateStudentArrangementDto,
     access: HrAccessContext,
@@ -886,8 +966,8 @@ export class StudentService {
       dto.onboardingStartAt,
     );
 
-    if (onboardingStartAt < this.getChinaTodayStart()) {
-      throw new BadRequestException('入职开始日期不能早于今天');
+    if (onboardingStartAt < this.getEarliestOnboardingStartDate()) {
+      throw new BadRequestException('入职开始日期不能早于今天前 30 天');
     }
 
     // updateMany sends one database update for all selected students.
@@ -972,12 +1052,39 @@ export class StudentService {
       throw new BadRequestException('录入 HR ID 格式错误');
     }
 
+    const hasWorkLocation = dto.workLocation !== undefined;
+    const hasStartDate = dto.onboardingStartAt !== undefined;
+
+    if (hasWorkLocation !== hasStartDate) {
+      throw new BadRequestException('工作地点和入职开始日期必须同时填写');
+    }
+
+    const onboardingStartAt = dto.onboardingStartAt
+      ? this.normalizeOnboardingStartDate(dto.onboardingStartAt)
+      : null;
+
+    if (
+      onboardingStartAt &&
+      onboardingStartAt < this.getEarliestOnboardingStartDate()
+    ) {
+      throw new BadRequestException('入职开始日期不能早于今天前 30 天');
+    }
+
+    const hasArrangement = Boolean(dto.workLocation && onboardingStartAt);
+
     try {
       const student = await this.studentModel.create({
         ownerHrId: new Types.ObjectId(ownerHrId),
         name: dto.name.trim(),
         email: dto.email.trim().toLowerCase(),
         phone: dto.phone?.trim(),
+        ...(hasArrangement
+          ? {
+              workLocation: dto.workLocation,
+              onboardingStartAt,
+              onboardingStatus: OnboardingStatus.PendingOnboarding,
+            }
+          : {}),
       });
 
       this.logger.log(`Created student ${student._id.toString()}`);
@@ -989,6 +1096,8 @@ export class StudentService {
         email: student.email,
         phone: student.phone ?? null,
         onboardingStatus: student.onboardingStatus,
+        workLocation: student.workLocation ?? null,
+        onboardingStartAt: student.onboardingStartAt ?? null,
         createdAt: student.createdAt,
       };
     } catch (error: unknown) {
@@ -1044,6 +1153,16 @@ export class StudentService {
     }
   }
 
+  private validateRequiredCollections(dto: SubmitStudentFormDto): void {
+    if (dto.educationExperiences.length === 0) {
+      throw new BadRequestException('教育经历至少填写一条');
+    }
+
+    if (dto.familyMembers.length === 0) {
+      throw new BadRequestException('家庭成员至少填写一位');
+    }
+  }
+
   private validateFormDates(dto: SubmitStudentFormDto): void {
     const now = new Date();
 
@@ -1057,12 +1176,6 @@ export class StudentService {
 
     if (dto.agreementSignedAt && new Date(dto.agreementSignedAt) > now) {
       throw new BadRequestException('协议签署时间不能晚于当前时间');
-    }
-  }
-
-  private validateAgreementInfo(dto: SubmitStudentFormDto): void {
-    if (dto.hasIdCopyAndAgreement && !dto.agreementSignedAt) {
-      throw new BadRequestException('请填写服务协议签署时间');
     }
   }
 
@@ -1085,6 +1198,24 @@ export class StudentService {
 
   private getChinaTodayStart(referenceDate = new Date()): Date {
     return this.normalizeOnboardingStartDate(referenceDate.toISOString());
+  }
+
+  private getEarliestOnboardingStartDate(referenceDate = new Date()): Date {
+    const earliestDate = this.getChinaTodayStart(referenceDate);
+    earliestDate.setUTCDate(
+      earliestDate.getUTCDate() - ONBOARDING_START_BACKFILL_DAYS,
+    );
+    return earliestDate;
+  }
+
+  private getChinaMonthRange(value: string): { start: Date; end: Date } {
+    const [year, month] = value.split('-').map(Number);
+    const chinaOffsetMs = 8 * 60 * 60 * 1000;
+
+    return {
+      start: new Date(Date.UTC(year, month - 1, 1) - chinaOffsetMs),
+      end: new Date(Date.UTC(year, month, 1) - chinaOffsetMs),
+    };
   }
 
   private hasStartedInternship(status: OnboardingStatus): boolean {

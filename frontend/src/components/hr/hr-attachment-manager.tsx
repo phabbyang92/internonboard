@@ -24,8 +24,8 @@ interface Props {
 
 const attachmentLabels: Record<AttachmentType, string> = {
   resume: "简历",
-  id_card_front: "身份证正面",
-  id_card_back: "身份证反面",
+  id_card_front: "身份证正面（或外籍护照首页）",
+  id_card_back: "身份证反面（或外籍护照签证页）",
 };
 
 const accepts: Record<AttachmentType, string> = {

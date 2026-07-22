@@ -19,8 +19,10 @@ import { ListStudentsQueryDto } from '../student/dto/list-students-query.dto';
 import { UpdateStudentArrangementDto } from '../student/dto/update-student-arrangement.dto';
 import { StudentService } from '../student/student.service';
 import { ListOperationLogsQueryDto } from './dto/list-operation-logs-query.dto';
+import { ChangeStudentWorkLocationDto } from './dto/change-student-work-location.dto';
 import { SoftDeleteStudentDto } from './dto/soft-delete-student.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { UpdateWorkLocationAssignmentDto } from './dto/update-work-location-assignment.dto';
 import { HrStudentManagementService } from './hr-student-management.service';
 
 @Controller('hr/students')
@@ -47,7 +49,10 @@ export class HrStudentsController {
     @Query() query: ListStudentsQueryDto,
     @Req() request: AuthenticatedHrRequest,
   ) {
-    return this.studentService.findAll(query, this.getAccess(request));
+    return this.hrStudentManagementService.findAll(
+      query,
+      this.getAccess(request),
+    );
   }
 
   @Get(':id/work-location-history')
@@ -99,6 +104,47 @@ export class HrStudentsController {
     return this.hrStudentManagementService.updateArrangement(
       id,
       dto,
+      this.getAccess(request),
+    );
+  }
+
+  @Post(':id/work-location-assignments')
+  changeWorkLocation(
+    @Param('id') id: string,
+    @Body() dto: ChangeStudentWorkLocationDto,
+    @Req() request: AuthenticatedHrRequest,
+  ) {
+    return this.hrStudentManagementService.changeWorkLocation(
+      id,
+      dto,
+      this.getAccess(request),
+    );
+  }
+
+  @Patch(':id/work-location-assignments/:assignmentId')
+  updateWorkLocationAssignment(
+    @Param('id') id: string,
+    @Param('assignmentId') assignmentId: string,
+    @Body() dto: UpdateWorkLocationAssignmentDto,
+    @Req() request: AuthenticatedHrRequest,
+  ) {
+    return this.hrStudentManagementService.updateWorkLocationAssignment(
+      id,
+      assignmentId,
+      dto,
+      this.getAccess(request),
+    );
+  }
+
+  @Delete(':id/work-location-assignments/:assignmentId')
+  cancelWorkLocationAssignment(
+    @Param('id') id: string,
+    @Param('assignmentId') assignmentId: string,
+    @Req() request: AuthenticatedHrRequest,
+  ) {
+    return this.hrStudentManagementService.cancelWorkLocationAssignment(
+      id,
+      assignmentId,
       this.getAccess(request),
     );
   }

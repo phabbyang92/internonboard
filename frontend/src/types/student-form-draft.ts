@@ -52,7 +52,6 @@ export interface StudentFormDraft {
   emergencyContactRelation: string;
   // null 表示学生尚未选择，不能在页面加载时默认替学生回答“否”。
   hasIdCopyAndAgreement: boolean | null;
-  agreementSignedAt: string;
   notes: string;
   applicantSignature: string;
   applicantSignedAt: string;
@@ -67,6 +66,22 @@ function toDateInputValue(value: string | null | undefined) {
   // API 日期是 ISO 字符串，date input 只需要 YYYY-MM-DD。
   return value.slice(0, 10);
 }
+
+const emptyEducationExperience: EducationExperienceDraft = {
+  startYear: "",
+  endYear: "",
+  school: "",
+  major: "",
+  advisor: "",
+  phone: "",
+};
+
+const emptyFamilyMember: FamilyMemberDraft = {
+  relation: "",
+  name: "",
+  employer: "",
+  phone: "",
+};
 
 export function createStudentFormDraft(form: StudentForm): StudentFormDraft {
   const basicInfo = form.basicInfo;
@@ -89,18 +104,22 @@ export function createStudentFormDraft(form: StudentForm): StudentFormDraft {
       homeAddress: basicInfo?.homeAddress ?? "",
       homePhone: basicInfo?.homePhone ?? "",
     },
-    educationExperiences: form.educationExperiences.map((experience) => ({
-      ...experience,
-      startYear: String(experience.startYear),
-      endYear: String(experience.endYear),
-      advisor: experience.advisor ?? "",
-      phone: experience.phone ?? "",
-    })),
-    familyMembers: form.familyMembers.map((member) => ({
-      ...member,
-      employer: member.employer ?? "",
-      phone: member.phone ?? "",
-    })),
+    educationExperiences: form.educationExperiences.length
+      ? form.educationExperiences.map((experience) => ({
+          ...experience,
+          startYear: String(experience.startYear),
+          endYear: String(experience.endYear),
+          advisor: experience.advisor ?? "",
+          phone: experience.phone ?? "",
+        }))
+      : [{ ...emptyEducationExperience }],
+    familyMembers: form.familyMembers.length
+      ? form.familyMembers.map((member) => ({
+          ...member,
+          employer: member.employer ?? "",
+          phone: member.phone ?? "",
+        }))
+      : [{ ...emptyFamilyMember }],
     internshipExperiences: form.internshipExperiences.map((experience) => ({
       ...experience,
       startYear: String(experience.startYear),
@@ -112,7 +131,6 @@ export function createStudentFormDraft(form: StudentForm): StudentFormDraft {
     emergencyContactPhone: form.emergencyContactPhone ?? "",
     emergencyContactRelation: form.emergencyContactRelation ?? "",
     hasIdCopyAndAgreement: form.hasIdCopyAndAgreement,
-    agreementSignedAt: toDateInputValue(form.agreementSignedAt),
     notes: form.notes ?? "",
     applicantSignature: form.applicantSignature ?? "",
     applicantSignedAt: toDateInputValue(form.applicantSignedAt),

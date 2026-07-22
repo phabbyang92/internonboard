@@ -27,10 +27,15 @@ export function FamilyMembersSection({
   return (
     <section className="mt-6 overflow-hidden rounded-lg border border-[#d2dee8] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
       <div className="flex flex-col gap-4 border-b border-[#d2dee8] px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-        <div>
-          <p className="text-xs font-semibold text-[#184268]">03</p>
-          <h2 className="mt-2 text-xl font-semibold">家庭成员</h2>
-        </div>
+          <div>
+            <p className="text-xs font-semibold text-[#184268]">03</p>
+            <h2 className="mt-2 text-xl font-semibold">
+              家庭成员 <span className="text-[#b44532]">*</span>
+            </h2>
+            <p className="mt-2 text-sm text-[#6b7f92]">
+              请至少填写一位家庭成员。
+            </p>
+          </div>
         <button
           type="button"
           className={addButtonClassName}

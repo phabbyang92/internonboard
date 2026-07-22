@@ -7,6 +7,7 @@ import {
 import type {
   AttachmentMutationResult,
   BatchUpdateHrArrangementPayload,
+  ChangeHrWorkLocationPayload,
   CreateHrStudentPayload,
   CreateHrStudentResponse,
   HrStudentDetail,
@@ -15,6 +16,7 @@ import type {
   OperationLogResponse,
   UpdateHrArrangementPayload,
   UpdateHrProfilePayload,
+  UpdateHrWorkLocationAssignmentPayload,
   WorkLocationHistoryResponse,
 } from "@/types/hr";
 import type { AttachmentType } from "@/types/student";
@@ -43,8 +45,16 @@ export function listHrStudents(
     searchParams.set("formStatus", query.formStatus);
   }
 
+  if (query.onboardingStartMonth) {
+    searchParams.set("onboardingStartMonth", query.onboardingStartMonth);
+  }
+
   if (query.ownerHrId) {
     searchParams.set("ownerHrId", query.ownerHrId);
+  }
+
+  if (query.sortBy) {
+    searchParams.set("sortBy", query.sortBy);
   }
 
   return apiRequest<HrStudentListResponse>(
@@ -99,6 +109,40 @@ export function getWorkLocationHistory(
   id: string,
 ): Promise<WorkLocationHistoryResponse> {
   return apiRequest(`/api/hr/students/${id}/work-location-history`);
+}
+
+export function changeHrStudentWorkLocation(
+  id: string,
+  payload: ChangeHrWorkLocationPayload,
+): Promise<unknown> {
+  return apiRequest(`/api/hr/students/${id}/work-location-assignments`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateHrWorkLocationAssignment(
+  studentId: string,
+  assignmentId: string,
+  payload: UpdateHrWorkLocationAssignmentPayload,
+): Promise<unknown> {
+  return apiRequest(
+    `/api/hr/students/${studentId}/work-location-assignments/${assignmentId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function cancelHrWorkLocationAssignment(
+  studentId: string,
+  assignmentId: string,
+): Promise<unknown> {
+  return apiRequest(
+    `/api/hr/students/${studentId}/work-location-assignments/${assignmentId}`,
+    { method: "DELETE" },
+  );
 }
 
 export function getOperationLogs(

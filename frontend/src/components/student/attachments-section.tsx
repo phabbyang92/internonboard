@@ -39,14 +39,14 @@ const attachmentRules: AttachmentRule[] = [
   },
   {
     type: "id_card_front",
-    label: "身份证正面",
+    label: "身份证正面（或外籍护照首页）",
     required: true,
     accept: ".pdf,.jpg,.jpeg,.png",
     formats: "PDF、JPG、PNG",
   },
   {
     type: "id_card_back",
-    label: "身份证反面",
+    label: "身份证反面（或外籍护照签证页）",
     required: true,
     accept: ".pdf,.jpg,.jpeg,.png",
     formats: "PDF、JPG、PNG",
@@ -178,7 +178,7 @@ export function AttachmentsSection({
         <p className="text-xs font-semibold text-[#184268]">07</p>
         <h2 className="mt-2 text-xl font-semibold">附件资料</h2>
         <p className="mt-2 text-sm leading-6 text-[#5f7285]">
-          请在上传前将文件分别命名为：姓名_个人简历、姓名_身份证正面、姓名_身份证反面。
+          请在上传前将文件分别命名为：姓名_个人简历、姓名_身份证正面（或姓名_外籍护照首页）、姓名_身份证反面（或姓名_外籍护照签证页）。
         </p>
       </div>
 

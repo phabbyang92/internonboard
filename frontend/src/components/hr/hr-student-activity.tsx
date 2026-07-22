@@ -1,32 +1,53 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Pencil, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { HrModal } from "@/components/hr/hr-modal";
+import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { ApiError } from "@/lib/api/client";
 import {
+  cancelHrWorkLocationAssignment,
   getOperationLogs,
   getWorkLocationHistory,
   softDeleteHrStudent,
+  updateHrWorkLocationAssignment,
 } from "@/lib/api/hr-students";
-import { formatDateOnly, formatDateTime } from "@/lib/format-date";
+import {
+  chinaDateInputToIso,
+  formatDateOnly,
+  formatDateTime,
+  getDayAfterChinaDateInput,
+  getDayBeforeChinaDateInput,
+  toChinaDateInput,
+} from "@/lib/format-date";
 import type {
   OperationAction,
   OperationLogResponse,
   WorkLocationHistoryItem,
 } from "@/types/hr";
+import {
+  WORK_LOCATIONS,
+  type WorkLocation,
+} from "@/types/student";
 
 interface Props {
   studentId: string;
   studentName: string;
   refreshToken: string;
+  createdAt: string;
+  updatedAt: string;
+  hasSubmitted: boolean;
+  onChanged: () => void;
 }
 
 const actionLabels: Record<OperationAction, string> = {
   "student.created": "创建学生",
   "student.profile.updated": "修改登记信息",
   "student.arrangement.updated": "修改入职安排",
+  "student.work_location_assignment.updated": "修改工作地点记录",
+  "student.work_location_assignment.cancelled": "撤销工作地点记录",
   "student.attachment.uploaded": "上传附件",
   "student.attachment.replaced": "替换附件",
   "student.attachment.deleted": "删除附件",
@@ -34,9 +55,11 @@ const actionLabels: Record<OperationAction, string> = {
 };
 
 const sourceLabels: Record<WorkLocationHistoryItem["source"], string> = {
+  create: "创建时安排",
   backfill: "历史补录",
   single: "单个安排",
   batch: "批量安排",
+  change: "地点变更",
 };
 
 const fieldLabels: Record<string, string> = {
@@ -51,13 +74,13 @@ const fieldLabels: Record<string, string> = {
   emergencyContactPhone: "紧急联系电话",
   emergencyContactRelation: "紧急联系人关系",
   hasIdCopyAndAgreement: "证件和协议状态",
-  agreementSignedAt: "协议签署日期",
   notes: "补充说明",
   applicantSignature: "申请人签名",
   applicantSignedAt: "申请人签署日期",
   workLocation: "工作地点",
-  onboardingStartAt: "入职开始日期",
+  onboardingStartAt: "实习开始日期",
   onboardingEndAt: "实习结束日期",
+  effectiveFrom: "地点开始日期",
 };
 
 const emptyLogs: OperationLogResponse = {
@@ -97,18 +120,38 @@ function describeChanges(changes: Record<string, unknown> | null): string {
     return `新附件：${valueText((replaced as { originalName?: unknown }).originalName)}`;
   }
 
-  const details = ["workLocation", "onboardingStartAt", "onboardingEndAt"]
+  const details = [
+    "workLocation",
+    "onboardingStartAt",
+    "onboardingEndAt",
+    "effectiveFrom",
+  ]
     .map((field) => {
       const change = changes[field];
       if (!change || typeof change !== "object") return null;
       const pair = change as { before?: unknown; after?: unknown };
       const displayValue = (value: unknown) =>
-        field === "onboardingStartAt" || field === "onboardingEndAt"
+        field === "onboardingStartAt" ||
+        field === "onboardingEndAt" ||
+        field === "effectiveFrom"
           ? formatDateOnly(typeof value === "string" ? value : null)
           : valueText(value);
       return `${fieldLabels[field]}：${displayValue(pair.before)} → ${displayValue(pair.after)}`;
     })
     .filter((item): item is string => item !== null);
+
+  if (
+    changes.effectiveFrom &&
+    typeof changes.effectiveFrom !== "object"
+  ) {
+    details.push(
+      `地点生效日期：${formatDateOnly(
+        typeof changes.effectiveFrom === "string"
+          ? changes.effectiveFrom
+          : null,
+      )}`,
+    );
+  }
 
   if (details.length) return details.join("；");
   if (typeof changes.reason === "string" && changes.reason) {
@@ -121,6 +164,10 @@ export function HrStudentActivity({
   studentId,
   studentName,
   refreshToken,
+  createdAt,
+  updatedAt,
+  hasSubmitted,
+  onChanged,
 }: Props) {
   const router = useRouter();
   const [history, setHistory] = useState<WorkLocationHistoryItem[]>([]);
@@ -132,6 +179,26 @@ export function HrStudentActivity({
   const [deleteReason, setDeleteReason] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [editingAssignment, setEditingAssignment] =
+    useState<WorkLocationHistoryItem | null>(null);
+  const [editLocation, setEditLocation] = useState<WorkLocation | "">("");
+  const [editEffectiveFrom, setEditEffectiveFrom] = useState("");
+  const [editMinimum, setEditMinimum] = useState("");
+  const [editMaximum, setEditMaximum] = useState("");
+  const [editError, setEditError] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [cancellingAssignment, setCancellingAssignment] =
+    useState<WorkLocationHistoryItem | null>(null);
+  const [cancelError, setCancelError] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timeoutId = window.setTimeout(() => setSuccessMessage(""), 3000);
+    return () => window.clearTimeout(timeoutId);
+  }, [successMessage]);
 
   useEffect(() => {
     let isActive = true;
@@ -159,7 +226,86 @@ export function HrStudentActivity({
     return () => {
       isActive = false;
     };
-  }, [logPage, refreshToken, studentId]);
+  }, [activityRefreshKey, logPage, refreshToken, studentId]);
+
+  function refreshActivity(message: string) {
+    setSuccessMessage(message);
+    setActivityRefreshKey((current) => current + 1);
+    onChanged();
+  }
+
+  function openEditAssignment(
+    assignment: WorkLocationHistoryItem,
+    descendingIndex: number,
+  ) {
+    const previousAssignment = history[descendingIndex + 1];
+    const nextAssignment = history[descendingIndex - 1];
+    const knownLocation = WORK_LOCATIONS.includes(
+      assignment.workLocation as WorkLocation,
+    )
+      ? (assignment.workLocation as WorkLocation)
+      : "";
+
+    setEditingAssignment(assignment);
+    setEditLocation(knownLocation);
+    setEditEffectiveFrom(toChinaDateInput(assignment.effectiveFrom));
+    setEditMinimum(
+      getDayAfterChinaDateInput(previousAssignment?.effectiveFrom ?? null),
+    );
+    setEditMaximum(
+      getDayBeforeChinaDateInput(nextAssignment?.effectiveFrom ?? null),
+    );
+    setEditError("");
+  }
+
+  async function confirmEditAssignment() {
+    if (!editingAssignment || !editLocation || !editEffectiveFrom) {
+      setEditError("请选择工作地点和开始日期");
+      return;
+    }
+
+    setEditError("");
+    setIsSavingEdit(true);
+    try {
+      await updateHrWorkLocationAssignment(
+        studentId,
+        editingAssignment.id,
+        {
+          workLocation: editLocation,
+          effectiveFrom: chinaDateInputToIso(editEffectiveFrom),
+        },
+      );
+      setEditingAssignment(null);
+      refreshActivity("工作地点记录修改成功");
+    } catch (caught) {
+      setEditError(
+        caught instanceof ApiError ? caught.message : "修改工作地点记录失败",
+      );
+    } finally {
+      setIsSavingEdit(false);
+    }
+  }
+
+  async function confirmCancelAssignment() {
+    if (!cancellingAssignment) return;
+
+    setCancelError("");
+    setIsCancelling(true);
+    try {
+      await cancelHrWorkLocationAssignment(
+        studentId,
+        cancellingAssignment.id,
+      );
+      setCancellingAssignment(null);
+      refreshActivity("工作地点记录已撤销");
+    } catch (caught) {
+      setCancelError(
+        caught instanceof ApiError ? caught.message : "撤销工作地点记录失败",
+      );
+    } finally {
+      setIsCancelling(false);
+    }
+  }
 
   async function confirmDelete() {
     setDeleteError("");
@@ -180,52 +326,125 @@ export function HrStudentActivity({
 
   return (
     <>
+      {successMessage ? (
+        <div
+          className="fixed right-5 top-5 z-[120] rounded-md border border-[#9bcdbf] bg-[#e9f7f2] px-4 py-3 text-sm font-semibold text-[#176b58] shadow-lg"
+          role="status"
+        >
+          {successMessage}
+        </div>
+      ) : null}
+
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-        <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
-          <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
-            <h2 className="font-semibold text-[#223548]">工作地点历史</h2>
-            <p className="mt-1 text-xs text-[#6b7f92]">
-              记录学生曾在哪个地点工作，以及每次安排的生效时间。
-            </p>
-          </header>
-          {isLoading ? (
-            <p className="px-5 py-8 text-sm text-[#6b7f92]">
-              正在加载地点历史...
-            </p>
-          ) : error ? (
-            <p className="px-5 py-8 text-sm text-[#9d3426]" role="alert">
-              {error}
-            </p>
-          ) : history.length ? (
-            <ol className="divide-y divide-[#e1e8ef]">
-              {history.map((item) => (
-                <li
-                  key={item.id}
-                  className="grid gap-2 px-5 py-4 sm:grid-cols-[1fr_auto] sm:px-6"
+        <div className="space-y-6">
+          <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
+            <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
+              <h2 className="font-semibold text-[#223548]">工作地点历史</h2>
+              <p className="mt-1 text-xs text-[#6b7f92]">
+                记录学生曾在哪个地点工作，以及每次安排的生效时间。
+              </p>
+            </header>
+            {isLoading ? (
+              <p className="px-5 py-8 text-sm text-[#6b7f92]">
+                正在加载地点历史...
+              </p>
+            ) : error ? (
+              <p className="px-5 py-8 text-sm text-[#9d3426]" role="alert">
+                {error}
+              </p>
+            ) : history.length ? (
+              <ol className="divide-y divide-[#e1e8ef]">
+                {history.map((item, index) => {
+                  const isInitialAssignment = index === history.length - 1;
+
+                  return (
+                    <li
+                      key={item.id}
+                      className="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto] sm:px-6"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-[#2b3e50]">
+                          {item.workLocation}
+                        </p>
+                        <p className="mt-1 text-xs text-[#6b7f92]">
+                          {formatDateOnly(item.effectiveFrom)} 至{" "}
+                          {item.effectiveTo
+                            ? `${formatDateOnly(item.effectiveTo)} 前`
+                            : "当前"}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-start justify-start gap-2 sm:justify-end">
+                        <span className="rounded border border-[#c7d6e2] bg-[#f3f7fa] px-2 py-1 text-xs text-[#52677a]">
+                          {isInitialAssignment
+                            ? "初始安排"
+                            : sourceLabels[item.source]}
+                        </span>
+                        {!isInitialAssignment ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => openEditAssignment(item, index)}
+                              className="inline-flex min-h-7 cursor-pointer items-center gap-1 rounded border border-[#a9bfd2] px-2 text-xs font-medium text-[#244b70] transition hover:border-[#184268] hover:bg-[#edf4fa]"
+                            >
+                              <Pencil
+                                aria-hidden="true"
+                                className="h-3.5 w-3.5"
+                              />
+                              修改
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCancelError("");
+                                setCancellingAssignment(item);
+                              }}
+                              className="inline-flex min-h-7 cursor-pointer items-center gap-1 rounded border border-[#d8aaa2] px-2 text-xs font-medium text-[#94382b] transition hover:border-[#b95a4d] hover:bg-[#fff4f2]"
+                            >
+                              <Undo2
+                                aria-hidden="true"
+                                className="h-3.5 w-3.5"
+                              />
+                              撤销
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <p className="px-5 py-8 text-sm text-[#6b7f92]">
+                暂无地点变更历史。
+              </p>
+            )}
+          </section>
+
+          <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
+            <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
+              <h2 className="font-semibold text-[#223548]">记录信息</h2>
+            </header>
+            <dl className="grid gap-4 px-5 py-5 sm:px-6">
+              {[
+                ["系统创建时间", formatDateTime(createdAt)],
+                ["最后更新时间", formatDateTime(updatedAt)],
+                ["学生提交状态", hasSubmitted ? "已提交，仅 HR 可修改" : "未提交"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="border-b border-[#e1e8ef] pb-3 last:border-b-0 last:pb-0"
                 >
-                  <div>
-                    <p className="text-sm font-semibold text-[#2b3e50]">
-                      {item.workLocation}
-                    </p>
-                    <p className="mt-1 text-xs text-[#6b7f92]">
-                      {formatDateTime(item.effectiveFrom)} 至{" "}
-                      {item.effectiveTo
-                        ? formatDateTime(item.effectiveTo)
-                        : "当前"}
-                    </p>
-                  </div>
-                  <span className="self-start border border-[#c7d6e2] bg-[#f3f7fa] px-2 py-1 text-xs text-[#52677a]">
-                    {sourceLabels[item.source]}
-                  </span>
-                </li>
+                  <dt className="text-xs font-medium text-[#6b7f92]">
+                    {label}
+                  </dt>
+                  <dd className="mt-1.5 text-sm font-medium text-[#2b3e50]">
+                    {value}
+                  </dd>
+                </div>
               ))}
-            </ol>
-          ) : (
-            <p className="px-5 py-8 text-sm text-[#6b7f92]">
-              暂无地点变更历史。
-            </p>
-          )}
-        </section>
+            </dl>
+          </section>
+        </div>
 
         <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
           <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
@@ -300,6 +519,126 @@ export function HrStudentActivity({
           ) : null}
         </section>
       </div>
+
+      <HrModal
+        isOpen={editingAssignment !== null}
+        onClose={() => !isSavingEdit && setEditingAssignment(null)}
+        title="修改工作地点记录"
+        description="只修改这一段；系统会自动重算相邻地点的结束日期。"
+      >
+        <div className="space-y-5 px-5 py-5 sm:px-6">
+          <label className="block text-sm font-medium text-[#31485c]">
+            工作地点
+            <select
+              value={editLocation}
+              disabled={isSavingEdit}
+              onChange={(event) =>
+                setEditLocation(event.target.value as WorkLocation)
+              }
+              className="mt-2 min-h-11 w-full rounded-md border border-[#b9c9d7] bg-white px-3 outline-none focus:border-[#184268]"
+            >
+              <option value="">请选择</option>
+              {WORK_LOCATIONS.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div>
+            <label
+              htmlFor="edit-work-location-effective-from"
+              className="block text-sm font-medium text-[#31485c]"
+            >
+              本段开始日期
+            </label>
+            <DatePickerInput
+              id="edit-work-location-effective-from"
+              value={editEffectiveFrom}
+              min={editMinimum || undefined}
+              max={editMaximum || undefined}
+              disabled={isSavingEdit}
+              onChange={(event) => setEditEffectiveFrom(event.target.value)}
+              className="mt-2 min-h-11 w-full rounded-md border border-[#b9c9d7] bg-white px-3 outline-none focus:border-[#184268]"
+            />
+            <p className="mt-2 text-xs text-[#6b7f92]">
+              开始日期必须晚于上一段；存在下一段时，也必须早于下一段。
+            </p>
+          </div>
+
+          {editError ? (
+            <p className="text-sm text-[#9d3426]" role="alert">
+              {editError}
+            </p>
+          ) : null}
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              disabled={isSavingEdit}
+              onClick={() => setEditingAssignment(null)}
+              className="min-h-11 cursor-pointer rounded-md border border-[#b9c9d7] px-5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              disabled={isSavingEdit}
+              onClick={() => void confirmEditAssignment()}
+              className="min-h-11 cursor-pointer rounded-md bg-[#184268] px-5 text-sm font-semibold text-white transition hover:bg-[#123653] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSavingEdit ? "正在保存..." : "保存修改"}
+            </button>
+          </div>
+        </div>
+      </HrModal>
+
+      <HrModal
+        isOpen={cancellingAssignment !== null}
+        onClose={() => !isCancelling && setCancellingAssignment(null)}
+        title="撤销工作地点记录"
+        description="撤销后，系统会自动连接前后时间段；此操作仍会保留在 HR 操作日志中。"
+      >
+        <div className="space-y-4 px-5 py-5 sm:px-6">
+          {cancellingAssignment ? (
+            <div className="rounded-md border border-[#d5e0e9] bg-[#f6f9fb] px-4 py-3 text-sm text-[#31485c]">
+              <p className="font-semibold">
+                {cancellingAssignment.workLocation}
+              </p>
+              <p className="mt-1 text-xs text-[#6b7f92]">
+                从 {formatDateOnly(cancellingAssignment.effectiveFrom)} 开始
+              </p>
+            </div>
+          ) : null}
+          <p className="text-sm leading-6 text-[#6f443d]">
+            请确认这是一条误操作记录。撤销后无法直接恢复，但可重新新增地点变更。
+          </p>
+          {cancelError ? (
+            <p className="text-sm text-[#9d3426]" role="alert">
+              {cancelError}
+            </p>
+          ) : null}
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              disabled={isCancelling}
+              onClick={() => setCancellingAssignment(null)}
+              className="min-h-11 cursor-pointer rounded-md border border-[#b9c9d7] px-5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              disabled={isCancelling}
+              onClick={() => void confirmCancelAssignment()}
+              className="min-h-11 cursor-pointer rounded-md bg-[#a23b2e] px-5 text-sm font-semibold text-white transition hover:bg-[#853126] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isCancelling ? "正在撤销..." : "确认撤销"}
+            </button>
+          </div>
+        </div>
+      </HrModal>
 
       <section className="mt-6 overflow-hidden rounded-lg border border-[#dfc5c0] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.04)]">
         <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
