@@ -5,6 +5,7 @@ import {
   primaryButtonClassName,
   removeButtonClassName,
 } from "@/components/student/form-control-styles";
+import { YearSelectInput } from "@/components/ui/year-select-input";
 import type { InternshipExperienceDraft } from "@/types/student-form-draft";
 
 interface InternshipExperiencesSectionProps {
@@ -84,17 +85,12 @@ export function InternshipExperiencesSection({
                     label="起始年份"
                     required
                   >
-                    <input
+                    <YearSelectInput
                       id={`internship-${index}-start-year`}
-                      className={inputClassName}
-                      type="number"
-                      inputMode="numeric"
-                      min={1900}
-                      max={2100}
-                      required
+                      className="min-h-11"
                       value={experience.startYear}
-                      onChange={(event) =>
-                        onUpdate(index, "startYear", event.target.value)
+                      onChange={(value) =>
+                        onUpdate(index, "startYear", value)
                       }
                     />
                   </FormField>
@@ -104,23 +100,17 @@ export function InternshipExperiencesSection({
                     label="结束年份"
                     required
                   >
-                    <input
+                    <YearSelectInput
                       id={`internship-${index}-end-year`}
-                      className={inputClassName}
-                      type="number"
-                      inputMode="numeric"
-                      min={experience.startYear || 1900}
-                      max={2100}
-                      required
-                      aria-invalid={hasInvalidYearRange}
-                      aria-describedby={
-                        hasInvalidYearRange
-                          ? `internship-${index}-year-error`
+                      className="min-h-11"
+                      minYear={
+                        experience.startYear
+                          ? Number(experience.startYear)
                           : undefined
                       }
                       value={experience.endYear}
-                      onChange={(event) =>
-                        onUpdate(index, "endYear", event.target.value)
+                      onChange={(value) =>
+                        onUpdate(index, "endYear", value)
                       }
                     />
                     {hasInvalidYearRange ? (

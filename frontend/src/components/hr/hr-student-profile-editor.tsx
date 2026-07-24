@@ -3,6 +3,8 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { DatePickerInput } from "@/components/ui/date-picker-input";
+import { SelectInput } from "@/components/ui/select-input";
+import { YearSelectInput } from "@/components/ui/year-select-input";
 import { ApiError } from "@/lib/api/client";
 import { updateHrStudentProfile } from "@/lib/api/hr-students";
 import { createStudentFormDraft } from "@/types/student-form-draft";
@@ -123,7 +125,7 @@ export function HrStudentProfileEditor({ student, onSaved, onCancel }: Props) {
       <Section title="个人情况">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="申请职位"><input value={draft.basicInfo.position} onChange={(e) => updateBasic("position", e.target.value)} className={inputClass} /></Field>
-          <Field label="投递方向"><select value={draft.basicInfo.applicationDirection} onChange={(e) => updateBasic("applicationDirection", e.target.value)} className={inputClass}><option value="">未填写</option>{APPLICATION_DIRECTIONS.map((item) => <option key={item}>{item}</option>)}</select></Field>
+          <Field label="投递方向"><SelectInput value={draft.basicInfo.applicationDirection || undefined} onChange={(value) => updateBasic("applicationDirection", value)} placeholder="未填写" options={APPLICATION_DIRECTIONS.map((item) => ({ value: item, label: item }))} className="mt-1.5 min-h-10" /></Field>
           <Field label="性别"><input value={draft.basicInfo.gender} onChange={(e) => updateBasic("gender", e.target.value)} className={inputClass} /></Field>
           <Field label="出生日期"><DatePickerInput value={draft.basicInfo.birthDate} onChange={(e) => updateBasic("birthDate", e.target.value)} className={inputClass} /></Field>
           <Field label="身份证号码（或外籍护照号）"><input value={draft.basicInfo.idNumber} onChange={(e) => updateBasic("idNumber", e.target.value)} className={inputClass} /></Field>
@@ -143,7 +145,7 @@ export function HrStudentProfileEditor({ student, onSaved, onCancel }: Props) {
         <div className="space-y-3">
           {draft.educationExperiences.map((item, index) => (
             <div key={index} className="grid gap-3 border border-[#d5e0e9] p-3 sm:grid-cols-3">
-              {(["startYear", "endYear", "school", "major", "advisor", "phone"] as const).map((field) => <Field key={field} label={({ startYear: "起始年", endYear: "结束年", school: "学校", major: "专业", advisor: "导师/班主任", phone: "联系电话" } as const)[field]}><input required={["startYear", "endYear", "school", "major"].includes(field)} type={field.includes("Year") ? "number" : "text"} value={item[field]} onChange={(e) => setDraft((current) => ({ ...current, educationExperiences: current.educationExperiences.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: e.target.value } : row) }))} className={inputClass} /></Field>)}
+              {(["startYear", "endYear", "school", "major", "advisor", "phone"] as const).map((field) => <Field key={field} label={({ startYear: "起始年", endYear: "结束年", school: "学校", major: "专业", advisor: "导师/班主任", phone: "联系电话" } as const)[field]}>{field === "startYear" || field === "endYear" ? <YearSelectInput value={item[field]} minYear={field === "endYear" && item.startYear ? Number(item.startYear) : undefined} onChange={(value) => setDraft((current) => ({ ...current, educationExperiences: current.educationExperiences.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row) }))} className="mt-1.5 min-h-10" /> : <input required={["school", "major"].includes(field)} value={item[field]} onChange={(e) => setDraft((current) => ({ ...current, educationExperiences: current.educationExperiences.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: e.target.value } : row) }))} className={inputClass} />}</Field>)}
               <button type="button" onClick={() => setDraft({ ...draft, educationExperiences: draft.educationExperiences.filter((_, rowIndex) => rowIndex !== index) })} className="justify-self-start text-sm text-[#9d3426]">删除这条</button>
             </div>
           ))}
@@ -167,7 +169,7 @@ export function HrStudentProfileEditor({ student, onSaved, onCancel }: Props) {
         <div className="space-y-3">
           {draft.internshipExperiences.map((item, index) => (
             <div key={index} className="grid gap-3 border border-[#d5e0e9] p-3 sm:grid-cols-3">
-              {(["startYear", "endYear", "company", "referenceName", "phone"] as const).map((field) => <Field key={field} label={({ startYear: "起始年", endYear: "结束年", company: "实习公司", referenceName: "证明人", phone: "联系电话" } as const)[field]}><input required={["startYear", "endYear", "company"].includes(field)} type={field.includes("Year") ? "number" : "text"} value={item[field]} onChange={(e) => setDraft((current) => ({ ...current, internshipExperiences: current.internshipExperiences.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: e.target.value } : row) }))} className={inputClass} /></Field>)}
+              {(["startYear", "endYear", "company", "referenceName", "phone"] as const).map((field) => <Field key={field} label={({ startYear: "起始年", endYear: "结束年", company: "实习公司", referenceName: "证明人", phone: "联系电话" } as const)[field]}>{field === "startYear" || field === "endYear" ? <YearSelectInput value={item[field]} minYear={field === "endYear" && item.startYear ? Number(item.startYear) : undefined} onChange={(value) => setDraft((current) => ({ ...current, internshipExperiences: current.internshipExperiences.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row) }))} className="mt-1.5 min-h-10" /> : <input required={field === "company"} value={item[field]} onChange={(e) => setDraft((current) => ({ ...current, internshipExperiences: current.internshipExperiences.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: e.target.value } : row) }))} className={inputClass} />}</Field>)}
               <button type="button" onClick={() => setDraft({ ...draft, internshipExperiences: draft.internshipExperiences.filter((_, rowIndex) => rowIndex !== index) })} className="justify-self-start text-sm text-[#9d3426]">删除这条</button>
             </div>
           ))}
@@ -180,7 +182,7 @@ export function HrStudentProfileEditor({ student, onSaved, onCancel }: Props) {
           <Field label="紧急联系人"><input value={draft.emergencyContactName} onChange={(e) => setDraft({ ...draft, emergencyContactName: e.target.value })} className={inputClass} /></Field>
           <Field label="紧急联系电话"><input value={draft.emergencyContactPhone} onChange={(e) => setDraft({ ...draft, emergencyContactPhone: e.target.value })} className={inputClass} /></Field>
           <Field label="关系"><input value={draft.emergencyContactRelation} onChange={(e) => setDraft({ ...draft, emergencyContactRelation: e.target.value })} className={inputClass} /></Field>
-          <Field label="身份证复印件和协议"><select value={draft.hasIdCopyAndAgreement === null ? "" : String(draft.hasIdCopyAndAgreement)} onChange={(e) => setDraft({ ...draft, hasIdCopyAndAgreement: e.target.value === "" ? null : e.target.value === "true" })} className={inputClass}><option value="">未填写</option><option value="true">是</option><option value="false">否</option></select></Field>
+          <Field label="身份证复印件和协议"><SelectInput value={draft.hasIdCopyAndAgreement === null ? undefined : String(draft.hasIdCopyAndAgreement)} onChange={(value) => setDraft({ ...draft, hasIdCopyAndAgreement: value === "true" })} placeholder="未填写" options={[{ value: "true", label: "是" }, { value: "false", label: "否" }]} className="mt-1.5 min-h-10" /></Field>
           <Field label="申请人签名"><input value={draft.applicantSignature} onChange={(e) => setDraft({ ...draft, applicantSignature: e.target.value })} className={inputClass} /></Field>
           <Field label="申请人签署日期"><DatePickerInput value={draft.applicantSignedAt} onChange={(e) => setDraft({ ...draft, applicantSignedAt: e.target.value })} className={inputClass} /></Field>
         </div>

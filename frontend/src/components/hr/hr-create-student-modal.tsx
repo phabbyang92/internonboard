@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 
 import { HrModal } from "@/components/hr/hr-modal";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
+import { SelectInput } from "@/components/ui/select-input";
 import { ApiError } from "@/lib/api/client";
 import { createHrStudent } from "@/lib/api/hr-students";
 import {
@@ -108,20 +109,18 @@ export function HrCreateStudentModal({ isOpen, onClose, onCreated }: Props) {
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="text-sm font-medium text-[#31485c]">
             工作地点（选填）
-            <select
-              value={workLocation}
-              onChange={(event) =>
-                setWorkLocation(event.target.value as WorkLocation | "")
+            <SelectInput
+              value={workLocation || undefined}
+              onChange={(value) =>
+                setWorkLocation(value as WorkLocation | "")
               }
-              className="mt-2 h-11 w-full rounded-md border border-[#b9c9d7] bg-white px-3 outline-none focus:border-[#184268]"
-            >
-              <option value="">暂不安排</option>
-              {WORK_LOCATIONS.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </select>
+              placeholder="暂不安排"
+              options={WORK_LOCATIONS.map((location) => ({
+                value: location,
+                label: location,
+              }))}
+              className="mt-2 min-h-11"
+            />
           </label>
           <label className="text-sm font-medium text-[#31485c]">
             实习开始日期（选填）

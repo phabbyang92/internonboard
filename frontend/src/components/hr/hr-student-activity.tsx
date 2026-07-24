@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { HrModal } from "@/components/hr/hr-modal";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
+import { SelectInput } from "@/components/ui/select-input";
 import { ApiError } from "@/lib/api/client";
 import {
   cancelHrWorkLocationAssignment,
@@ -529,21 +530,19 @@ export function HrStudentActivity({
         <div className="space-y-5 px-5 py-5 sm:px-6">
           <label className="block text-sm font-medium text-[#31485c]">
             工作地点
-            <select
-              value={editLocation}
+            <SelectInput
+              value={editLocation || undefined}
               disabled={isSavingEdit}
-              onChange={(event) =>
-                setEditLocation(event.target.value as WorkLocation)
+              onChange={(value) =>
+                setEditLocation(value as WorkLocation)
               }
-              className="mt-2 min-h-11 w-full rounded-md border border-[#b9c9d7] bg-white px-3 outline-none focus:border-[#184268]"
-            >
-              <option value="">请选择</option>
-              {WORK_LOCATIONS.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </select>
+              placeholder="请选择"
+              options={WORK_LOCATIONS.map((location) => ({
+                value: location,
+                label: location,
+              }))}
+              className="mt-2 min-h-11"
+            />
           </label>
 
           <div>

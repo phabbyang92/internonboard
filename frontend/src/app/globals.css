@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "@daypicker/react/style.css";
 
 :root {
   color-scheme: light;
@@ -43,27 +42,27 @@ input[type="radio"] {
   border-radius: 3px;
 }
 
-.intern-date-picker .rdp-root {
-  --rdp-accent-color: #184268;
-  --rdp-accent-background-color: #edf4fa;
-  --rdp-day-height: 38px;
-  --rdp-day-width: 38px;
-  --rdp-day_button-height: 36px;
-  --rdp-day_button-width: 36px;
-  margin: 0;
+.app-select.ant-select .ant-select-selector,
+.app-date-picker.ant-picker {
+  min-height: inherit;
+  border-color: #b9c9d7;
+  box-shadow: none;
 }
 
-.intern-date-picker .rdp-dropdown {
-  cursor: pointer;
+.app-select.ant-select .ant-select-selection-item,
+.app-select.ant-select .ant-select-selection-placeholder {
+  display: flex;
+  align-items: center;
 }
 
-.intern-date-picker .rdp-dropdowns {
-  font-size: 0.875rem;
-  font-weight: 600;
+.app-select.ant-select-focused .ant-select-selector,
+.app-date-picker.ant-picker-focused {
+  border-color: #184268;
+  box-shadow: 0 0 0 2px rgb(24 66 104 / 15%);
 }
 
-.intern-date-picker .rdp-day_button:hover:not(:disabled) {
-  background: #edf4fa;
+.app-date-picker.ant-picker-disabled {
+  background: #eef3f7;
 }
 
 ::selection {

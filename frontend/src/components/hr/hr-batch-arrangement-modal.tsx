@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 
 import { HrModal } from "@/components/hr/hr-modal";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
+import { SelectInput } from "@/components/ui/select-input";
 import { ApiError } from "@/lib/api/client";
 import { batchUpdateHrStudentArrangement } from "@/lib/api/hr-students";
 import {
@@ -63,17 +64,16 @@ export function HrBatchArrangementModal({
       <form className="space-y-4 px-5 py-5 sm:px-6" onSubmit={submit}>
         <label className="block text-sm font-medium">
           工作地点
-          <select
-            required
-            value={workLocation}
-            onChange={(e) => setWorkLocation(e.target.value as WorkLocation)}
-            className="mt-2 h-11 w-full border border-[#b9c9d7] bg-white px-3"
-          >
-            <option value="">请选择</option>
-            {WORK_LOCATIONS.map((location) => (
-              <option key={location}>{location}</option>
-            ))}
-          </select>
+          <SelectInput
+            value={workLocation || undefined}
+            onChange={(value) => setWorkLocation(value as WorkLocation)}
+            placeholder="请选择"
+            options={WORK_LOCATIONS.map((location) => ({
+              value: location,
+              label: location,
+            }))}
+            className="mt-2 min-h-11"
+          />
         </label>
         <label className="block text-sm font-medium">
           实习开始日期

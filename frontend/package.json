@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@daypicker/react": "^10.0.1",
+    "@ant-design/nextjs-registry": "^1.3.0",
+    "antd": "^6.5.2",
+    "dayjs": "^1.11.21",
     "lucide-react": "^1.25.0",
     "next": "16.2.10",
     "react": "19.2.4",

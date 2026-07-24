@@ -16,6 +16,8 @@ import { InternshipExperiencesSection } from "@/components/student/internship-ex
 import { StudentFormSubmitSection } from "@/components/student/student-form-submit-section";
 import { SupplementaryInfoSection } from "@/components/student/supplementary-info-section";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
+import { SelectInput } from "@/components/ui/select-input";
+import { YearSelectInput } from "@/components/ui/year-select-input";
 import { ApiError } from "@/lib/api/client";
 import { submitStudentForm } from "@/lib/api/student-form";
 import {
@@ -367,25 +369,22 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
             label="投递方向"
             required
           >
-            <select
+            <SelectInput
               id="application-direction"
-              className={inputClassName}
-              required
-              value={draft.basicInfo.applicationDirection}
-              onChange={(event) =>
+              className="min-h-11"
+              value={draft.basicInfo.applicationDirection || undefined}
+              placeholder="请选择"
+              options={APPLICATION_DIRECTIONS.map((direction) => ({
+                value: direction,
+                label: direction,
+              }))}
+              onChange={(value) =>
                 updateBasicInfo(
                   "applicationDirection",
-                  event.target.value as StudentBasicInfoDraft["applicationDirection"],
+                  value as StudentBasicInfoDraft["applicationDirection"],
                 )
               }
-            >
-              <option value="">请选择</option>
-              {APPLICATION_DIRECTIONS.map((direction) => (
-                <option key={direction} value={direction}>
-                  {direction}
-                </option>
-              ))}
-            </select>
+            />
           </FormField>
 
           <FormField htmlFor="source-channel" label="投递渠道" required>
@@ -402,18 +401,18 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
           </FormField>
 
           <FormField htmlFor="gender" label="性别" required>
-            <select
+            <SelectInput
               id="gender"
-              className={inputClassName}
-              required
-              value={draft.basicInfo.gender}
-              onChange={(event) => updateBasicInfo("gender", event.target.value)}
-            >
-              <option value="">请选择</option>
-              <option value="女">女</option>
-              <option value="男">男</option>
-              <option value="其他">其他</option>
-            </select>
+              className="min-h-11"
+              value={draft.basicInfo.gender || undefined}
+              placeholder="请选择"
+              options={[
+                { value: "女", label: "女" },
+                { value: "男", label: "男" },
+                { value: "其他", label: "其他" },
+              ]}
+              onChange={(value) => updateBasicInfo("gender", value)}
+            />
           </FormField>
 
           <FormField htmlFor="birth-date" label="出生日期" required>
@@ -460,19 +459,18 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
           </FormField>
 
           <FormField htmlFor="marital-status" label="婚姻状况">
-            <select
+            <SelectInput
               id="marital-status"
-              className={inputClassName}
-              value={draft.basicInfo.maritalStatus}
-              onChange={(event) =>
-                updateBasicInfo("maritalStatus", event.target.value)
-              }
-            >
-              <option value="">请选择</option>
-              <option value="未婚">未婚</option>
-              <option value="已婚">已婚</option>
-              <option value="其他">其他</option>
-            </select>
+              className="min-h-11"
+              value={draft.basicInfo.maritalStatus || undefined}
+              placeholder="请选择"
+              options={[
+                { value: "未婚", label: "未婚" },
+                { value: "已婚", label: "已婚" },
+                { value: "其他", label: "其他" },
+              ]}
+              onChange={(value) => updateBasicInfo("maritalStatus", value)}
+            />
           </FormField>
 
           <FormField htmlFor="political-status" label="政治面貌">
@@ -619,20 +617,15 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
                       label="起始年份"
                       required
                     >
-                      <input
+                      <YearSelectInput
                         id={`education-${index}-start-year`}
-                        className={inputClassName}
-                        type="number"
-                        inputMode="numeric"
-                        min={1900}
-                        max={2100}
-                        required
+                        className="min-h-11"
                         value={experience.startYear}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           updateEducationExperience(
                             index,
                             "startYear",
-                            event.target.value,
+                            value,
                           )
                         }
                       />
@@ -643,26 +636,20 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
                       label="结束年份"
                       required
                     >
-                      <input
+                      <YearSelectInput
                         id={`education-${index}-end-year`}
-                        className={inputClassName}
-                        type="number"
-                        inputMode="numeric"
-                        min={experience.startYear || 1900}
-                        max={2100}
-                        required
-                        aria-invalid={hasInvalidYearRange}
-                        aria-describedby={
-                          hasInvalidYearRange
-                            ? `education-${index}-year-error`
+                        className="min-h-11"
+                        minYear={
+                          experience.startYear
+                            ? Number(experience.startYear)
                             : undefined
                         }
                         value={experience.endYear}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           updateEducationExperience(
                             index,
                             "endYear",
-                            event.target.value,
+                            value,
                           )
                         }
                       />

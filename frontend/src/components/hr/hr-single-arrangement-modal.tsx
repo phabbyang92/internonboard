@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 
 import { HrModal } from "@/components/hr/hr-modal";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
+import { SelectInput } from "@/components/ui/select-input";
 import { ApiError } from "@/lib/api/client";
 import { updateHrStudentArrangement } from "@/lib/api/hr-students";
 import {
@@ -99,19 +100,18 @@ export function HrSingleArrangementModal({
         {!hasStarted ? (
           <label className="block text-sm font-medium text-[#31485c]">
             初始工作地点
-            <select
-              required
-              value={workLocation}
-              onChange={(event) =>
-                setWorkLocation(event.target.value as WorkLocation)
+            <SelectInput
+              value={workLocation || undefined}
+              onChange={(value) =>
+                setWorkLocation(value as WorkLocation)
               }
-              className="mt-2 h-11 w-full rounded-md border border-[#b9c9d7] bg-white px-3"
-            >
-              <option value="">请选择</option>
-              {WORK_LOCATIONS.map((location) => (
-                <option key={location}>{location}</option>
-              ))}
-            </select>
+              placeholder="请选择"
+              options={WORK_LOCATIONS.map((location) => ({
+                value: location,
+                label: location,
+              }))}
+              className="mt-2 min-h-11"
+            />
           </label>
         ) : null}
 

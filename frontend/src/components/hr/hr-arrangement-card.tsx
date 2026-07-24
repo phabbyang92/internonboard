@@ -4,6 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { DatePickerInput } from "@/components/ui/date-picker-input";
+import { SelectInput } from "@/components/ui/select-input";
 import { ApiError } from "@/lib/api/client";
 import {
   changeHrStudentWorkLocation,
@@ -186,19 +187,18 @@ export function HrArrangementCard({ student, onSaved }: Props) {
             <>
               <label className="block text-xs font-semibold text-[#52677a]">
                 初始工作地点
-                <select
-                  required
-                  value={workLocation}
-                  onChange={(event) =>
-                    setWorkLocation(event.target.value as WorkLocation)
+                <SelectInput
+                  value={workLocation || undefined}
+                  onChange={(value) =>
+                    setWorkLocation(value as WorkLocation)
                   }
-                  className="mt-2 h-10 w-full rounded-md border border-[#b9c9d7] bg-white px-3 text-sm"
-                >
-                  <option value="">请选择</option>
-                  {WORK_LOCATIONS.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
+                  placeholder="请选择"
+                  options={WORK_LOCATIONS.map((item) => ({
+                    value: item,
+                    label: item,
+                  }))}
+                  className="mt-2 min-h-10"
+                />
               </label>
               <label className="block text-xs font-semibold text-[#52677a]">
                 实习开始日期
@@ -253,21 +253,20 @@ export function HrArrangementCard({ student, onSaved }: Props) {
           </div>
           <label className="block text-xs font-semibold text-[#52677a]">
             新工作地点
-            <select
-              required
-              value={nextLocation}
-              onChange={(event) =>
-                setNextLocation(event.target.value as WorkLocation)
+            <SelectInput
+              value={nextLocation || undefined}
+              onChange={(value) =>
+                setNextLocation(value as WorkLocation)
               }
-              className="mt-2 h-10 w-full rounded-md border border-[#b9c9d7] bg-white px-3 text-sm"
-            >
-              <option value="">请选择</option>
-              {WORK_LOCATIONS.filter(
+              placeholder="请选择"
+              options={WORK_LOCATIONS.filter(
                 (location) => location !== student.workLocation,
-              ).map((location) => (
-                <option key={location}>{location}</option>
-              ))}
-            </select>
+              ).map((location) => ({
+                value: location,
+                label: location,
+              }))}
+              className="mt-2 min-h-10"
+            />
           </label>
           <label className="block text-xs font-semibold text-[#52677a]">
             新地点生效日期

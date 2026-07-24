@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 import { HrModal } from "@/components/hr/hr-modal";
+import { SelectInput } from "@/components/ui/select-input";
 import { ApiError } from "@/lib/api/client";
 import {
   deleteHrAttachment,
@@ -215,20 +216,18 @@ export function HrAttachmentManager({ student, onChanged }: Props) {
           <div className="mt-3 grid gap-3">
             <label className="text-xs font-medium text-[#52677a]">
               附件类型
-              <select
+              <SelectInput
                 value={uploadType}
-                onChange={(event) => {
-                  setUploadType(event.target.value as AttachmentType);
+                onChange={(value) => {
+                  setUploadType(value as AttachmentType);
                   setUploadFile(null);
                 }}
-                className="mt-1.5 h-10 w-full border border-[#b9c9d7] bg-white px-3 text-sm"
-              >
-                {ATTACHMENT_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {attachmentLabels[type]}
-                  </option>
-                ))}
-              </select>
+                options={ATTACHMENT_TYPES.map((type) => ({
+                  value: type,
+                  label: attachmentLabels[type],
+                }))}
+                className="mt-1.5 min-h-10"
+              />
             </label>
             <label className="text-xs font-medium text-[#52677a]">
               选择文件

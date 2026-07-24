@@ -8,6 +8,7 @@ import { HrBatchArrangementModal } from "@/components/hr/hr-batch-arrangement-mo
 import { HrCreateStudentModal } from "@/components/hr/hr-create-student-modal";
 import { HrSingleArrangementModal } from "@/components/hr/hr-single-arrangement-modal";
 import { OnboardingStatusBadge } from "@/components/hr/onboarding-status-badge";
+import { SelectInput } from "@/components/ui/select-input";
 import { ApiError } from "@/lib/api/client";
 import { listHrUsers } from "@/lib/api/hr-auth";
 import { listHrStudents } from "@/lib/api/hr-students";
@@ -39,8 +40,8 @@ const emptyResponse: HrStudentListResponse = {
 
 const currentYear = new Date().getFullYear();
 const onboardingYearOptions = Array.from(
-  { length: 201 },
-  (_, index) => currentYear - 100 + index,
+  { length: 21 },
+  (_, index) => currentYear - 10 + index,
 );
 const onboardingMonthOptions = Array.from({ length: 12 }, (_, index) =>
   String(index + 1).padStart(2, "0"),
@@ -419,25 +420,26 @@ export function HrStudentList({ user }: Props) {
             >
               工作地点
             </label>
-            <select
+            <SelectInput
               id="student-work-location"
-              value={workLocation}
-              onChange={(event) => {
+              value={workLocation || undefined}
+              placeholder="全部地点"
+              options={[
+                { value: "", label: "全部地点" },
+                ...WORK_LOCATIONS.map((location) => ({
+                  value: location,
+                  label: location,
+                })),
+              ]}
+              onChange={(value) => {
                 setIsLoading(true);
                 setErrorMessage("");
-                setWorkLocation(event.target.value as WorkLocation | "");
+                setWorkLocation(value as WorkLocation | "");
                 setSelectedIds([]);
                 setPage(1);
               }}
-              className="h-11 w-full border border-[#b9c9d7] bg-white px-3 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
-            >
-              <option value="">全部地点</option>
-              {WORK_LOCATIONS.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </select>
+              className="min-h-11"
+            />
           </div>
 
           <div className="lg:col-span-2">
@@ -445,37 +447,33 @@ export function HrStudentList({ user }: Props) {
               实习开始时间
             </span>
             <div className="grid grid-cols-2 gap-2">
-              <select
+              <SelectInput
                 id="student-onboarding-start-year"
-                aria-label="实习开始年份"
                 value={onboardingStartYearInput}
-                onChange={(event) =>
-                  setOnboardingStartYearInput(event.target.value)
-                }
-                className="h-11 w-full cursor-pointer border border-[#b9c9d7] bg-white px-2 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
-              >
-                {onboardingYearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="实习开始月份"
-                value={onboardingStartMonthInput}
+                options={onboardingYearOptions.map((year) => ({
+                  value: String(year),
+                  label: String(year),
+                }))}
+                onChange={setOnboardingStartYearInput}
+                ariaLabel="实习开始年份"
+                className="min-h-11"
+                showSearch
+              />
+              <SelectInput
+                value={onboardingStartMonthInput || undefined}
                 disabled={!onboardingStartYearInput}
-                onChange={(event) =>
-                  setOnboardingStartMonthInput(event.target.value)
-                }
-                className="h-11 w-full cursor-pointer border border-[#b9c9d7] bg-white px-2 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15 disabled:cursor-not-allowed disabled:bg-[#f3f6f8] disabled:text-[#94a3af]"
-              >
-                <option value="">月份</option>
-                {onboardingMonthOptions.map((month) => (
-                  <option key={month} value={month}>
-                    {Number(month)}
-                  </option>
-                ))}
-              </select>
+                placeholder="月份"
+                options={[
+                  { value: "", label: "全部月份" },
+                  ...onboardingMonthOptions.map((month) => ({
+                    value: month,
+                    label: String(Number(month)),
+                  })),
+                ]}
+                onChange={setOnboardingStartMonthInput}
+                ariaLabel="实习开始月份"
+                className="min-h-11"
+              />
             </div>
           </div>
 
@@ -487,25 +485,29 @@ export function HrStudentList({ user }: Props) {
               >
                 录入 HR
               </label>
-              <select
+              <SelectInput
                 id="student-owner"
-                value={ownerHrId}
-                onChange={(event) => {
+                value={ownerHrId || undefined}
+                placeholder="全部 HR"
+                options={[
+                  { value: "", label: "全部 HR" },
+                  ...hrUsers.map((hrUser) => ({
+                    value: hrUser.id,
+                    label: `${hrUser.name}（${
+                      hrUser.role === "admin" ? "管理员" : "HR"
+                    }）`,
+                  })),
+                ]}
+                onChange={(value) => {
                   setIsLoading(true);
                   setErrorMessage("");
-                  setOwnerHrId(event.target.value);
+                  setOwnerHrId(value);
                   setSelectedIds([]);
                   setPage(1);
                 }}
-                className="h-11 w-full border border-[#b9c9d7] bg-white px-3 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
-              >
-                <option value="">全部 HR</option>
-                {hrUsers.map((hrUser) => (
-                  <option key={hrUser.id} value={hrUser.id}>
-                    {hrUser.name}（{hrUser.role === "admin" ? "管理员" : "HR"}）
-                  </option>
-                ))}
-              </select>
+                className="min-h-11"
+                showSearch
+              />
             </div>
           ) : null}
 
@@ -516,24 +518,26 @@ export function HrStudentList({ user }: Props) {
             >
               入职状态
             </label>
-            <select
+            <SelectInput
               id="student-status"
-              value={status}
-              onChange={(event) => {
+              value={status || undefined}
+              placeholder="全部状态"
+              options={[
+                { value: "", label: "全部状态" },
+                { value: "candidate", label: "候选学生" },
+                { value: "pending_onboarding", label: "待入职" },
+                { value: "onboarded", label: "已入职" },
+                { value: "departed", label: "已离职" },
+              ]}
+              onChange={(value) => {
                 setIsLoading(true);
                 setErrorMessage("");
-                setStatus(event.target.value as OnboardingStatus | "");
+                setStatus(value as OnboardingStatus | "");
                 setSelectedIds([]);
                 setPage(1);
               }}
-              className="h-11 w-full border border-[#b9c9d7] bg-white px-3 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
-            >
-              <option value="">全部状态</option>
-              <option value="candidate">候选学生</option>
-              <option value="pending_onboarding">待入职</option>
-              <option value="onboarded">已入职</option>
-              <option value="departed">已离职</option>
-            </select>
+              className="min-h-11"
+            />
           </div>
 
           <div className="lg:col-span-2">
@@ -543,22 +547,24 @@ export function HrStudentList({ user }: Props) {
             >
               表单状态
             </label>
-            <select
+            <SelectInput
               id="student-form-status"
-              value={formStatus}
-              onChange={(event) => {
+              value={formStatus || undefined}
+              placeholder="全部表单状态"
+              options={[
+                { value: "", label: "全部表单状态" },
+                { value: "not_submitted", label: "待填写" },
+                { value: "submitted", label: "已提交" },
+              ]}
+              onChange={(value) => {
                 setIsLoading(true);
                 setErrorMessage("");
-                setFormStatus(event.target.value as FormSubmissionStatus | "");
+                setFormStatus(value as FormSubmissionStatus | "");
                 setSelectedIds([]);
                 setPage(1);
               }}
-              className="h-11 w-full border border-[#b9c9d7] bg-white px-3 text-sm outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
-            >
-              <option value="">全部表单状态</option>
-              <option value="not_submitted">待填写</option>
-              <option value="submitted">已提交</option>
-            </select>
+              className="min-h-11"
+            />
           </div>
 
           <div className="flex gap-3 sm:col-span-2 lg:col-span-2">
@@ -594,26 +600,32 @@ export function HrStudentList({ user }: Props) {
           >
             排序方式
           </label>
-          <select
+          <SelectInput
             id="student-sort"
             value={sortBy}
-            onChange={(event) => {
+            options={[
+              {
+                value: "created_at_desc",
+                label: "按添加顺序（最新优先）",
+              },
+              {
+                value: "onboarding_start_at_desc",
+                label: "开始工作时间由远及近（较晚优先）",
+              },
+              {
+                value: "onboarding_start_at_asc",
+                label: "开始工作时间由近及远（较早优先）",
+              },
+            ]}
+            onChange={(value) => {
               setIsLoading(true);
               setErrorMessage("");
-              setSortBy(event.target.value as HrStudentListSort);
+              setSortBy(value as HrStudentListSort);
               setSelectedIds([]);
               setPage(1);
             }}
-            className="h-10 cursor-pointer rounded-md border border-[#b9c9d7] bg-white px-3 text-sm text-[#31485c] outline-none focus:border-[#184268] focus:ring-2 focus:ring-[#184268]/15"
-          >
-            <option value="created_at_desc">按添加顺序（最新优先）</option>
-            <option value="onboarding_start_at_desc">
-              开始工作时间由远及近（较晚优先）
-            </option>
-            <option value="onboarding_start_at_asc">
-              开始工作时间由近及远（较早优先）
-            </option>
-          </select>
+            className="min-h-10 min-w-72"
+          />
         </div>
         {errorMessage ? (
           <div className="px-5 py-12 text-center">
@@ -814,21 +826,22 @@ export function HrStudentList({ user }: Props) {
         <div className="flex flex-col gap-4 border-t border-[#d5e0e9] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 text-sm text-[#5f7285]">
             <label htmlFor="page-size">每页</label>
-            <select
+            <SelectInput
               id="page-size"
               value={limit}
-              onChange={(event) => {
+              options={[
+                { value: 20, label: "20" },
+                { value: 50, label: "50" },
+                { value: 100, label: "100" },
+              ]}
+              onChange={(value) => {
                 setIsLoading(true);
                 setErrorMessage("");
-                setLimit(Number(event.target.value));
+                setLimit(Number(value));
                 setPage(1);
               }}
-              className="h-9 border border-[#b9c9d7] bg-white px-2 outline-none focus:border-[#184268]"
-            >
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
+              className="min-h-9 w-20"
+            />
             <span>条</span>
           </div>
 
