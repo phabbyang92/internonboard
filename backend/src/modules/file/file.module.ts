@@ -1,16 +1,35 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { FILE_STORAGE } from './storage/file-storage.interface';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  FILE_STORAGE,
+  type FileStorage,
+} from './storage/file-storage.interface';
 import { LocalFileStorageService } from './storage/local-file-storage.service';
+import { OwnCloudFileStorageService } from './storage/owncloud-file-storage.service';
 
 @Module({
   imports: [ConfigModule],
   providers: [
-    LocalFileStorageService,
     {
-      // 业务代码注入 FILE_STORAGE，不直接依赖本地存储类。
       provide: FILE_STORAGE,
-      useExisting: LocalFileStorageService,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): FileStorage => {
+        const driver = (
+          configService.get<string>('FILE_STORAGE_DRIVER') ?? 'local'
+        ).toLowerCase();
+
+        if (driver === 'owncloud') {
+          return new OwnCloudFileStorageService(configService);
+        }
+
+        if (driver === 'local') {
+          return new LocalFileStorageService(configService);
+        }
+
+        throw new Error(
+          `不支持的 FILE_STORAGE_DRIVER：${driver}，只能使用 local 或 owncloud`,
+        );
+      },
     },
   ],
   exports: [FILE_STORAGE],

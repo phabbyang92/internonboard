@@ -4,15 +4,18 @@
 
 系统的目标流程是：HR 登录后台并预先录入学生，设置工作地点和入职开始日期；学生通过统一入口使用姓名和邮箱登录，填写并一次性提交登记表；HR 在后台查看学生信息并下载附件。
 
+面向 HR 和学生的操作说明见 [使用指南](./USER_GUIDE.md)，也可以直接查看
+[PDF 版本](./output/pdf/student-onboarding-user-guide.pdf)。
+
 当前 MVP 已完成前后端 API 集成。学生端和 HR 后台均可在浏览器中使用；`prototype/` 保留早期用于需求讨论的静态页面，不参与正式系统运行。
 
 ## 已实现功能
 
 当前版本已完成可供 HR 和学生使用的前后端 MVP。HR 可以登录后台、连续录入学生、设置或批量设置入职安排、搜索筛选和排序学生、查看详情、修改登记资料、管理附件，以及维护可修改和撤销的工作地点时间线。普通 HR 仅能管理自己录入的学生，管理员可以查看全部学生并按录入 HR 筛选。
 
-学生可以通过姓名和邮箱登录，填写包含个人信息、教育经历、家庭成员、实习经历和补充信息的登记表，上传个人简历及身份证件正反面，并一次性提交。系统使用 JWT Cookie 鉴权、MongoDB 操作日志和本地文件存储，并通过 NestJS Cron 自动更新待入职、已入职和已离职状态。
+学生可以通过姓名和邮箱登录，填写包含个人信息、教育经历、家庭成员、实习经历和补充信息的登记表，上传个人简历及身份证件正反面，并一次性提交。系统使用 JWT Cookie 鉴权、MongoDB 操作日志和 ownCloud WebDAV 文件存储，并通过 NestJS Cron 自动更新待入职、已入职和已离职状态。
 
-当前尚未实现打卡模块和阿里云 OSS 实现。
+当前尚未实现打卡模块。
 
 ## 项目结构
 
@@ -29,7 +32,7 @@ internonboard/
 │   │   │   ├── hr/                   # HR 学生管理接口
 │   │   │   ├── student/              # 学生模型、DTO 和业务逻辑
 │   │   │   ├── student-form/         # 学生登记表和附件接口
-│   │   │   ├── file/                 # 本地文件存储抽象和文件校验
+│   │   │   ├── file/                 # 文件存储抽象、ownCloud 实现和文件校验
 │   │   │   ├── operation-log/        # 持久化操作日志
 │   │   │   ├── work-location/        # 工作地点有效期历史
 │   │   │   └── onboarding/           # 入职状态定时更新
@@ -66,6 +69,7 @@ internonboard/
 | npm         | 依赖管理               | -                                             |
 | MongoDB     | 学生和 HR 数据         | `mongodb://127.0.0.1:27017/intern_onboarding` |
 | mongosh     | 本地数据库初始化和检查 | -                                             |
+| Docker      | 本地运行 ownCloud      | `http://localhost:8080`                       |
 
 ### 1. 安装后端依赖
 
@@ -88,13 +92,49 @@ PORT=3001
 FRONTEND_ORIGIN=http://localhost:3000
 MONGODB_URI=mongodb://127.0.0.1:27017/intern_onboarding
 JWT_SECRET=your-local-random-secret
+FILE_STORAGE_DRIVER=owncloud
+WEBDAV_URL=http://localhost:8080/remote.php/dav/files/admin/
+WEBDAV_USERNAME=admin
+WEBDAV_PASSWORD=your-owncloud-app-passcode
+WEBDAV_REMOTE_PATH=学生入职登记系统
 ```
 
-### 3. 启动 MongoDB
+本地测试可以暂时使用 ownCloud 的 `admin/admin`。正式环境应使用 HTTPS 和
+ownCloud App Passcode，且不得把真实密码写入 `.env.example` 或提交到 Git。
+
+### 3. 启动 ownCloud
+
+确保 Docker Desktop 已启动，然后运行本地测试容器：
+
+```bash
+docker run \
+  --name internonboard-owncloud \
+  -d \
+  -p 8080:8080 \
+  -v internonboard-owncloud-data:/mnt/data \
+  owncloud/server
+```
+
+浏览器访问 `http://localhost:8080`。快速测试容器的默认账号和密码均为
+`admin`。命名 volume 会在容器停止或重建后保留文件；以后可用
+`docker start internonboard-owncloud` 再次启动。启动后可在 `backend` 目录验证存储：
+
+```bash
+npm run verify:owncloud
+```
+
+如果旧版本已在 `backend/uploads/` 保存附件，可执行以下幂等迁移。脚本只复制
+文件、保持 `storageKey` 不变，不会删除本地原文件：
+
+```bash
+npm run migrate:owncloud
+```
+
+### 4. 启动 MongoDB
 
 确保 MongoDB 正在 `127.0.0.1:27017` 运行。如果使用其他 MongoDB 地址，修改 `.env` 中的 `MONGODB_URI`。
 
-### 4. 创建本地 HR 测试账号
+### 5. 创建本地 HR 测试账号
 
 在 `backend` 目录运行账号创建脚本：
 
@@ -127,7 +167,7 @@ HR_PASSWORD=666666 npm run create:hr -- \
 只能查看和管理自己新增的学生。
 脚本会检查邮箱和密码、使用 bcrypt 保存密码哈希，并拒绝重复邮箱。
 
-### 5. 回填旧学生负责人
+### 6. 回填旧学生负责人
 
 如果数据库中已有本功能上线前创建的学生，启动新版后端前执行：
 
@@ -149,7 +189,7 @@ npm run migrate:work-location-history
 脚本会把当前地点和实习开始日期写成第一段地点历史，并清理旧版专用的
 `onlineOnboardingStartAt` 字段。已有地点历史的学生不会被重复处理，可安全重复执行。
 
-### 6. 启动后端
+### 7. 启动后端
 
 ```bash
 npm run start:dev
@@ -167,7 +207,7 @@ http://localhost:3001/api
 curl http://localhost:3001/api/health
 ```
 
-### 7. 配置并启动前端
+### 8. 配置并启动前端
 
 新建一个终端：
 
@@ -197,7 +237,7 @@ http://localhost:3000/student/login
 http://localhost:3000/hr/login
 ```
 
-### 8. 运行检查和测试
+### 9. 运行检查和测试
 
 ```bash
 cd internonboard/backend
@@ -375,5 +415,4 @@ candidate -> pending_onboarding -> onboarded -> departed
 | Validation           | class-validator + class-transformer |
 | Authentication       | JWT + HttpOnly Cookie               |
 | Password Hash        | bcrypt                              |
-| Current File Storage | 本地 `backend/uploads/`             |
-| Future File Storage  | 公司阿里云 OSS                      |
+| File Storage         | ownCloud WebDAV（可切换为本地目录） |

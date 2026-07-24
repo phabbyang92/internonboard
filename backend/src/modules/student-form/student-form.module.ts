@@ -11,7 +11,7 @@ import { StudentAttachmentController } from './student-attachment.controller';
     AuthModule,
     StudentModule,
 
-    // 提供 FILE_STORAGE，本地阶段对应 LocalFileStorageService。
+    // 根据 FILE_STORAGE_DRIVER 提供本地或 ownCloud 存储实现。
     FileModule,
   ],
   controllers: [StudentFormController, StudentAttachmentController],

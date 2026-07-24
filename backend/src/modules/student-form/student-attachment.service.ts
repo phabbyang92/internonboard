@@ -15,7 +15,7 @@ export class StudentAttachmentService {
   constructor(
     private readonly studentService: StudentService,
 
-    // Inject the storage abstraction so local storage can later be replaced by OSS.
+    // 业务层只依赖抽象，实际文件可由本地目录或 ownCloud 保存。
     @Inject(FILE_STORAGE)
     private readonly fileStorage: FileStorage,
   ) {}
@@ -83,7 +83,7 @@ export class StudentAttachmentService {
     // 数据库操作返回成失败响应并诱发重复删除请求。
     try {
       await this.fileStorage.delete(attachment.storageKey);
-      this.logger.log(`Deleted local file ${attachment.storageKey}`);
+      this.logger.log(`Deleted attachment file ${attachment.storageKey}`);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(
