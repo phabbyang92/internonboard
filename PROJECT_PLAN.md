@@ -678,32 +678,12 @@ HR 查询列表时使用同一个幂等方法补漏。正式多实例部署后�
 }
 ```
 
-### 8.4 attendance_records 集合（未来打卡）
+### 8.4 出勤管理集合
 
-后续增加打卡功能时可新增集合：
-
-```js
-{
-  _id: ObjectId,
-
-  studentId: ObjectId,
-
-  checkInAt: Date,
-  checkOutAt: Date,
-
-  workLocation: String,
-  checkInMethod: "web" | "mobile" | "qr_code" | "manual",
-
-  status: "normal" | "late" | "missing" | "manual_adjusted",
-
-  note: String,
-
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-第一版不做打卡，只预留扩展方向。
+出勤模块使用 `attendance_records`、`attendance_calendar` 和
+`office_networks` 三个集合。每日唯一、设备唯一、请假、缺勤、工作日历及
+办公室公网 IP 的详细 Schema 和索引见
+[学生出勤管理模块开发计划](./ATTENDANCE_DEVELOPMENT_PLAN.md)。
 
 ## 9. 文件存储设计
 
@@ -858,7 +838,7 @@ NestJS:
 - 文件上传/下载
 - 权限校验
 - 自动状态更新任务
-- 未来打卡 API
+- 出勤管理 API
 ```
 
 ### 11.2 MVP 项目结构示例
@@ -990,41 +970,13 @@ MVP 阶段可以先使用 NestJS 自带 `Logger` 组件记录到服务日志。
 
 如果后续需要在 HR 后台查看操作历史，再单独设计 `operation_logs` 集合。
 
-## 14. 未来打卡模块
+## 14. 出勤管理模块
 
-打卡功能不是第一版 MVP，但要在架构上预留。
+下一阶段在当前系统中增加每日一次的学生出勤登记、请假登记、线下办公室
+公网 IP 校验、设备每日唯一限制、工作日历、自动缺勤和 HR 出勤统计。
 
-未来学生入职后可使用：
-
-- 打卡入口
-- 上班打卡
-- 下班打卡
-- 查看自己的打卡记录
-
-HR 可使用：
-
-- 查看每日打卡情况
-- 按学生筛选打卡记录
-- 按工作地点筛选打卡记录
-- 查看迟到、缺卡、异常记录
-- 导出打卡统计
-
-未来可能的页面：
-
-- `/student/attendance`
-- `/hr/attendance`
-- `/hr/attendance/:studentId`
-
-未来可能的 API：
-
-```text
-POST /api/student/attendance/check-in
-POST /api/student/attendance/check-out
-GET  /api/student/attendance
-
-GET  /api/hr/attendance
-GET  /api/hr/students/:id/attendance
-```
+完整业务规则、数据库、后端结构、API、学生前端、HR 前端和开发阶段见
+[学生出勤管理模块开发计划](./ATTENDANCE_DEVELOPMENT_PLAN.md)。
 
 ## 15. 实施阶段
 
@@ -1111,16 +1063,25 @@ GET  /api/hr/students/:id/attendance
 
 目标：
 
-- 学生入职后可打卡
-- HR 可查看打卡情况
-- HR 可筛选和导出打卡记录
+- 学生在有效实习工作日完成每日一次出勤登记。
+- 当天安排地点为“线上”的学生只能线上签到。
+- 当天安排地点为办公室或研究院的学生可自行选择线上或线下签到。
+- 线上签到不限制 IP，线下签到校验对应办公室公网出口 IP。
+- 学生可以按月份查看自己的出勤汇总和每日记录。
+- 学生可以登记未来两周内的多个请假日期。
+- 系统自动生成迟到和缺勤状态。
+- HR 查看每日出勤和精简出勤汇总。
+- Admin HR 维护假期、办公网络并查看全部学生。
 
 产出：
 
-- 学生打卡页
-- HR 打卡管理页
-- 打卡数据模型
-- 打卡 API
+- 学生出勤、签到方式选择、个人出勤记录和请假页面。
+- HR 出勤管理页面。
+- Admin 工作日历和办公网络页面。
+- 出勤数据模型、API、Cron 和自动化测试。
+
+详细实施顺序见
+[学生出勤管理模块开发计划](./ATTENDANCE_DEVELOPMENT_PLAN.md)。
 
 ## 16. 当前需要确认的问题
 
