@@ -55,6 +55,20 @@ input[type="radio"] {
   align-items: center;
 }
 
+.work-location-select.ant-select .ant-select-selector {
+  min-height: 3.5rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.work-location-select.ant-select .ant-select-selection-item {
+  line-height: normal;
+}
+
+.ant-select-dropdown .ant-select-item-option-content {
+  white-space: normal;
+}
+
 .app-select.ant-select-focused .ant-select-selector,
 .app-date-picker.ant-picker-focused {
   border-color: #184268;

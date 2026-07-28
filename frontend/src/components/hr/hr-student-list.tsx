@@ -9,6 +9,10 @@ import { HrCreateStudentModal } from "@/components/hr/hr-create-student-modal";
 import { HrSingleArrangementModal } from "@/components/hr/hr-single-arrangement-modal";
 import { OnboardingStatusBadge } from "@/components/hr/onboarding-status-badge";
 import { SelectInput } from "@/components/ui/select-input";
+import {
+  getWorkLocationSelectOptions,
+  WorkLocationLabel,
+} from "@/components/ui/work-location-label";
 import { ApiError } from "@/lib/api/client";
 import { listHrUsers } from "@/lib/api/hr-auth";
 import { listHrStudents } from "@/lib/api/hr-students";
@@ -21,7 +25,6 @@ import type {
   HrUser,
 } from "@/types/hr";
 import {
-  WORK_LOCATIONS,
   type OnboardingStatus,
   type WorkLocation,
 } from "@/types/student";
@@ -426,10 +429,7 @@ export function HrStudentList({ user }: Props) {
               placeholder="全部地点"
               options={[
                 { value: "", label: "全部地点" },
-                ...WORK_LOCATIONS.map((location) => ({
-                  value: location,
-                  label: location,
-                })),
+                ...getWorkLocationSelectOptions(),
               ]}
               onChange={(value) => {
                 setIsLoading(true);
@@ -438,7 +438,7 @@ export function HrStudentList({ user }: Props) {
                 setSelectedIds([]);
                 setPage(1);
               }}
-              className="min-h-11"
+              className="work-location-select min-h-11"
             />
           </div>
 
@@ -593,39 +593,41 @@ export function HrStudentList({ user }: Props) {
       </section>
 
       <section className="mt-5 overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_4px_18px_rgba(24,66,104,0.05)]">
-        <div className="flex items-center justify-end gap-3 border-b border-[#d5e0e9] bg-[#f8fafc] px-4 py-3 sm:px-5">
+        <div className="flex items-center justify-end gap-2.5 border-b border-[#d5e0e9] bg-[#f8fafc] px-4 py-3 sm:px-5">
           <label
-            className="text-sm font-medium text-[#52677a]"
+            className="shrink-0 whitespace-nowrap text-sm font-medium text-[#52677a]"
             htmlFor="student-sort"
           >
             排序方式
           </label>
-          <SelectInput
-            id="student-sort"
-            value={sortBy}
-            options={[
-              {
-                value: "created_at_desc",
-                label: "按添加顺序（最新优先）",
-              },
-              {
-                value: "onboarding_start_at_desc",
-                label: "开始工作时间由远及近（较晚优先）",
-              },
-              {
-                value: "onboarding_start_at_asc",
-                label: "开始工作时间由近及远（较早优先）",
-              },
-            ]}
-            onChange={(value) => {
-              setIsLoading(true);
-              setErrorMessage("");
-              setSortBy(value as HrStudentListSort);
-              setSelectedIds([]);
-              setPage(1);
-            }}
-            className="min-h-10 min-w-72"
-          />
+          <div className="w-[330px] max-w-[calc(100%_-_5.5rem)]">
+            <SelectInput
+              id="student-sort"
+              value={sortBy}
+              options={[
+                {
+                  value: "created_at_desc",
+                  label: "按添加顺序（最新优先）",
+                },
+                {
+                  value: "onboarding_start_at_desc",
+                  label: "开始工作时间由远及近（较晚优先）",
+                },
+                {
+                  value: "onboarding_start_at_asc",
+                  label: "开始工作时间由近及远（较早优先）",
+                },
+              ]}
+              onChange={(value) => {
+                setIsLoading(true);
+                setErrorMessage("");
+                setSortBy(value as HrStudentListSort);
+                setSelectedIds([]);
+                setPage(1);
+              }}
+              className="min-h-10"
+            />
+          </div>
         </div>
         {errorMessage ? (
           <div className="px-5 py-12 text-center">
@@ -762,19 +764,31 @@ export function HrStudentList({ user }: Props) {
                       </td>
                       <td className="px-3 py-4 align-top text-[#425a6e]">
                         {student.workLocationTimeline.length ? (
-                          <div>
-                            <p className="break-words font-medium leading-5 text-[#31485c]">
-                              {student.workLocationTimeline
-                                .map((item) => item.workLocation)
-                                .join(" → ")}
-                            </p>
-                            <p className="mt-1 break-words text-xs leading-5 text-[#6b7f92]">
-                              {student.workLocationTimeline
-                                .map((item) =>
-                                  formatDateOnly(item.effectiveFrom),
-                                )
-                                .join(" → ")}
-                            </p>
+                          <div className="flex flex-wrap items-start gap-x-1.5 gap-y-2">
+                            {student.workLocationTimeline.map((item, index) => (
+                              <div
+                                key={`${item.workLocation}-${item.effectiveFrom}`}
+                                className="flex min-w-0 items-start gap-1.5"
+                              >
+                                {index > 0 ? (
+                                  <span
+                                    className="mt-0.5 shrink-0 text-[#6b7f92]"
+                                    aria-hidden="true"
+                                  >
+                                    →
+                                  </span>
+                                ) : null}
+                                <div className="min-w-0">
+                                  <WorkLocationLabel
+                                    location={item.workLocation}
+                                    nameClassName="text-[#31485c]"
+                                  />
+                                  <p className="mt-1 text-xs leading-4 text-[#6b7f92]">
+                                    {formatDateOnly(item.effectiveFrom)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         ) : (
                           "未安排"

@@ -7,6 +7,10 @@ import { useEffect, useState } from "react";
 import { HrModal } from "@/components/hr/hr-modal";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { SelectInput } from "@/components/ui/select-input";
+import {
+  getWorkLocationSelectOptions,
+  WorkLocationLabel,
+} from "@/components/ui/work-location-label";
 import { ApiError } from "@/lib/api/client";
 import {
   cancelHrWorkLocationAssignment,
@@ -364,9 +368,10 @@ export function HrStudentActivity({
                       className="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto] sm:px-6"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-[#2b3e50]">
-                          {item.workLocation}
-                        </p>
+                        <WorkLocationLabel
+                          location={item.workLocation}
+                          nameClassName="text-sm font-semibold text-[#2b3e50]"
+                        />
                         <p className="mt-1 text-xs text-[#6b7f92]">
                           {formatDateOnly(item.effectiveFrom)} 至{" "}
                           {item.effectiveTo
@@ -537,11 +542,8 @@ export function HrStudentActivity({
                 setEditLocation(value as WorkLocation)
               }
               placeholder="请选择"
-              options={WORK_LOCATIONS.map((location) => ({
-                value: location,
-                label: location,
-              }))}
-              className="mt-2 min-h-11"
+              options={getWorkLocationSelectOptions()}
+              className="work-location-select mt-2 min-h-11"
             />
           </label>
 
@@ -602,9 +604,10 @@ export function HrStudentActivity({
         <div className="space-y-4 px-5 py-5 sm:px-6">
           {cancellingAssignment ? (
             <div className="rounded-md border border-[#d5e0e9] bg-[#f6f9fb] px-4 py-3 text-sm text-[#31485c]">
-              <p className="font-semibold">
-                {cancellingAssignment.workLocation}
-              </p>
+              <WorkLocationLabel
+                location={cancellingAssignment.workLocation}
+                nameClassName="font-semibold"
+              />
               <p className="mt-1 text-xs text-[#6b7f92]">
                 从 {formatDateOnly(cancellingAssignment.effectiveFrom)} 开始
               </p>

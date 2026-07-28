@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { HrModal } from "@/components/hr/hr-modal";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { SelectInput } from "@/components/ui/select-input";
+import { getWorkLocationSelectOptions } from "@/components/ui/work-location-label";
 import { ApiError } from "@/lib/api/client";
 import { createHrStudent } from "@/lib/api/hr-students";
 import {
@@ -12,7 +13,7 @@ import {
   getEarliestOnboardingStartInput,
 } from "@/lib/format-date";
 import type { CreateHrStudentResponse } from "@/types/hr";
-import { WORK_LOCATIONS, type WorkLocation } from "@/types/student";
+import type { WorkLocation } from "@/types/student";
 
 interface Props {
   isOpen: boolean;
@@ -115,11 +116,8 @@ export function HrCreateStudentModal({ isOpen, onClose, onCreated }: Props) {
                 setWorkLocation(value as WorkLocation | "")
               }
               placeholder="暂不安排"
-              options={WORK_LOCATIONS.map((location) => ({
-                value: location,
-                label: location,
-              }))}
-              className="mt-2 min-h-11"
+              options={getWorkLocationSelectOptions()}
+              className="work-location-select mt-2 min-h-11"
             />
           </label>
           <label className="text-sm font-medium text-[#31485c]">

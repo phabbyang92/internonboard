@@ -5,6 +5,10 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { SelectInput } from "@/components/ui/select-input";
+import {
+  getWorkLocationSelectOptions,
+  WorkLocationLabel,
+} from "@/components/ui/work-location-label";
 import { ApiError } from "@/lib/api/client";
 import {
   changeHrStudentWorkLocation,
@@ -193,11 +197,8 @@ export function HrArrangementCard({ student, onSaved }: Props) {
                     setWorkLocation(value as WorkLocation)
                   }
                   placeholder="请选择"
-                  options={WORK_LOCATIONS.map((item) => ({
-                    value: item,
-                    label: item,
-                  }))}
-                  className="mt-2 min-h-10"
+                  options={getWorkLocationSelectOptions()}
+                  className="work-location-select mt-2 min-h-10"
                 />
               </label>
               <label className="block text-xs font-semibold text-[#52677a]">
@@ -249,7 +250,12 @@ export function HrArrangementCard({ student, onSaved }: Props) {
       ) : mode === "location" ? (
         <form className="space-y-4 p-5" onSubmit={submitLocationChange}>
           <div className="rounded-md bg-[#f3f7fa] px-3 py-2 text-xs text-[#52677a]">
-            当前地点：{student.workLocation ?? "未安排"}
+            <span className="mb-1 block">当前地点</span>
+            {student.workLocation ? (
+              <WorkLocationLabel location={student.workLocation} />
+            ) : (
+              "未安排"
+            )}
           </div>
           <label className="block text-xs font-semibold text-[#52677a]">
             新工作地点
@@ -259,13 +265,12 @@ export function HrArrangementCard({ student, onSaved }: Props) {
                 setNextLocation(value as WorkLocation)
               }
               placeholder="请选择"
-              options={WORK_LOCATIONS.filter(
-                (location) => location !== student.workLocation,
-              ).map((location) => ({
-                value: location,
-                label: location,
-              }))}
-              className="mt-2 min-h-10"
+              options={getWorkLocationSelectOptions(
+                WORK_LOCATIONS.filter(
+                  (location) => location !== student.workLocation,
+                ),
+              )}
+              className="work-location-select mt-2 min-h-10"
             />
           </label>
           <label className="block text-xs font-semibold text-[#52677a]">
@@ -307,8 +312,12 @@ export function HrArrangementCard({ student, onSaved }: Props) {
           <dl className="grid gap-4 text-sm">
             <div>
               <dt className="text-xs text-[#6b7f92]">当前工作地点</dt>
-              <dd className="mt-1 font-medium">
-                {student.workLocation ?? "未安排"}
+              <dd className="mt-1">
+                {student.workLocation ? (
+                  <WorkLocationLabel location={student.workLocation} />
+                ) : (
+                  "未安排"
+                )}
               </dd>
             </div>
             <div>

@@ -2,6 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 
+import { WorkLocationLabel } from "@/components/ui/work-location-label";
 import { formatDateOnly } from "@/lib/format-date";
 import type { AttachmentMetadata, StudentForm } from "@/types/student";
 import type { StudentFormDraft } from "@/types/student-form-draft";
@@ -252,7 +253,13 @@ export function StudentFormSubmitSection({
                 <dl className="grid gap-x-5 sm:grid-cols-2 lg:grid-cols-3">
                   <ReviewItem
                     label="工作地点"
-                    value={form.workLocation ?? "未设置"}
+                    value={
+                      form.workLocation ? (
+                        <WorkLocationLabel location={form.workLocation} />
+                      ) : (
+                        "未设置"
+                      )
+                    }
                   />
                   <ReviewItem
                     label="实习开始日期"

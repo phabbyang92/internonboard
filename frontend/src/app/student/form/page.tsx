@@ -3,6 +3,7 @@
 import { StudentPageHeader } from "@/components/student/student-page-header";
 import { StudentPageState } from "@/components/student/student-page-state";
 import { StudentRegistrationForm } from "@/components/student/student-registration-form";
+import { WorkLocationLabel } from "@/components/ui/work-location-label";
 import { useStudentFormAccess } from "@/hooks/use-student-form-access";
 import { formatDateOnly } from "@/lib/format-date";
 
@@ -50,8 +51,12 @@ export default function StudentFormPage() {
             </div>
             <div className="border-b border-[#dee7ee] p-5 lg:border-b-0 lg:border-r">
               <dt className="text-xs font-medium text-[#6b7f92]">工作地点</dt>
-              <dd className="mt-2 text-sm font-semibold">
-                {form.workLocation ?? "未设置"}
+              <dd className="mt-2 text-sm">
+                {form.workLocation ? (
+                  <WorkLocationLabel location={form.workLocation} />
+                ) : (
+                  "未设置"
+                )}
               </dd>
             </div>
             <div className="border-b border-[#dee7ee] p-5 sm:border-r sm:border-b-0">

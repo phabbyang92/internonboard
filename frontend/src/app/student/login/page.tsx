@@ -94,7 +94,7 @@ export default function StudentLoginPage() {
         <div className="max-w-xl pt-2 lg:pt-10">
           <p className="text-sm font-semibold text-[#184268]">学生入口</p>
           <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
-            学生入职登记
+            入职登记
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7 text-[#52677a]">
             请使用 HR 预录入的姓名和邮箱进入登记系统。

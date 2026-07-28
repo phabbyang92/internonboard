@@ -1,10 +1,11 @@
 "use client";
 
 import { Select } from "antd";
+import type { ReactNode } from "react";
 
 export interface SelectInputOption<Value extends string | number = string> {
   value: Value;
-  label: string;
+  label: ReactNode;
   disabled?: boolean;
 }
 

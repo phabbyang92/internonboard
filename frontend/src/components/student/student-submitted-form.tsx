@@ -1,4 +1,5 @@
 import { formatDateOnly, formatDateTime } from "@/lib/format-date";
+import { WorkLocationLabel } from "@/components/ui/work-location-label";
 import type { AttachmentType, StudentForm } from "@/types/student";
 import type { ReactNode } from "react";
 
@@ -182,7 +183,13 @@ export function StudentSubmittedForm({ form }: { form: StudentForm }) {
 
       <ReadonlySection number="05" title="补充信息">
         <dl className="grid gap-x-6 gap-y-4 px-5 py-6 sm:grid-cols-2 sm:px-8 lg:grid-cols-3">
-          <ReadonlyItem label="工作地点">{display(form.workLocation)}</ReadonlyItem>
+          <ReadonlyItem label="工作地点">
+            {form.workLocation ? (
+              <WorkLocationLabel location={form.workLocation} />
+            ) : (
+              display(form.workLocation)
+            )}
+          </ReadonlyItem>
           <ReadonlyItem label="入职开始日期">{formatDateOnly(form.onboardingStartAt)}</ReadonlyItem>
           <ReadonlyItem label="实习结束日期">{formatDateOnly(form.onboardingEndAt)}</ReadonlyItem>
           <ReadonlyItem label="紧急联系人姓名">{display(form.emergencyContactName)}</ReadonlyItem>

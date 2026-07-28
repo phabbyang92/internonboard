@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { HrModal } from "@/components/hr/hr-modal";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { SelectInput } from "@/components/ui/select-input";
+import { getWorkLocationSelectOptions } from "@/components/ui/work-location-label";
 import { ApiError } from "@/lib/api/client";
 import { updateHrStudentArrangement } from "@/lib/api/hr-students";
 import {
@@ -13,7 +14,7 @@ import {
   toChinaDateInput,
 } from "@/lib/format-date";
 import type { HrStudentListItem } from "@/types/hr";
-import { WORK_LOCATIONS, type WorkLocation } from "@/types/student";
+import type { WorkLocation } from "@/types/student";
 
 interface Props {
   student: HrStudentListItem | null;
@@ -106,11 +107,8 @@ export function HrSingleArrangementModal({
                 setWorkLocation(value as WorkLocation)
               }
               placeholder="请选择"
-              options={WORK_LOCATIONS.map((location) => ({
-                value: location,
-                label: location,
-              }))}
-              className="mt-2 min-h-11"
+              options={getWorkLocationSelectOptions()}
+              className="work-location-select mt-2 min-h-11"
             />
           </label>
         ) : null}
