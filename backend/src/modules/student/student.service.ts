@@ -472,7 +472,7 @@ export class StudentService {
 
   async findOneByIdForHr(id: string, access: HrAccessContext) {
     const student = await this.findActiveStudentByIdForHr(id, access);
-    return this.serializeStudent(student);
+    return this.serializeStudentForHr(student);
   }
 
   async ensureStudentExistsIncludingDeletedForHr(
@@ -535,6 +535,31 @@ export class StudentService {
       createdAt: student.createdAt,
       updatedAt: student.updatedAt,
     };
+  }
+
+  private serializeStudentForHr(student: StudentDocument) {
+    return {
+      ...this.serializeStudent(student),
+
+      // HR 备注绝不能放进学生端共用的 serializeStudent() 响应。
+      hrMemo: student.hrMemo ?? null,
+      hrMemoUpdatedByHrId: student.hrMemoUpdatedByHrId?.toString() ?? null,
+      hrMemoUpdatedAt: student.hrMemoUpdatedAt ?? null,
+    };
+  }
+
+  async updateHrMemo(id: string, memo: string, access: HrAccessContext) {
+    const student = await this.findActiveStudentByIdForHr(id, access);
+    const normalizedMemo = memo.trim();
+
+    student.hrMemo = normalizedMemo || null;
+    student.hrMemoUpdatedByHrId = new Types.ObjectId(access.hrUserId);
+    student.hrMemoUpdatedAt = new Date();
+    await student.save();
+
+    this.logger.log(`HR ${access.hrUserId} updated memo for student ${id}`);
+
+    return this.serializeStudentForHr(student);
   }
 
   async submitForm(id: string, dto: SubmitStudentFormDto) {

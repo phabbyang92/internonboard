@@ -108,6 +108,19 @@ export class Student extends BaseSchema {
 
   @Prop({ type: Date, default: null })
   submittedAt?: Date | null;
+
+  @Prop({ type: String, trim: true, maxlength: 100, default: null })
+  hrMemo?: string | null;
+
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'HrUser',
+    default: null,
+  })
+  hrMemoUpdatedByHrId?: Types.ObjectId | null;
+
+  @Prop({ type: Date, default: null })
+  hrMemoUpdatedAt?: Date | null;
 }
 
 export const StudentSchema = SchemaFactory.createForClass(Student);

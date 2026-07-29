@@ -10,6 +10,7 @@ import { HrModal } from "@/components/hr/hr-modal";
 import { OnboardingStatusBadge } from "@/components/hr/onboarding-status-badge";
 import { HrStudentProfileEditor } from "@/components/hr/hr-student-profile-editor";
 import { HrStudentActivity } from "@/components/hr/hr-student-activity";
+import { HrStudentMemo } from "@/components/hr/hr-student-memo";
 import { HrStudentOwnerCard } from "@/components/hr/hr-student-owner-card";
 import { ApiError } from "@/lib/api/client";
 import { getHrStudent } from "@/lib/api/hr-students";
@@ -169,30 +170,35 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-4 border-b border-[#c8d6e1] pb-6 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="truncate text-2xl font-semibold text-[#172735]">
-              {student.name}
-            </h1>
-            <OnboardingStatusBadge status={student.onboardingStatus} />
+      <div className="mt-5 grid gap-5 border-b border-[#c8d6e1] pb-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-stretch">
+        <div className="flex min-w-0 flex-col">
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="truncate text-2xl font-semibold text-[#172735]">
+                {student.name}
+              </h1>
+              <OnboardingStatusBadge status={student.onboardingStatus} />
+            </div>
+            <p className="mt-2 break-all text-sm text-[#5f7285]">
+              {student.email} · {display(student.phone)}
+            </p>
           </div>
-          <p className="mt-2 break-all text-sm text-[#5f7285]">
-            {student.email} · {display(student.phone)}
-          </p>
-        </div>
-        <div className="flex flex-col items-start gap-3 sm:items-end">
           <button
             type="button"
             onClick={() => {
               setSuccessMessage("");
               setIsProfileEditing(true);
             }}
-            className="min-h-10 cursor-pointer bg-[#184268] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#123653] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268]"
+            className="mt-4 min-h-10 w-fit cursor-pointer rounded-md bg-[#184268] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#123653] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268] lg:mt-auto"
           >
             修改登记信息
           </button>
         </div>
+
+        <HrStudentMemo
+          student={student}
+          onSaved={(updatedStudent) => setStudent(updatedStudent)}
+        />
       </div>
 
       {successMessage ? (
@@ -204,7 +210,7 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
         </p>
       ) : null}
 
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           <Section
             title="个人情况"

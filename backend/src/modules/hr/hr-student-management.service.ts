@@ -18,6 +18,7 @@ import { ChangeStudentWorkLocationDto } from './dto/change-student-work-location
 import { ListOperationLogsQueryDto } from './dto/list-operation-logs-query.dto';
 import { SoftDeleteStudentDto } from './dto/soft-delete-student.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { UpdateHrMemoDto } from './dto/update-hr-memo.dto';
 import { UpdateWorkLocationAssignmentDto } from './dto/update-work-location-assignment.dto';
 
 @Injectable()
@@ -132,6 +133,32 @@ export class HrStudentManagementService {
       // 登记信息可能包含身份证号，因此日志只记录字段名。
       changes: {
         fields: this.getUpdatedProfileFields(dto),
+      },
+    });
+
+    return result;
+  }
+
+  async updateMemo(
+    studentId: string,
+    dto: UpdateHrMemoDto,
+    access: HrAccessContext,
+  ) {
+    const result = await this.studentService.updateHrMemo(
+      studentId,
+      dto.memo,
+      access,
+    );
+
+    await this.operationLogService.record({
+      operatorHrId: access.hrUserId,
+      studentId,
+      action: OperationAction.StudentMemoUpdated,
+
+      // 备注可能包含内部信息，日志只记录动作和长度，不复制正文。
+      changes: {
+        cleared: result.hrMemo === null,
+        characterCount: result.hrMemo?.length ?? 0,
       },
     });
 

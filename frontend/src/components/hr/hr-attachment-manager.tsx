@@ -49,8 +49,9 @@ export function HrAttachmentManager({ student, onChanged }: Props) {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [pendingReplacement, setPendingReplacement] =
     useState<PendingReplacement | null>(null);
-  const [pendingDelete, setPendingDelete] =
-    useState<AttachmentMetadata | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AttachmentMetadata | null>(
+    null,
+  );
   const [busyAction, setBusyAction] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -178,7 +179,7 @@ export function HrAttachmentManager({ student, onChanged }: Props) {
                   </button>
                   <label
                     htmlFor={`replace-attachment-${index}`}
-                    className={`inline-flex min-h-9 items-center border border-[#aabed0] px-3 text-xs font-medium text-[#244b70] ${isBusy ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                    className={`inline-flex min-h-9 items-center rounded-md border border-[#aabed0] px-3 text-xs font-medium text-[#244b70] transition hover:border-[#184268] hover:bg-[#edf4fa] ${isBusy ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
                   >
                     替换
                   </label>
@@ -211,7 +212,10 @@ export function HrAttachmentManager({ student, onChanged }: Props) {
           <p className="px-5 py-8 text-sm text-[#6b7f92]">暂无附件。</p>
         )}
 
-        <form className="border-t border-[#d5e0e9] bg-[#f7f9fb] px-5 py-4" onSubmit={handleUpload}>
+        <form
+          className="border-t border-[#d5e0e9] bg-[#f7f9fb] px-5 py-4"
+          onSubmit={handleUpload}
+        >
           <p className="text-sm font-semibold text-[#31485c]">上传新附件</p>
           <div className="mt-3 grid gap-3">
             <label className="text-xs font-medium text-[#52677a]">
@@ -239,7 +243,7 @@ export function HrAttachmentManager({ student, onChanged }: Props) {
                 onChange={(event) =>
                   setUploadFile(event.target.files?.[0] ?? null)
                 }
-                className="mt-1.5 block w-full text-xs file:mr-3 file:min-h-9 file:border file:border-[#b9c9d7] file:bg-white file:px-3 file:text-xs"
+                className="mt-1.5 block w-full text-xs file:mr-3 file:min-h-9 file:cursor-pointer file:rounded-md file:border file:border-[#b9c9d7] file:bg-white file:px-3 file:text-xs file:transition hover:file:border-[#184268] hover:file:bg-[#edf4fa]"
               />
             </label>
             <button
@@ -252,12 +256,18 @@ export function HrAttachmentManager({ student, onChanged }: Props) {
         </form>
 
         {message ? (
-          <p className="border-t border-[#b8d6cf] bg-[#eef8f4] px-5 py-3 text-xs text-[#175e51]" role="status">
+          <p
+            className="border-t border-[#b8d6cf] bg-[#eef8f4] px-5 py-3 text-xs text-[#175e51]"
+            role="status"
+          >
             {message}
           </p>
         ) : null}
         {error ? (
-          <p className="border-t border-[#e4c8c2] bg-[#fff5f3] px-5 py-3 text-xs text-[#9d3426]" role="alert">
+          <p
+            className="border-t border-[#e4c8c2] bg-[#fff5f3] px-5 py-3 text-xs text-[#9d3426]"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
@@ -271,13 +281,37 @@ export function HrAttachmentManager({ student, onChanged }: Props) {
       >
         <div className="space-y-4 px-5 py-5 sm:px-6">
           <div className="border border-[#d5e0e9] bg-[#f7f9fb] p-4 text-sm">
-            <p><span className="text-[#6b7f92]">原文件：</span>{pendingReplacement?.attachment.originalName}</p>
-            <p className="mt-2"><span className="text-[#6b7f92]">新文件：</span>{pendingReplacement?.file.name}</p>
+            <p>
+              <span className="text-[#6b7f92]">原文件：</span>
+              {pendingReplacement?.attachment.originalName}
+            </p>
+            <p className="mt-2">
+              <span className="text-[#6b7f92]">新文件：</span>
+              {pendingReplacement?.file.name}
+            </p>
           </div>
-          {error ? <p className="text-sm text-[#9d3426]" role="alert">{error}</p> : null}
+          {error ? (
+            <p className="text-sm text-[#9d3426]" role="alert">
+              {error}
+            </p>
+          ) : null}
           <div className="flex justify-end gap-3">
-            <button type="button" disabled={isBusy} onClick={() => setPendingReplacement(null)} className="min-h-11 border border-[#b9c9d7] px-5 text-sm">取消</button>
-            <button type="button" disabled={isBusy} onClick={() => void confirmReplacement()} className="min-h-11 bg-[#184268] px-5 text-sm font-semibold text-white disabled:opacity-50">{busyAction === "replace" ? "正在替换..." : "确认替换"}</button>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => setPendingReplacement(null)}
+              className="min-h-11 border border-[#b9c9d7] px-5 text-sm"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => void confirmReplacement()}
+              className="min-h-11 bg-[#184268] px-5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {busyAction === "replace" ? "正在替换..." : "确认替换"}
+            </button>
           </div>
         </div>
       </HrModal>
@@ -289,11 +323,31 @@ export function HrAttachmentManager({ student, onChanged }: Props) {
         description="该操作会同时删除附件记录和对应的本地或 OSS 文件。"
       >
         <div className="space-y-4 px-5 py-5 sm:px-6">
-          <p className="break-all text-sm text-[#31485c]">确定删除“{pendingDelete?.originalName}”吗？</p>
-          {error ? <p className="text-sm text-[#9d3426]" role="alert">{error}</p> : null}
+          <p className="break-all text-sm text-[#31485c]">
+            确定删除“{pendingDelete?.originalName}”吗？
+          </p>
+          {error ? (
+            <p className="text-sm text-[#9d3426]" role="alert">
+              {error}
+            </p>
+          ) : null}
           <div className="flex justify-end gap-3">
-            <button type="button" disabled={isBusy} onClick={() => setPendingDelete(null)} className="min-h-11 border border-[#b9c9d7] px-5 text-sm">取消</button>
-            <button type="button" disabled={isBusy} onClick={() => void confirmDelete()} className="min-h-11 bg-[#a23b2e] px-5 text-sm font-semibold text-white disabled:opacity-50">{busyAction === "delete" ? "正在删除..." : "确认删除"}</button>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => setPendingDelete(null)}
+              className="min-h-11 border border-[#b9c9d7] px-5 text-sm"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => void confirmDelete()}
+              className="min-h-11 bg-[#a23b2e] px-5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {busyAction === "delete" ? "正在删除..." : "确认删除"}
+            </button>
           </div>
         </div>
       </HrModal>

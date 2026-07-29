@@ -23,6 +23,7 @@ describe('HrStudentManagementService', () => {
       create: jest.fn(),
       findAll: jest.fn(),
       updateProfile: jest.fn(),
+      updateHrMemo: jest.fn(),
       findOneByIdForHr: jest.fn(),
       updateDueOnboardingStatuses: jest.fn().mockResolvedValue(undefined),
       updateArrangement: jest.fn(),
@@ -58,6 +59,37 @@ describe('HrStudentManagementService', () => {
       ),
     };
   }
+
+  it('updates an HR memo without copying its content into the operation log', async () => {
+    const { service, studentService, operationLogService } =
+      createDependencies();
+    studentService.updateHrMemo.mockResolvedValue({
+      id: STUDENT_ID,
+      hrMemo: '下月确认转线上',
+    });
+
+    const result = await service.updateMemo(
+      STUDENT_ID,
+      { memo: '下月确认转线上' },
+      HR_ACCESS,
+    );
+
+    expect(studentService.updateHrMemo).toHaveBeenCalledWith(
+      STUDENT_ID,
+      '下月确认转线上',
+      HR_ACCESS,
+    );
+    expect(operationLogService.record).toHaveBeenCalledWith({
+      operatorHrId: HR_ID,
+      studentId: STUDENT_ID,
+      action: OperationAction.StudentMemoUpdated,
+      changes: {
+        cleared: false,
+        characterCount: 7,
+      },
+    });
+    expect(result.hrMemo).toBe('下月确认转线上');
+  });
 
   it('adds an ordered work-location timeline to every list item', async () => {
     const { service, studentService, workLocationHistoryService } =

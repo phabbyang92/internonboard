@@ -15,6 +15,7 @@ import type {
   HrStudentListResponse,
   OperationLogResponse,
   UpdateHrArrangementPayload,
+  UpdateHrMemoPayload,
   UpdateHrProfilePayload,
   UpdateHrWorkLocationAssignmentPayload,
   WorkLocationHistoryResponse,
@@ -81,6 +82,16 @@ export function updateHrStudentProfile(
   payload: UpdateHrProfilePayload,
 ): Promise<HrStudentDetail> {
   return apiRequest<HrStudentDetail>(`/api/hr/students/${id}/profile`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateHrStudentMemo(
+  id: string,
+  payload: UpdateHrMemoPayload,
+): Promise<HrStudentDetail> {
+  return apiRequest<HrStudentDetail>(`/api/hr/students/${id}/memo`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });

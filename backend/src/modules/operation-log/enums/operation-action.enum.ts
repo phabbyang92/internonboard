@@ -1,6 +1,7 @@
 export enum OperationAction {
   StudentCreated = 'student.created',
   StudentProfileUpdated = 'student.profile.updated',
+  StudentMemoUpdated = 'student.memo.updated',
   StudentArrangementUpdated = 'student.arrangement.updated',
   WorkLocationAssignmentUpdated = 'student.work_location_assignment.updated',
   WorkLocationAssignmentCancelled = 'student.work_location_assignment.cancelled',

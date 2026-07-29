@@ -32,10 +32,7 @@ import type {
   OperationLogResponse,
   WorkLocationHistoryItem,
 } from "@/types/hr";
-import {
-  WORK_LOCATIONS,
-  type WorkLocation,
-} from "@/types/student";
+import { WORK_LOCATIONS, type WorkLocation } from "@/types/student";
 
 interface Props {
   studentId: string;
@@ -50,6 +47,7 @@ interface Props {
 const actionLabels: Record<OperationAction, string> = {
   "student.created": "创建学生",
   "student.profile.updated": "修改登记信息",
+  "student.memo.updated": "修改 HR 备忘录",
   "student.arrangement.updated": "修改入职安排",
   "student.work_location_assignment.updated": "修改工作地点记录",
   "student.work_location_assignment.cancelled": "撤销工作地点记录",
@@ -145,10 +143,7 @@ function describeChanges(changes: Record<string, unknown> | null): string {
     })
     .filter((item): item is string => item !== null);
 
-  if (
-    changes.effectiveFrom &&
-    typeof changes.effectiveFrom !== "object"
-  ) {
+  if (changes.effectiveFrom && typeof changes.effectiveFrom !== "object") {
     details.push(
       `地点生效日期：${formatDateOnly(
         typeof changes.effectiveFrom === "string"
@@ -161,6 +156,11 @@ function describeChanges(changes: Record<string, unknown> | null): string {
   if (details.length) return details.join("；");
   if (typeof changes.reason === "string" && changes.reason) {
     return `原因：${changes.reason}`;
+  }
+  if (typeof changes.characterCount === "number") {
+    return changes.cleared
+      ? "已清空备忘录"
+      : `备忘录当前 ${changes.characterCount} 字`;
   }
   return "操作已记录";
 }
@@ -272,14 +272,10 @@ export function HrStudentActivity({
     setEditError("");
     setIsSavingEdit(true);
     try {
-      await updateHrWorkLocationAssignment(
-        studentId,
-        editingAssignment.id,
-        {
-          workLocation: editLocation,
-          effectiveFrom: chinaDateInputToIso(editEffectiveFrom),
-        },
-      );
+      await updateHrWorkLocationAssignment(studentId, editingAssignment.id, {
+        workLocation: editLocation,
+        effectiveFrom: chinaDateInputToIso(editEffectiveFrom),
+      });
       setEditingAssignment(null);
       refreshActivity("工作地点记录修改成功");
     } catch (caught) {
@@ -297,10 +293,7 @@ export function HrStudentActivity({
     setCancelError("");
     setIsCancelling(true);
     try {
-      await cancelHrWorkLocationAssignment(
-        studentId,
-        cancellingAssignment.id,
-      );
+      await cancelHrWorkLocationAssignment(studentId, cancellingAssignment.id);
       setCancellingAssignment(null);
       refreshActivity("工作地点记录已撤销");
     } catch (caught) {
@@ -434,7 +427,10 @@ export function HrStudentActivity({
               {[
                 ["系统创建时间", formatDateTime(createdAt)],
                 ["最后更新时间", formatDateTime(updatedAt)],
-                ["学生提交状态", hasSubmitted ? "已提交，仅 HR 可修改" : "未提交"],
+                [
+                  "学生提交状态",
+                  hasSubmitted ? "已提交，仅 HR 可修改" : "未提交",
+                ],
               ].map(([label, value]) => (
                 <div
                   key={label}
@@ -538,9 +534,7 @@ export function HrStudentActivity({
             <SelectInput
               value={editLocation || undefined}
               disabled={isSavingEdit}
-              onChange={(value) =>
-                setEditLocation(value as WorkLocation)
-              }
+              onChange={(value) => setEditLocation(value as WorkLocation)}
               placeholder="请选择"
               options={getWorkLocationSelectOptions()}
               className="work-location-select mt-2 min-h-11"

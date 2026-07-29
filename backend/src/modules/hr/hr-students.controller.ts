@@ -22,6 +22,7 @@ import { ListOperationLogsQueryDto } from './dto/list-operation-logs-query.dto';
 import { ChangeStudentWorkLocationDto } from './dto/change-student-work-location.dto';
 import { SoftDeleteStudentDto } from './dto/soft-delete-student.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { UpdateHrMemoDto } from './dto/update-hr-memo.dto';
 import { UpdateWorkLocationAssignmentDto } from './dto/update-work-location-assignment.dto';
 import { HrStudentManagementService } from './hr-student-management.service';
 
@@ -156,6 +157,19 @@ export class HrStudentsController {
     @Req() request: AuthenticatedHrRequest,
   ) {
     return this.hrStudentManagementService.updateProfile(
+      id,
+      dto,
+      this.getAccess(request),
+    );
+  }
+
+  @Patch(':id/memo')
+  updateMemo(
+    @Param('id') id: string,
+    @Body() dto: UpdateHrMemoDto,
+    @Req() request: AuthenticatedHrRequest,
+  ) {
+    return this.hrStudentManagementService.updateMemo(
       id,
       dto,
       this.getAccess(request),

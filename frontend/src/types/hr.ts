@@ -68,9 +68,7 @@ export interface HrStudentListQuery {
 
 export type FormSubmissionStatus = "not_submitted" | "submitted";
 export type HrStudentListSort =
-  | "created_at_desc"
-  | "onboarding_start_at_desc"
-  | "onboarding_start_at_asc";
+  "created_at_desc" | "onboarding_start_at_desc" | "onboarding_start_at_asc";
 
 export interface HrStudentListResponse {
   items: HrStudentListItem[];
@@ -126,8 +124,7 @@ export interface ChangeHrWorkLocationPayload {
   effectiveFrom: string;
 }
 
-export type UpdateHrWorkLocationAssignmentPayload =
-  ChangeHrWorkLocationPayload;
+export type UpdateHrWorkLocationAssignmentPayload = ChangeHrWorkLocationPayload;
 
 export interface UpdateHrProfilePayload {
   name?: string;
@@ -148,7 +145,14 @@ export interface UpdateHrProfilePayload {
 
 export type HrStudentDetail = StudentForm & {
   ownerHrId: string | null;
+  hrMemo: string | null;
+  hrMemoUpdatedByHrId: string | null;
+  hrMemoUpdatedAt: string | null;
 };
+
+export interface UpdateHrMemoPayload {
+  memo: string;
+}
 
 export interface WorkLocationHistoryItem {
   id: string;
@@ -169,6 +173,7 @@ export interface WorkLocationHistoryResponse {
 export type OperationAction =
   | "student.created"
   | "student.profile.updated"
+  | "student.memo.updated"
   | "student.arrangement.updated"
   | "student.work_location_assignment.updated"
   | "student.work_location_assignment.cancelled"

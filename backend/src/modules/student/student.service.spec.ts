@@ -216,6 +216,49 @@ describe('StudentService', () => {
   });
 
   describe('HR access scope', () => {
+    it('updates an HR-only memo inside the current HR ownership scope', async () => {
+      const model = createModelMock();
+      const save = jest.fn().mockResolvedValue(undefined);
+      const student = createStudent({ save });
+      model.findOne.mockReturnValue(queryResult(student));
+
+      const result = await createService(model).updateHrMemo(
+        STUDENT_ID,
+        '  下月确认转线上  ',
+        HR_ACCESS,
+      );
+
+      expect(model.findOne).toHaveBeenCalledWith({
+        _id: STUDENT_ID,
+        isDeleted: false,
+        ownerHrId: new Types.ObjectId(HR_ID),
+      });
+      expect(student.hrMemo).toBe('下月确认转线上');
+      expect(student.hrMemoUpdatedByHrId?.toString()).toBe(HR_ID);
+      expect(student.hrMemoUpdatedAt).toBeInstanceOf(Date);
+      expect(save).toHaveBeenCalled();
+      expect(result.hrMemo).toBe('下月确认转线上');
+    });
+
+    it('does not expose the HR memo through the student detail serializer', async () => {
+      const model = createModelMock();
+      model.findOne.mockReturnValue(
+        queryResult(
+          createStudent({
+            hrMemo: '仅 HR 可见',
+            hrMemoUpdatedByHrId: new Types.ObjectId(HR_ID),
+            hrMemoUpdatedAt: new Date('2026-07-29T00:00:00.000Z'),
+          }),
+        ),
+      );
+
+      const result = await createService(model).findOneById(STUDENT_ID);
+
+      expect(result).not.toHaveProperty('hrMemo');
+      expect(result).not.toHaveProperty('hrMemoUpdatedByHrId');
+      expect(result).not.toHaveProperty('hrMemoUpdatedAt');
+    });
+
     it('scopes regular HR queries to their own students', () => {
       const service = createService(createModelMock());
 
