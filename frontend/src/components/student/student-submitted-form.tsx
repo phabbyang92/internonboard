@@ -75,7 +75,6 @@ export function StudentSubmittedForm({ form }: { form: StudentForm }) {
               {display(basic.idNumber)}
             </ReadonlyItem>
             <ReadonlyItem label="户籍">{display(basic.householdRegistration)}</ReadonlyItem>
-            <ReadonlyItem label="婚姻状况">{display(basic.maritalStatus)}</ReadonlyItem>
             <ReadonlyItem label="学历">{display(basic.degree)}</ReadonlyItem>
             <ReadonlyItem label="在读学校">{display(basic.currentSchool)}</ReadonlyItem>
             <ReadonlyItem label="专业">{display(basic.major)}</ReadonlyItem>

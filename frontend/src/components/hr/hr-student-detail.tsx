@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Download } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { HrArrangementCard } from "@/components/hr/hr-arrangement-card";
@@ -13,7 +14,7 @@ import { HrStudentActivity } from "@/components/hr/hr-student-activity";
 import { HrStudentMemo } from "@/components/hr/hr-student-memo";
 import { HrStudentOwnerCard } from "@/components/hr/hr-student-owner-card";
 import { ApiError } from "@/lib/api/client";
-import { getHrStudent } from "@/lib/api/hr-students";
+import { exportHrStudent, getHrStudent } from "@/lib/api/hr-students";
 import { formatDateOnly, formatDateTime } from "@/lib/format-date";
 import type {
   HrStudentDetail as HrStudentDetailType,
@@ -81,6 +82,8 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   useEffect(() => {
     let isActive = true;
@@ -113,6 +116,30 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
     if (!student) setIsLoading(true);
     setErrorMessage("");
     setRefreshKey((current) => current + 1);
+  }
+
+  async function handleExport() {
+    setIsExporting(true);
+    setExportError("");
+
+    try {
+      const { blob, fileName } = await exportHrStudent(studentId);
+      const objectUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+
+      anchor.href = objectUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (error: unknown) {
+      setExportError(
+        error instanceof ApiError ? error.message : "导出学生信息失败",
+      );
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   if (isLoading) {
@@ -183,16 +210,27 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
               {student.email} · {display(student.phone)}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setSuccessMessage("");
-              setIsProfileEditing(true);
-            }}
-            className="mt-4 min-h-10 w-fit cursor-pointer rounded-md bg-[#184268] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#123653] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268] lg:mt-auto"
-          >
-            修改登记信息
-          </button>
+          <div className="mt-4 flex flex-wrap gap-3 lg:mt-auto">
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessMessage("");
+                setIsProfileEditing(true);
+              }}
+              className="min-h-10 w-fit cursor-pointer rounded-md bg-[#184268] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#123653] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268]"
+            >
+              修改登记信息
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleExport()}
+              disabled={isExporting}
+              className="inline-flex min-h-10 w-fit cursor-pointer items-center gap-2 rounded-md border border-[#aac2d5] bg-white px-4 text-sm font-semibold text-[#244b70] shadow-sm transition hover:border-[#184268] hover:bg-[#edf4fa] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Download aria-hidden="true" size={17} />
+              {isExporting ? "正在导出..." : "导出学生信息"}
+            </button>
+          </div>
         </div>
 
         <HrStudentMemo
@@ -207,6 +245,15 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
           role="status"
         >
           {successMessage}
+        </p>
+      ) : null}
+
+      {exportError ? (
+        <p
+          className="mt-5 rounded-md border border-[#e0b7ad] bg-[#fff5f2] px-4 py-3 text-sm text-[#9d3426]"
+          role="alert"
+        >
+          {exportError}
         </p>
       ) : null}
 
@@ -233,9 +280,6 @@ export function HrStudentDetail({ studentId, currentUser }: Props) {
                 </DetailItem>
                 <DetailItem label="户籍">
                   {display(basic.householdRegistration)}
-                </DetailItem>
-                <DetailItem label="婚姻状况">
-                  {display(basic.maritalStatus)}
                 </DetailItem>
                 <DetailItem label="当前学校">
                   {display(basic.currentSchool)}

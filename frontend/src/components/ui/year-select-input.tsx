@@ -25,17 +25,25 @@ export function YearSelectInput({
   className = "",
   ariaLabel,
 }: YearSelectInputProps) {
-  const options = useMemo(() => {
+  const { options, currentYearIndex } = useMemo(() => {
     const firstYear = Math.min(minYear, maxYear);
     const lastYear = Math.max(minYear, maxYear);
+    const currentYear = new Date().getFullYear();
+    const initialYear = Math.min(Math.max(currentYear, firstYear), lastYear);
 
-    return Array.from(
+    // 年份始终按从大到小排列，打开时再单独定位到当前年份。
+    const yearOptions = Array.from(
       { length: lastYear - firstYear + 1 },
       (_, index) => lastYear - index,
     ).map((year) => ({
       value: String(year),
       label: String(year),
     }));
+
+    return {
+      options: yearOptions,
+      currentYearIndex: lastYear - initialYear,
+    };
   }, [maxYear, minYear]);
 
   return (
@@ -49,6 +57,7 @@ export function YearSelectInput({
       className={className}
       ariaLabel={ariaLabel}
       showSearch
+      initialScrollIndex={Math.max(0, currentYearIndex - 2)}
     />
   );
 }

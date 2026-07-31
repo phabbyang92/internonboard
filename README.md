@@ -11,7 +11,7 @@
 
 ## 已实现功能
 
-当前版本已完成可供 HR 和学生使用的前后端 MVP。HR 可以登录后台、连续录入学生、设置或批量设置入职安排、搜索筛选和排序学生、查看详情、修改登记资料、管理附件，以及维护可修改和撤销的工作地点时间线。普通 HR 仅能管理自己录入的学生，管理员可以查看全部学生并按录入 HR 筛选。
+当前版本已完成可供 HR 和学生使用的前后端 MVP。HR 可以登录后台、连续录入学生、设置或批量设置入职安排、搜索筛选和排序学生、查看详情、修改登记资料、将完整学生详情导出为 Excel、管理附件，以及维护可修改和撤销的工作地点时间线。普通 HR 仅能管理自己录入的学生，管理员可以查看全部学生并按录入 HR 筛选。
 
 学生可以通过姓名和邮箱登录，填写包含个人信息、教育经历、家庭成员、实习经历和补充信息的登记表，上传个人简历及身份证件正反面，并一次性提交。系统使用 JWT Cookie 鉴权、MongoDB 操作日志和 ownCloud WebDAV 文件存储，并通过 NestJS Cron 自动更新待入职、已入职和已离职状态。
 
@@ -97,7 +97,15 @@ WEBDAV_URL=http://localhost:8080/remote.php/dav/files/admin/
 WEBDAV_USERNAME=admin
 WEBDAV_PASSWORD=your-owncloud-app-passcode
 WEBDAV_REMOTE_PATH=学生入职登记系统
+ID_CARD_WATERMARK_TEXT=仅限学生入职登记使用 · {studentName} · {date}
 ```
+
+身份证正反面或外籍护照页仅接受 JPG、JPEG、PNG 图片。后端会在写入
+ownCloud 前自动纠正图片方向、清除元数据并添加平铺水印，原始无水印图片
+不会保存。`ID_CARD_WATERMARK_TEXT` 支持 `{studentName}` 和 `{date}`
+占位符；修改该变量只影响之后新上传或替换的身份证图片。
+已有旧附件不会被批量重写；如需让旧身份证附件也带水印，请由 HR 在学生
+详情页重新替换对应附件。
 
 本地测试可以暂时使用 ownCloud 的 `admin/admin`。正式环境应使用 HTTPS 和
 ownCloud App Passcode，且不得把真实密码写入 `.env.example` 或提交到 Git。
@@ -188,6 +196,68 @@ npm run migrate:work-location-history
 
 脚本会把当前地点和实习开始日期写成第一段地点历史，并清理旧版专用的
 `onlineOnboardingStartAt` 字段。已有地点历史的学生不会被重复处理，可安全重复执行。
+
+### 正式部署：迁移旧地点名称或重置测试数据
+
+本版本调整了以下四个工作地点的标准名称：
+
+```text
+上海研究院 -> 上海办公室 - 绿地汇
+上海办公室 -> 上海办公室 - 会德丰
+深圳办公室 -> 深圳办公室 - 1302
+深圳研究院 -> 深圳办公室 - 41层
+```
+
+正式环境首次部署本版本时，根据数据库内容选择下面一种方案。正常重启和
+后续发布不需要重复处理。
+
+#### 方案 A：保留已有数据并迁移（推荐）
+
+如果数据库中已有需要保留的学生、HR、地点历史或操作日志，应先备份数据库，
+确认生产环境的 `MONGODB_URI` 正确，然后在 `backend` 目录执行：
+
+```bash
+npm run migrate:work-location-names
+```
+
+脚本会同步更新 `students` 和 `work_location_assignments` 中的旧地点名称，
+避免地点定时任务再次把旧名称写回学生记录。脚本是幂等的，可以安全重复执行；
+第一次执行会显示实际更新数量，迁移完成后再次执行通常会更新 0 条。
+
+如果数据库来自仍含“婚姻状况”字段的旧版本，再执行一次以下幂等迁移：
+
+```bash
+cd backend
+npm run migrate:remove-marital-status
+```
+
+该命令只删除学生记录中的旧婚姻状况字段，可重复执行。
+
+推荐部署顺序：
+
+1. 核对 `MONGODB_URI` 指向目标环境，并备份 MongoDB。
+2. 暂停旧后端或暂时停止 HR 修改学生地点。
+3. 部署新代码，但先不要开放新后端流量。
+4. 在 `backend` 目录执行 `npm run migrate:work-location-names`。
+5. 检查脚本输出并抽查学生当前地点和地点历史。
+6. 启动新版本后端和前端。
+
+如果正式数据库明确包含旧名称，但脚本始终更新 0 条，应先检查是否连接错了
+数据库，不要直接继续部署。
+
+#### 方案 B：清空可丢弃的测试数据
+
+如果是首次正式上线，并且旧 MongoDB 中全部都是确认可以删除的测试数据，
+可以备份后清空旧数据库，再启动新版本。清空 MongoDB 会删除学生资料、
+登记表、HR 账号、工作地点历史、附件元数据和操作日志。
+
+MongoDB 与 ownCloud 是两个独立存储。清空 MongoDB 不会删除 ownCloud 中的
+附件文件，这些文件会失去数据库关联并成为孤立文件，因此测试附件需要在
+ownCloud 中另行清理。数据库重置后，还需要重新创建 Admin HR 和普通 HR
+账号。
+
+执行清空操作前必须再次确认目标环境和数据库名称。只要数据库中已经存在
+真实学生资料，就不要使用方案 B，应使用方案 A 迁移。
 
 ### 7. 启动后端
 
@@ -315,6 +385,7 @@ E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
 | `POST`   | `/api/hr/students`                           | 新增单个学生           |
 | `GET`    | `/api/hr/students`                           | 获取学生列表           |
 | `GET`    | `/api/hr/students/:id`                       | 获取学生完整详情       |
+| `GET`    | `/api/hr/students/:id/export`                | 导出学生详情 XLSX      |
 | `GET`    | `/api/hr/students/:id/work-location-history` | 获取工作地点历史       |
 | `POST`   | `/api/hr/students/:id/work-location-assignments` | 新增带生效日期的地点变更 |
 | `PATCH`  | `/api/hr/students/:id/work-location-assignments/:assignmentId` | 修改一段工作地点安排 |
@@ -348,7 +419,7 @@ E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
   "name": "测试学生",
   "email": "student@example.com",
   "phone": "13800000000",
-  "workLocation": "上海办公室",
+  "workLocation": "上海办公室 - 会德丰",
   "onboardingStartAt": "2026-08-01T00:00:00+08:00"
 }
 ```
@@ -373,7 +444,7 @@ E2E_MONGODB_URI=mongodb://127.0.0.1:27017/company_onboarding_e2e \
 
 ```json
 {
-  "workLocation": "上海办公室",
+  "workLocation": "上海办公室 - 会德丰",
   "onboardingStartAt": "2026-08-01T00:00:00+08:00"
 }
 ```

@@ -7,7 +7,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { TrimString } from '../../../common/transforms/trim-string.transform';
-import { ApplicationDirection } from '../enums/student.enums';
+import { ApplicationDirection, Gender } from '../enums/student.enums';
 
 export class BasicInfoDto {
   @TrimString()
@@ -23,11 +23,8 @@ export class BasicInfoDto {
   @IsISO8601({ strict: true })
   formDate?: string;
 
-  @TrimString()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
-  gender!: string;
+  @IsEnum(Gender, { message: '性别只能选择男或女' })
+  gender!: Gender;
 
   // HTTP JSON 中的日期先使用 ISO 字符串，保存时再转换成 Date。
   @IsISO8601({ strict: true })
@@ -44,12 +41,6 @@ export class BasicInfoDto {
   @IsNotEmpty()
   @MaxLength(200)
   householdRegistration!: string;
-
-  @IsOptional()
-  @TrimString()
-  @IsString()
-  @MaxLength(30)
-  maritalStatus?: string;
 
   @TrimString()
   @IsString()

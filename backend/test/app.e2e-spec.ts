@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
+import sharp from 'sharp';
 import request from 'supertest';
 import { HrRole } from '../src/modules/auth/enums/hr-role.enum';
 import {
@@ -90,6 +91,18 @@ function getChinaTodayStartIso(): string {
   ).toISOString();
 }
 
+function parseBinaryResponse(
+  response: NodeJS.ReadableStream,
+  callback: (error: Error | null, body: Buffer) => void,
+): void {
+  const chunks: Buffer[] = [];
+
+  response.on('data', (chunk: Buffer | string) => {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  });
+  response.on('end', () => callback(null, Buffer.concat(chunks)));
+}
+
 // Today's arrangement is valid and already effective for location history.
 const ONBOARDING_START_AT = getChinaTodayStartIso();
 
@@ -122,7 +135,7 @@ describe('Intern onboarding API (e2e)', () => {
     await hrAgent
       .patch(`/api/hr/students/${student.id}/arrangement`)
       .send({
-        workLocation: '上海办公室',
+        workLocation: '上海办公室 - 会德丰',
         onboardingStartAt: ONBOARDING_START_AT,
       })
       .expect(200);
@@ -150,7 +163,6 @@ describe('Intern onboarding API (e2e)', () => {
         birthDate: '2000-01-01T00:00:00.000Z',
         idNumber: 'E2E-ID-NUMBER',
         householdRegistration: '上海',
-        maritalStatus: '未婚',
         currentSchool: 'E2E 测试大学',
         major: '计算机科学',
         degree: '硕士',
@@ -223,7 +235,7 @@ describe('Intern onboarding API (e2e)', () => {
     await hrAgent
       .patch(`/api/hr/students/${student.id}/arrangement`)
       .send({
-        workLocation: '上海办公室',
+        workLocation: '上海办公室 - 会德丰',
         onboardingStartAt: ONBOARDING_START_AT,
       })
       .expect(200);
@@ -324,11 +336,29 @@ describe('Intern onboarding API (e2e)', () => {
       .expect(200);
     const initialForm = responseBody<FormResponse>(initialFormResponse).form;
     expect(initialForm.canEdit).toBe(true);
-    expect(initialForm.workLocation).toBe('上海办公室');
+    expect(initialForm.workLocation).toBe('上海办公室 - 会德丰');
 
     const resume = Buffer.from('%PDF-1.7 E2E original resume');
-    const idCardFront = Buffer.from('%PDF-1.7 E2E identity document front');
-    const idCardBack = Buffer.from('%PDF-1.7 E2E identity document back');
+    const idCardFront = await sharp({
+      create: {
+        width: 800,
+        height: 500,
+        channels: 3,
+        background: '#ffffff',
+      },
+    })
+      .png()
+      .toBuffer();
+    const idCardBack = await sharp({
+      create: {
+        width: 800,
+        height: 500,
+        channels: 3,
+        background: '#f2f2f2',
+      },
+    })
+      .png()
+      .toBuffer();
 
     await studentAgent
       .post('/api/student/attachments')
@@ -342,16 +372,16 @@ describe('Intern onboarding API (e2e)', () => {
       .post('/api/student/attachments')
       .field('type', 'id_card_front')
       .attach('file', idCardFront, {
-        filename: 'identity-front.pdf',
-        contentType: 'application/pdf',
+        filename: 'identity-front.png',
+        contentType: 'image/png',
       })
       .expect(201);
     await studentAgent
       .post('/api/student/attachments')
       .field('type', 'id_card_back')
       .attach('file', idCardBack, {
-        filename: 'identity-back.pdf',
-        contentType: 'application/pdf',
+        filename: 'identity-back.png',
+        contentType: 'image/png',
       })
       .expect(201);
 
@@ -368,9 +398,9 @@ describe('Intern onboarding API (e2e)', () => {
     await studentAgent
       .post('/api/student/attachments')
       .field('type', 'id_card_back')
-      .attach('file', resume, {
-        filename: 'identity-back-replacement.pdf',
-        contentType: 'application/pdf',
+      .attach('file', idCardBack, {
+        filename: 'identity-back-replacement.png',
+        contentType: 'image/png',
       })
       .expect(409);
 
@@ -411,8 +441,30 @@ describe('Intern onboarding API (e2e)', () => {
       historyResponse,
     );
     expect(history.items.map((item) => item.workLocation)).toEqual(
-      expect.arrayContaining(['上海办公室', '线上']),
+      expect.arrayContaining(['上海办公室 - 会德丰', '线上']),
     );
+
+    const exportResponse = await hrAgent
+      .get(`/api/hr/students/${studentId}/export`)
+      .buffer(true)
+      .parse(parseBinaryResponse)
+      .expect(200)
+      .expect(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+    expect(exportResponse.headers['content-disposition']).toContain(
+      "filename*=UTF-8''",
+    );
+    const exportBody: unknown = exportResponse.body;
+    expect(Buffer.isBuffer(exportBody)).toBe(true);
+
+    if (!Buffer.isBuffer(exportBody)) {
+      throw new Error('Expected student export to return a Buffer');
+    }
+
+    // XLSX files are ZIP containers and start with the PK signature.
+    expect(exportBody.subarray(0, 2).toString()).toBe('PK');
 
     const logsResponse = await hrAgent
       .get(`/api/hr/students/${studentId}/operation-logs`)
@@ -425,6 +477,7 @@ describe('Intern onboarding API (e2e)', () => {
         'student.created',
         'student.profile.updated',
         'student.arrangement.updated',
+        'student.exported',
       ]),
     );
   });

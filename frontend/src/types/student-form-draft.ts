@@ -1,13 +1,16 @@
-import type { ApplicationDirection, StudentForm } from "@/types/student";
+import type {
+  ApplicationDirection,
+  Gender,
+  StudentForm,
+} from "@/types/student";
 
 export interface StudentBasicInfoDraft {
   position: string;
   applicationDirection: ApplicationDirection | "";
-  gender: string;
+  gender: Gender | "";
   birthDate: string;
   idNumber: string;
   householdRegistration: string;
-  maritalStatus: string;
   currentSchool: string;
   major: string;
   degree: string;
@@ -67,14 +70,16 @@ function toDateInputValue(value: string | null | undefined) {
   return value.slice(0, 10);
 }
 
-const emptyEducationExperience: EducationExperienceDraft = {
-  startYear: "",
-  endYear: "",
-  school: "",
-  major: "",
-  advisor: "",
-  phone: "",
-};
+export function createEmptyEducationExperienceDraft(): EducationExperienceDraft {
+  return {
+    startYear: "",
+    endYear: "",
+    school: "",
+    major: "",
+    advisor: "",
+    phone: "",
+  };
+}
 
 const emptyFamilyMember: FamilyMemberDraft = {
   relation: "",
@@ -95,7 +100,6 @@ export function createStudentFormDraft(form: StudentForm): StudentFormDraft {
       birthDate: toDateInputValue(basicInfo?.birthDate),
       idNumber: basicInfo?.idNumber ?? "",
       householdRegistration: basicInfo?.householdRegistration ?? "",
-      maritalStatus: basicInfo?.maritalStatus ?? "",
       currentSchool: basicInfo?.currentSchool ?? "",
       major: basicInfo?.major ?? "",
       degree: basicInfo?.degree ?? "",
@@ -112,7 +116,7 @@ export function createStudentFormDraft(form: StudentForm): StudentFormDraft {
           advisor: experience.advisor ?? "",
           phone: experience.phone ?? "",
         }))
-      : [{ ...emptyEducationExperience }],
+      : [createEmptyEducationExperienceDraft()],
     familyMembers: form.familyMembers.length
       ? form.familyMembers.map((member) => ({
           ...member,

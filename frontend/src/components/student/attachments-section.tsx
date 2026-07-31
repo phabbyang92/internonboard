@@ -41,15 +41,15 @@ const attachmentRules: AttachmentRule[] = [
     type: "id_card_front",
     label: "身份证正面（或外籍护照首页）",
     required: true,
-    accept: ".pdf,.jpg,.jpeg,.png",
-    formats: "PDF、JPG、PNG",
+    accept: ".jpg,.jpeg,.png",
+    formats: "JPG、PNG",
   },
   {
     type: "id_card_back",
     label: "身份证反面（或外籍护照签证页）",
     required: true,
-    accept: ".pdf,.jpg,.jpeg,.png",
-    formats: "PDF、JPG、PNG",
+    accept: ".jpg,.jpeg,.png",
+    formats: "JPG、PNG",
   },
 ];
 
@@ -206,17 +206,17 @@ export function AttachmentsSection({
           return (
             <div
               key={rule.type}
-              className="flex min-h-64 flex-col border border-[#d2dee8] bg-[#fbfcfc] p-5"
+              className="flex min-h-64 flex-col rounded-md border border-[#d2dee8] bg-[#fbfcfc] p-5"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
+              <div className="grid min-h-24 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                <div className="min-w-0">
                   <h3 className="text-base font-semibold">{rule.label}</h3>
                   <p className="mt-1 text-xs leading-5 text-[#6b7f92]">
                     {rule.formats}，不超过 10 MB
                   </p>
                 </div>
                 <span
-                  className={`border px-2 py-1 text-xs font-medium ${
+                  className={`inline-flex h-8 min-w-[3.25rem] shrink-0 items-center justify-center whitespace-nowrap rounded-md border px-2 text-xs font-medium ${
                     rule.required
                       ? "border-[#d7b4aa] bg-[#fff3f0] text-[#9a4736]"
                       : "border-[#ccd7d3] bg-white text-[#5f7285]"
@@ -226,16 +226,16 @@ export function AttachmentsSection({
                 </span>
               </div>
 
-              <div className="mt-5 flex-1 space-y-3">
+              <div className="mt-5 min-h-32 flex-1 space-y-3">
                 {matchingAttachments.length === 0 ? (
-                  <p className="border border-dashed border-[#c7d6e2] px-3 py-5 text-center text-sm text-[#6b7f92]">
+                  <p className="flex min-h-28 items-center justify-center rounded-md border border-dashed border-[#c7d6e2] px-3 py-5 text-center text-sm text-[#6b7f92]">
                     尚未上传
                   </p>
                 ) : (
                   matchingAttachments.map((attachment) => (
                     <div
                       key={attachment.storageKey}
-                      className="border border-[#d5e0e9] bg-white px-3 py-3"
+                      className="flex min-h-28 flex-col justify-between rounded-md border border-[#d5e0e9] bg-white px-3 py-3"
                     >
                       <p
                         className="break-all text-sm font-medium text-[#263746]"
@@ -248,7 +248,7 @@ export function AttachmentsSection({
                           <>
                             <button
                               type="button"
-                              className="min-h-9 bg-[#a13f2e] px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                              className="min-h-9 rounded-md bg-[#a13f2e] px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                               disabled={isBusy}
                               onClick={() => removeAttachment(attachment)}
                             >
@@ -258,7 +258,7 @@ export function AttachmentsSection({
                             </button>
                             <button
                               type="button"
-                              className="min-h-9 border border-[#c5d3de] px-3 py-1.5 text-xs font-medium text-[#52677a]"
+                              className="min-h-9 rounded-md border border-[#c5d3de] px-3 py-1.5 text-xs font-medium text-[#52677a]"
                               onClick={() => setConfirmingStorageKey(null)}
                             >
                               取消
@@ -267,7 +267,7 @@ export function AttachmentsSection({
                         ) : (
                           <button
                             type="button"
-                            className="min-h-9 border border-[#d7b4aa] px-3 py-1.5 text-xs font-medium text-[#a13f2e] hover:bg-[#fff3f0]"
+                            className="min-h-9 rounded-md border border-[#d7b4aa] px-3 py-1.5 text-xs font-medium text-[#a13f2e] hover:bg-[#fff3f0]"
                             disabled={isBusy}
                             onClick={() =>
                               setConfirmingStorageKey(attachment.storageKey)
@@ -283,7 +283,7 @@ export function AttachmentsSection({
               </div>
 
               <label
-                className={`mt-5 flex min-h-11 items-center justify-center border px-4 py-2 text-center text-sm font-semibold transition ${
+                className={`mt-5 flex min-h-11 items-center justify-center rounded-md border px-4 py-2 text-center text-sm font-semibold transition ${
                   isBusy
                     ? "cursor-wait border-[#b6c4d0] bg-[#eef3f7] text-[#728394]"
                     : "cursor-pointer border-[#184268] text-[#184268] hover:bg-[#edf4fa]"

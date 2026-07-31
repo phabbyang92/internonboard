@@ -19,12 +19,12 @@ const ALLOWED_FILE_RULES: Record<AttachmentType, AllowedFileRule> = {
     ],
   },
   [AttachmentType.IdCardFront]: {
-    extensions: ['.pdf', '.jpg', '.jpeg', '.png'],
-    mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+    extensions: ['.jpg', '.jpeg', '.png'],
+    mimeTypes: ['image/jpeg', 'image/png'],
   },
   [AttachmentType.IdCardBack]: {
-    extensions: ['.pdf', '.jpg', '.jpeg', '.png'],
-    mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+    extensions: ['.jpg', '.jpeg', '.png'],
+    mimeTypes: ['image/jpeg', 'image/png'],
   },
 };
 

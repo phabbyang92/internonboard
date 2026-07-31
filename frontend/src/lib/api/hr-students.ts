@@ -77,6 +77,30 @@ export function getHrStudent(id: string): Promise<HrStudentDetail> {
   return apiRequest<HrStudentDetail>(`/api/hr/students/${id}`);
 }
 
+export async function exportHrStudent(id: string) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/hr/students/${id}/export`,
+    { credentials: "include" },
+  );
+
+  if (!response.ok) {
+    const data: unknown = await response.json().catch(() => null);
+    throw new ApiError(getErrorMessage(data), response.status);
+  }
+
+  const contentDisposition = response.headers.get("Content-Disposition");
+  const encodedFileName = contentDisposition?.match(
+    /filename\*=UTF-8''([^;]+)/i,
+  )?.[1];
+
+  return {
+    blob: await response.blob(),
+    fileName: encodedFileName
+      ? decodeURIComponent(encodedFileName)
+      : "学生详情.xlsx",
+  };
+}
+
 export function updateHrStudentProfile(
   id: string,
   payload: UpdateHrProfilePayload,

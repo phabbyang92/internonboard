@@ -31,8 +31,8 @@ const attachmentLabels: Record<AttachmentType, string> = {
 
 const accepts: Record<AttachmentType, string> = {
   resume: ".pdf,.doc,.docx",
-  id_card_front: ".pdf,.jpg,.jpeg,.png",
-  id_card_back: ".pdf,.jpg,.jpeg,.png",
+  id_card_front: ".jpg,.jpeg,.png",
+  id_card_back: ".jpg,.jpeg,.png",
 };
 
 interface PendingReplacement {

@@ -2,8 +2,34 @@
 
 import { ApiError } from "@/lib/api/client";
 import { getCurrentStudent, loginStudent } from "@/lib/api/student-auth";
+import { Steps } from "antd";
+import { CalendarClock, ClipboardCheck, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+
+const STUDENT_WORKFLOW_STEPS = [
+  {
+    number: "01",
+    stage: "入职前",
+    title: "填写登记表",
+    description: "完善个人信息并上传所需附件，核对无误后提交。",
+    icon: ClipboardCheck,
+  },
+  {
+    number: "02",
+    stage: "等待入职",
+    title: "留意入职安排",
+    description: "登记完成后，按照 HR 安排等待入职日期。",
+    icon: CalendarClock,
+  },
+  {
+    number: "03",
+    stage: "入职后",
+    title: "完成每日考勤",
+    description: "工作日登记出勤；如需请假，提交请假申请。",
+    icon: UserCheck,
+  },
+] as const;
 
 function getStudentDestination(hasSubmitted: boolean): string {
   return hasSubmitted ? "/student/submitted" : "/student/form";
@@ -83,33 +109,60 @@ export default function StudentLoginPage() {
   return (
     <main className="min-h-screen bg-[#f3f7fa] text-[#172735]">
       <header className="border-b border-[#d5e0e9] bg-white">
-        <div className="mx-auto flex min-h-16 max-w-6xl items-center px-5 sm:px-8">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center px-5 sm:px-8">
           <span className="text-sm font-semibold text-[#30475b]">
-            学生入职登记系统
+            登记与考勤系统
           </span>
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl items-start gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:py-20">
-        <div className="max-w-xl pt-2 lg:pt-10">
-          <p className="text-sm font-semibold text-[#184268]">学生入口</p>
-          <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
-            入职登记
+      <section className="mx-auto grid max-w-7xl items-start gap-12 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:py-20">
+        <div className="min-w-0 pt-2 lg:pt-8">
+          <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+            登记与考勤工作台
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7 text-[#52677a]">
             请使用 HR 预录入的姓名和邮箱进入登记系统。
           </p>
 
-          <dl className="mt-10 grid gap-5 border-l-2 border-[#4f88b7] pl-5 text-sm">
-            <div>
-              <dt className="font-medium text-[#263a4b]">登录信息</dt>
-              <dd className="mt-1 text-[#5f7285]">姓名与邮箱需和入职名单一致</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-[#263a4b]">提交规则</dt>
-              <dd className="mt-1 text-[#5f7285]">登记表确认后只能提交一次</dd>
-            </div>
-          </dl>
+          <div
+            className="mt-11 rounded-lg border border-[#cbd9e4] bg-white px-5 py-7 shadow-[0_10px_30px_rgba(24,66,104,0.07)] sm:px-7 sm:py-8"
+            aria-label="学生登记与考勤流程"
+          >
+            <Steps
+              className="student-workflow-steps"
+              current={-1}
+              titlePlacement="vertical"
+              responsive
+              items={STUDENT_WORKFLOW_STEPS.map((step) => {
+                const Icon = step.icon;
+
+                return {
+                  status: "process",
+                  icon: (
+                    <span className="grid h-12 w-12 place-items-center rounded-full bg-[#184268] text-white shadow-[0_6px_16px_rgba(24,66,104,0.2)]">
+                      <Icon size={22} strokeWidth={1.8} aria-hidden="true" />
+                    </span>
+                  ),
+                  title: (
+                    <span className="block">
+                      <span className="block text-xs font-semibold text-[#52708a]">
+                        STEP {step.number} · {step.stage}
+                      </span>
+                      <span className="mt-1 block text-base font-semibold text-[#203446]">
+                        {step.title}
+                      </span>
+                    </span>
+                  ),
+                  content: (
+                    <span className="mx-auto mt-2 block max-w-48 text-sm leading-6 text-[#637789]">
+                      {step.description}
+                    </span>
+                  ),
+                };
+              })}
+            />
+          </div>
         </div>
 
         <form
@@ -119,7 +172,9 @@ export default function StudentLoginPage() {
         >
           <div>
             <h2 className="text-xl font-semibold">登录</h2>
-            <p className="mt-2 text-sm text-[#5f7285]">进入你的入职登记表</p>
+            <p className="mt-2 text-sm text-[#5f7285]">
+              进入你的登记与考勤工作台
+            </p>
           </div>
 
           <div className="mt-7 space-y-5">

@@ -7,6 +7,7 @@ import { WorkLocationHistoryModule } from '../work-location/work-location-histor
 import { HrAttachmentController } from './hr-attachment.controller';
 import { HrAttachmentService } from './hr-attachment.service';
 import { HrStudentManagementService } from './hr-student-management.service';
+import { HrStudentExportService } from './hr-student-export.service';
 import { HrStudentsController } from './hr-students.controller';
 
 @Module({
@@ -18,6 +19,10 @@ import { HrStudentsController } from './hr-students.controller';
     WorkLocationHistoryModule,
   ],
   controllers: [HrStudentsController, HrAttachmentController],
-  providers: [HrAttachmentService, HrStudentManagementService],
+  providers: [
+    HrAttachmentService,
+    HrStudentManagementService,
+    HrStudentExportService,
+  ],
 })
 export class HrModule {}

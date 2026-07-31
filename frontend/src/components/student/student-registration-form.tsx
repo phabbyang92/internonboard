@@ -24,8 +24,13 @@ import {
   buildStudentFormPayload,
   findIncompleteRequiredField,
 } from "@/lib/student-form-payload";
-import { APPLICATION_DIRECTIONS, type StudentForm } from "@/types/student";
 import {
+  APPLICATION_DIRECTIONS,
+  GENDERS,
+  type StudentForm,
+} from "@/types/student";
+import {
+  createEmptyEducationExperienceDraft,
   createStudentFormDraft,
   type StudentBasicInfoDraft,
   type EducationExperienceDraft,
@@ -36,15 +41,6 @@ import {
 interface StudentRegistrationFormProps {
   form: StudentForm;
 }
-
-const emptyEducationExperience: EducationExperienceDraft = {
-  startYear: "",
-  endYear: "",
-  school: "",
-  major: "",
-  advisor: "",
-  phone: "",
-};
 
 const emptyFamilyMember: FamilyMemberDraft = {
   relation: "",
@@ -96,7 +92,7 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
         // 创建新对象，避免不同经历意外共享同一份数据。
         educationExperiences: [
           ...current.educationExperiences,
-          { ...emptyEducationExperience },
+          createEmptyEducationExperienceDraft(),
         ],
       };
     });
@@ -406,12 +402,16 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
               className="min-h-11"
               value={draft.basicInfo.gender || undefined}
               placeholder="请选择"
-              options={[
-                { value: "女", label: "女" },
-                { value: "男", label: "男" },
-                { value: "其他", label: "其他" },
-              ]}
-              onChange={(value) => updateBasicInfo("gender", value)}
+              options={GENDERS.map((gender) => ({
+                value: gender,
+                label: gender,
+              }))}
+              onChange={(value) =>
+                updateBasicInfo(
+                  "gender",
+                  value as StudentBasicInfoDraft["gender"],
+                )
+              }
             />
           </FormField>
 
@@ -455,21 +455,6 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
               onChange={(event) =>
                 updateBasicInfo("householdRegistration", event.target.value)
               }
-            />
-          </FormField>
-
-          <FormField htmlFor="marital-status" label="婚姻状况">
-            <SelectInput
-              id="marital-status"
-              className="min-h-11"
-              value={draft.basicInfo.maritalStatus || undefined}
-              placeholder="请选择"
-              options={[
-                { value: "未婚", label: "未婚" },
-                { value: "已婚", label: "已婚" },
-                { value: "其他", label: "其他" },
-              ]}
-              onChange={(value) => updateBasicInfo("maritalStatus", value)}
             />
           </FormField>
 

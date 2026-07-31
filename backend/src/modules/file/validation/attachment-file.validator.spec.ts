@@ -27,11 +27,33 @@ function createFile(
 
 describe('validateAttachmentFile', () => {
   const validPdf = Buffer.from('%PDF-1.7 test file');
+  const validPng = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    Buffer.from('test image bytes'),
+  ]);
 
   it('accepts a PDF with matching extension, MIME type, and signature', () => {
     expect(() =>
       validateAttachmentFile(AttachmentType.Resume, createFile(validPdf)),
     ).not.toThrow();
+  });
+
+  it('accepts a PNG identity image with matching metadata', () => {
+    expect(() =>
+      validateAttachmentFile(
+        AttachmentType.IdCardFront,
+        createFile(validPng, 'identity.png', 'image/png'),
+      ),
+    ).not.toThrow();
+  });
+
+  it('rejects PDF identity documents because they cannot be watermarked safely', () => {
+    expect(() =>
+      validateAttachmentFile(
+        AttachmentType.IdCardBack,
+        createFile(validPdf, 'identity.pdf', 'application/pdf'),
+      ),
+    ).toThrow('该附件类型不支持文件格式 .pdf');
   });
 
   it('rejects an empty file', () => {

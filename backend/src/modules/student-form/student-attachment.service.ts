@@ -5,6 +5,7 @@ import {
 } from '../file/storage/file-storage.interface';
 import { normalizeUploadedFileName } from '../file/filename/normalize-uploaded-file-name';
 import { validateAttachmentFile } from '../file/validation/attachment-file.validator';
+import { IdCardWatermarkService } from '../file/processing/id-card-watermark.service';
 import { StudentService } from '../student/student.service';
 import { UploadAttachmentDto } from './dto/upload-attachment.dto';
 
@@ -18,6 +19,7 @@ export class StudentAttachmentService {
     // 业务层只依赖抽象，实际文件可由本地目录或 ownCloud 保存。
     @Inject(FILE_STORAGE)
     private readonly fileStorage: FileStorage,
+    private readonly idCardWatermarkService: IdCardWatermarkService,
   ) {}
 
   async upload(
@@ -26,19 +28,25 @@ export class StudentAttachmentService {
     file: Express.Multer.File,
   ) {
     // Submitted or deleted students cannot upload more attachments.
-    await this.studentService.ensureFormIsEditable(studentId);
+    const student = await this.studentService.ensureFormIsEditable(studentId);
 
     const originalName = normalizeUploadedFileName(file.originalname);
     const normalizedFile = { ...file, originalname: originalName };
 
     // Validate size, extension, MIME type, and file signature before saving.
     validateAttachmentFile(dto.type, normalizedFile);
+    const storedBuffer = await this.idCardWatermarkService.process({
+      type: dto.type,
+      originalName,
+      studentName: student.name,
+      buffer: file.buffer,
+    });
 
     const storageKey = await this.fileStorage.save({
       studentId,
       type: dto.type,
       originalName,
-      buffer: file.buffer,
+      buffer: storedBuffer,
     });
 
     try {

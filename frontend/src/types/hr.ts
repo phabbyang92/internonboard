@@ -180,6 +180,7 @@ export type OperationAction =
   | "student.attachment.uploaded"
   | "student.attachment.replaced"
   | "student.attachment.deleted"
+  | "student.exported"
   | "student.soft_deleted";
 
 export interface OperationLogItem {

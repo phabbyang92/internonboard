@@ -10,5 +10,6 @@ export enum OperationAction {
   AttachmentReplaced = 'student.attachment.replaced',
   AttachmentDeleted = 'student.attachment.deleted',
 
+  StudentExported = 'student.exported',
   StudentSoftDeleted = 'student.soft_deleted',
 }

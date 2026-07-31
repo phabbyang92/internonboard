@@ -540,11 +540,10 @@ HR 查询列表时使用同一个幂等方法补漏。正式多实例部署后�
   basicInfo: {
     position: String,
     formDate: Date,
-    gender: String,
+    gender: "男" | "女",
     birthDate: Date,
     idNumber: String,
     householdRegistration: String,
-    maritalStatus: String,
     currentSchool: String,
     major: String,
     degree: String,

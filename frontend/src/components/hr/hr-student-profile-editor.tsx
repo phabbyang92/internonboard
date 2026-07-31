@@ -7,9 +7,16 @@ import { SelectInput } from "@/components/ui/select-input";
 import { YearSelectInput } from "@/components/ui/year-select-input";
 import { ApiError } from "@/lib/api/client";
 import { updateHrStudentProfile } from "@/lib/api/hr-students";
-import { createStudentFormDraft } from "@/types/student-form-draft";
+import {
+  createEmptyEducationExperienceDraft,
+  createStudentFormDraft,
+} from "@/types/student-form-draft";
 import type { HrStudentDetail, UpdateHrProfilePayload } from "@/types/hr";
-import { APPLICATION_DIRECTIONS, type StudentBasicInfo } from "@/types/student";
+import {
+  APPLICATION_DIRECTIONS,
+  GENDERS,
+  type StudentBasicInfo,
+} from "@/types/student";
 
 interface Props {
   student: HrStudentDetail;
@@ -126,11 +133,10 @@ export function HrStudentProfileEditor({ student, onSaved, onCancel }: Props) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="申请职位"><input value={draft.basicInfo.position} onChange={(e) => updateBasic("position", e.target.value)} className={inputClass} /></Field>
           <Field label="投递方向"><SelectInput value={draft.basicInfo.applicationDirection || undefined} onChange={(value) => updateBasic("applicationDirection", value)} placeholder="未填写" options={APPLICATION_DIRECTIONS.map((item) => ({ value: item, label: item }))} className="mt-1.5 min-h-10" /></Field>
-          <Field label="性别"><input value={draft.basicInfo.gender} onChange={(e) => updateBasic("gender", e.target.value)} className={inputClass} /></Field>
+          <Field label="性别"><SelectInput value={draft.basicInfo.gender || undefined} onChange={(value) => updateBasic("gender", value)} placeholder="未填写" options={GENDERS.map((item) => ({ value: item, label: item }))} className="mt-1.5 min-h-10" /></Field>
           <Field label="出生日期"><DatePickerInput value={draft.basicInfo.birthDate} onChange={(e) => updateBasic("birthDate", e.target.value)} className={inputClass} /></Field>
           <Field label="身份证号码（或外籍护照号）"><input value={draft.basicInfo.idNumber} onChange={(e) => updateBasic("idNumber", e.target.value)} className={inputClass} /></Field>
           <Field label="户籍"><input value={draft.basicInfo.householdRegistration} onChange={(e) => updateBasic("householdRegistration", e.target.value)} className={inputClass} /></Field>
-          <Field label="婚姻状况"><input value={draft.basicInfo.maritalStatus} onChange={(e) => updateBasic("maritalStatus", e.target.value)} className={inputClass} /></Field>
           <Field label="当前学校"><input value={draft.basicInfo.currentSchool} onChange={(e) => updateBasic("currentSchool", e.target.value)} className={inputClass} /></Field>
           <Field label="专业"><input value={draft.basicInfo.major} onChange={(e) => updateBasic("major", e.target.value)} className={inputClass} /></Field>
           <Field label="学历"><input value={draft.basicInfo.degree} onChange={(e) => updateBasic("degree", e.target.value)} className={inputClass} /></Field>
@@ -141,7 +147,7 @@ export function HrStudentProfileEditor({ student, onSaved, onCancel }: Props) {
         </div>
       </Section>
 
-      <Section title="教育经历" action={<button type="button" onClick={() => setDraft({ ...draft, educationExperiences: [...draft.educationExperiences, { startYear: "", endYear: "", school: "", major: "", advisor: "", phone: "" }] })} className="text-sm font-medium text-[#184268]">添加经历</button>}>
+      <Section title="教育经历" action={<button type="button" onClick={() => setDraft({ ...draft, educationExperiences: [...draft.educationExperiences, createEmptyEducationExperienceDraft()] })} className="text-sm font-medium text-[#184268]">添加经历</button>}>
         <div className="space-y-3">
           {draft.educationExperiences.map((item, index) => (
             <div key={index} className="grid gap-3 border border-[#d5e0e9] p-3 sm:grid-cols-3">

@@ -54,6 +54,7 @@ const actionLabels: Record<OperationAction, string> = {
   "student.attachment.uploaded": "上传附件",
   "student.attachment.replaced": "替换附件",
   "student.attachment.deleted": "删除附件",
+  "student.exported": "导出学生信息",
   "student.soft_deleted": "删除学生",
 };
 

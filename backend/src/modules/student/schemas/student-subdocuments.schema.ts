@@ -1,5 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { ApplicationDirection, AttachmentType } from '../enums/student.enums';
+import {
+  ApplicationDirection,
+  AttachmentType,
+  Gender,
+} from '../enums/student.enums';
 
 @Schema({ _id: false })
 export class BasicInfo {
@@ -16,8 +20,8 @@ export class BasicInfo {
   @Prop({ type: Date })
   formDate?: Date;
 
-  @Prop({ trim: true })
-  gender?: string;
+  @Prop({ type: String, enum: Object.values(Gender), trim: true })
+  gender?: Gender;
 
   @Prop({ type: Date })
   birthDate?: Date;
@@ -27,9 +31,6 @@ export class BasicInfo {
 
   @Prop({ trim: true })
   householdRegistration?: string;
-
-  @Prop({ trim: true })
-  maritalStatus?: string;
 
   @Prop({ trim: true })
   currentSchool?: string;

@@ -1,6 +1,8 @@
 "use client";
 
 import { Select } from "antd";
+import type { RefSelectProps } from "antd";
+import { useRef } from "react";
 import type { ReactNode } from "react";
 
 export interface SelectInputOption<Value extends string | number = string> {
@@ -19,6 +21,7 @@ interface SelectInputProps<Value extends string | number = string> {
   className?: string;
   ariaLabel?: string;
   showSearch?: boolean;
+  initialScrollIndex?: number;
 }
 
 export function SelectInput<Value extends string | number = string>({
@@ -31,9 +34,27 @@ export function SelectInput<Value extends string | number = string>({
   className = "",
   ariaLabel,
   showSearch = false,
+  initialScrollIndex,
 }: SelectInputProps<Value>) {
+  const selectRef = useRef<RefSelectProps>(null);
+
+  function handleOpenChange(open: boolean) {
+    if (!open || initialScrollIndex === undefined) {
+      return;
+    }
+
+    // 下拉面板挂载后，再把指定选项滚动到可视区域中央附近。
+    requestAnimationFrame(() => {
+      selectRef.current?.scrollTo({
+        index: initialScrollIndex,
+        align: "top",
+      });
+    });
+  }
+
   return (
     <Select
+      ref={selectRef}
       id={id}
       value={value}
       options={options}
@@ -45,6 +66,7 @@ export function SelectInput<Value extends string | number = string>({
       showSearch={showSearch}
       optionFilterProp="label"
       aria-label={ariaLabel}
+      onOpenChange={handleOpenChange}
     />
   );
 }

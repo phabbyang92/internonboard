@@ -8,8 +8,11 @@ import {
   Post,
   Query,
   Req,
+  Res,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { HrAuthGuard } from '../auth/guards/hr-auth.guard';
 import type { AuthenticatedHrRequest } from '../auth/interfaces/authenticated-hr-request.interface';
 import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
@@ -25,6 +28,7 @@ import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { UpdateHrMemoDto } from './dto/update-hr-memo.dto';
 import { UpdateWorkLocationAssignmentDto } from './dto/update-work-location-assignment.dto';
 import { HrStudentManagementService } from './hr-student-management.service';
+import { HrStudentExportService } from './hr-student-export.service';
 
 @Controller('hr/students')
 @UseGuards(HrAuthGuard)
@@ -32,6 +36,7 @@ export class HrStudentsController {
   constructor(
     private readonly studentService: StudentService,
     private readonly hrStudentManagementService: HrStudentManagementService,
+    private readonly hrStudentExportService: HrStudentExportService,
   ) {}
 
   @Post()
@@ -78,6 +83,29 @@ export class HrStudentsController {
       query,
       this.getAccess(request),
     );
+  }
+
+  @Get(':id/export')
+  async exportStudent(
+    @Param('id') id: string,
+    @Req() request: AuthenticatedHrRequest,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const { buffer, fileName } = await this.hrStudentExportService.createExport(
+      id,
+      this.getAccess(request),
+    );
+
+    response.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      'Content-Length': String(buffer.byteLength),
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    });
+
+    return new StreamableFile(buffer);
   }
 
   @Get(':id')

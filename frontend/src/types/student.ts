@@ -11,13 +11,17 @@ export const APPLICATION_DIRECTIONS = ["咨询", "新媒体", "ai"] as const;
 
 export type ApplicationDirection = (typeof APPLICATION_DIRECTIONS)[number];
 
+export const GENDERS = ["男", "女"] as const;
+
+export type Gender = (typeof GENDERS)[number];
+
 export const WORK_LOCATIONS = [
   "北京办公室",
   "香港办公室",
-  "深圳办公室",
-  "深圳研究院",
-  "上海办公室",
-  "上海研究院",
+  "深圳办公室 - 1302",
+  "深圳办公室 - 41层",
+  "上海办公室 - 会德丰",
+  "上海办公室 - 绿地汇",
   "南京办公室",
   "线上",
 ] as const;
@@ -42,11 +46,10 @@ export interface StudentBasicInfo {
   position: string;
   applicationDirection: ApplicationDirection;
   formDate?: string | null;
-  gender: string;
+  gender: Gender;
   birthDate: string;
   idNumber: string;
   householdRegistration: string;
-  maritalStatus?: string;
   currentSchool: string;
   major: string;
   degree: string;

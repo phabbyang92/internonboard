@@ -79,6 +79,58 @@ input[type="radio"] {
   background: #eef3f7;
 }
 
+.student-workflow-steps .ant-steps-item-icon {
+  width: 48px;
+  height: 48px;
+  margin-inline-start: 0;
+  background: transparent;
+  border: 0;
+}
+
+.student-workflow-steps .ant-steps-item-tail {
+  top: 24px;
+  margin-inline-start: 34px;
+  padding-inline: 34px 10px;
+}
+
+.student-workflow-steps .ant-steps-item-tail::after {
+  height: 2px;
+  background: #a9c5da !important;
+}
+
+.student-workflow-steps .ant-steps-item-content {
+  margin-top: 15px;
+}
+
+.student-workflow-steps .ant-steps-item-title {
+  padding-inline-end: 0;
+}
+
+@media (max-width: 575px) {
+  .student-workflow-steps.ant-steps-vertical
+    > .ant-steps-item
+    > .ant-steps-item-container
+    > .ant-steps-item-tail {
+    inset-inline-start: 24px;
+    top: 48px;
+    padding: 8px 0 4px;
+  }
+
+  .student-workflow-steps.ant-steps-vertical
+    > .ant-steps-item
+    > .ant-steps-item-container
+    > .ant-steps-item-content {
+    min-height: 128px;
+    margin-top: 0;
+    margin-inline-start: 20px;
+    text-align: left;
+  }
+
+  .student-workflow-steps .ant-steps-item-description > span {
+    margin-inline: 0;
+  }
+}
+
 ::selection {
   background: #d7e6f2;
   color: #123653;

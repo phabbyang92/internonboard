@@ -7,6 +7,7 @@ import {
 } from '../file/storage/file-storage.interface';
 import { normalizeUploadedFileName } from '../file/filename/normalize-uploaded-file-name';
 import { validateAttachmentFile } from '../file/validation/attachment-file.validator';
+import { IdCardWatermarkService } from '../file/processing/id-card-watermark.service';
 import {
   Student,
   type StudentDocument,
@@ -31,6 +32,7 @@ export class HrAttachmentService {
     @Inject(FILE_STORAGE)
     private readonly fileStorage: FileStorage,
     private readonly operationLogService: OperationLogService,
+    private readonly idCardWatermarkService: IdCardWatermarkService,
   ) {}
 
   async upload(
@@ -39,15 +41,24 @@ export class HrAttachmentService {
     file: Express.Multer.File,
     access: HrAccessContext,
   ) {
-    await this.studentService.findOneByIdForHr(studentId, access);
+    const student = await this.studentService.findOneByIdForHr(
+      studentId,
+      access,
+    );
     const originalName = normalizeUploadedFileName(file.originalname);
     validateAttachmentFile(dto.type, { ...file, originalname: originalName });
+    const storedBuffer = await this.idCardWatermarkService.process({
+      type: dto.type,
+      originalName,
+      studentName: student.name,
+      buffer: file.buffer,
+    });
 
     const storageKey = await this.fileStorage.save({
       studentId,
       type: dto.type,
       originalName,
-      buffer: file.buffer,
+      buffer: storedBuffer,
     });
 
     const attachment = {
@@ -110,12 +121,18 @@ export class HrAttachmentService {
 
     const originalName = normalizeUploadedFileName(file.originalname);
     validateAttachmentFile(dto.type, { ...file, originalname: originalName });
+    const storedBuffer = await this.idCardWatermarkService.process({
+      type: dto.type,
+      originalName,
+      studentName: student.name,
+      buffer: file.buffer,
+    });
 
     const newStorageKey = await this.fileStorage.save({
       studentId,
       type: dto.type,
       originalName,
-      buffer: file.buffer,
+      buffer: storedBuffer,
     });
 
     const newAttachment = {

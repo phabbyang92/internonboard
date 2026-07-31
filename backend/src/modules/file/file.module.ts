@@ -6,10 +6,12 @@ import {
 } from './storage/file-storage.interface';
 import { LocalFileStorageService } from './storage/local-file-storage.service';
 import { OwnCloudFileStorageService } from './storage/owncloud-file-storage.service';
+import { IdCardWatermarkService } from './processing/id-card-watermark.service';
 
 @Module({
   imports: [ConfigModule],
   providers: [
+    IdCardWatermarkService,
     {
       provide: FILE_STORAGE,
       inject: [ConfigService],
@@ -32,6 +34,6 @@ import { OwnCloudFileStorageService } from './storage/owncloud-file-storage.serv
       },
     },
   ],
-  exports: [FILE_STORAGE],
+  exports: [FILE_STORAGE, IdCardWatermarkService],
 })
 export class FileModule {}

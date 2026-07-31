@@ -1,5 +1,6 @@
 import type {
   ApplicationDirection,
+  Gender,
   SubmitStudentFormPayload,
 } from "@/types/student";
 import type { StudentFormDraft } from "@/types/student-form-draft";
@@ -31,11 +32,10 @@ export function buildStudentFormPayload(
       applicationDirection: draft.basicInfo
         .applicationDirection as ApplicationDirection,
       birthDate: dateInputToIso(draft.basicInfo.birthDate),
-      gender: draft.basicInfo.gender.trim(),
+      gender: draft.basicInfo.gender as Gender,
       idNumber: draft.basicInfo.idNumber.trim(),
       householdRegistration:
         draft.basicInfo.householdRegistration.trim(),
-      maritalStatus: optionalString(draft.basicInfo.maritalStatus),
       currentSchool: draft.basicInfo.currentSchool.trim(),
       major: draft.basicInfo.major.trim(),
       degree: draft.basicInfo.degree.trim(),

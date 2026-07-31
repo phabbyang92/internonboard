@@ -218,10 +218,6 @@ export function StudentFormSubmitSection({
                     value={draft.basicInfo.householdRegistration}
                   />
                   <ReviewItem
-                    label="婚姻状况"
-                    value={displayValue(draft.basicInfo.maritalStatus)}
-                  />
-                  <ReviewItem
                     label="学历"
                     value={draft.basicInfo.degree}
                   />

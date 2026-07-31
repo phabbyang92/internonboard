@@ -3,6 +3,7 @@ import type { Model } from 'mongoose';
 import { Readable } from 'node:stream';
 import { HrRole } from '../auth/enums/hr-role.enum';
 import type { HrAccessContext } from '../auth/interfaces/hr-access-context.interface';
+import type { IdCardWatermarkService } from '../file/processing/id-card-watermark.service';
 import { OperationAction } from '../operation-log/enums/operation-action.enum';
 import { OperationLogService } from '../operation-log/operation-log.service';
 import { AttachmentType } from '../student/enums/student.enums';
@@ -42,6 +43,7 @@ describe('HrAttachmentService', () => {
     };
     const studentService = {
       findOneByIdForHr: jest.fn().mockResolvedValue({
+        name: '测试学生',
         attachments: [oldAttachment],
       }),
       addAttachmentMetadataByHr: jest.fn(),
@@ -60,6 +62,13 @@ describe('HrAttachmentService', () => {
     const operationLogService = {
       record: jest.fn().mockResolvedValue(undefined),
     };
+    const idCardWatermarkService = {
+      process: jest
+        .fn()
+        .mockImplementation(({ buffer }: { buffer: Buffer }) =>
+          Promise.resolve(buffer),
+        ),
+    };
 
     return {
       oldAttachment,
@@ -67,11 +76,13 @@ describe('HrAttachmentService', () => {
       studentModel,
       fileStorage,
       operationLogService,
+      idCardWatermarkService,
       service: new HrAttachmentService(
         studentService as unknown as StudentService,
         studentModel as unknown as Model<StudentDocument>,
         fileStorage,
         operationLogService as unknown as OperationLogService,
+        idCardWatermarkService as unknown as IdCardWatermarkService,
       ),
     };
   }
