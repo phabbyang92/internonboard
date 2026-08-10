@@ -14,6 +14,9 @@ export interface SaveFileInput {
 }
 
 export interface FileStorage {
+  // 就绪探针只检查存储是否可访问，不读取或返回任何业务附件。
+  checkAvailability(): Promise<void>;
+
   // 保存文件并返回数据库需要记录的相对 storageKey。
   save(input: SaveFileInput): Promise<string>;
 

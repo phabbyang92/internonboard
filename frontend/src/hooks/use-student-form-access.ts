@@ -1,8 +1,10 @@
 "use client";
 
 import { ApiError } from "@/lib/api/client";
-import { getCurrentStudent } from "@/lib/api/student-auth";
+import { getStudentPortal } from "@/lib/api/student-attendance";
 import { getStudentForm } from "@/lib/api/student-form";
+import { getStudentPortalPath } from "@/lib/student-portal-routing";
+import { STUDENT_SESSION_EXPIRED_PATH } from "@/lib/student-session";
 import type { StudentForm } from "@/types/student";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -28,30 +30,25 @@ export function useStudentFormAccess(
 
     async function loadPage() {
       try {
-        // /me checks the current Cookie before any form data is requested.
-        const { student } = await getCurrentStudent();
-        const shouldShowSubmittedPage = student.hasSubmitted;
+        // Portal state is the single source of truth for all student entry routes.
+        const portal = await getStudentPortal();
+        const expectedState = mode === "editable" ? "registration" : "waiting";
 
-        if (mode === "editable" && shouldShowSubmittedPage) {
-          router.replace("/student/submitted");
-          return;
-        }
-
-        if (mode === "submitted" && !shouldShowSubmittedPage) {
-          router.replace("/student/form");
+        if (portal.portalState !== expectedState) {
+          router.replace(getStudentPortalPath(portal.portalState));
           return;
         }
 
         const { form: studentForm } = await getStudentForm();
 
-        // Check again using current database data in case status changed.
+        // A mismatched form snapshot is routed through /student for a fresh decision.
         if (mode === "editable" && studentForm.hasSubmitted) {
-          router.replace("/student/submitted");
+          router.replace("/student");
           return;
         }
 
         if (mode === "submitted" && !studentForm.hasSubmitted) {
-          router.replace("/student/form");
+          router.replace("/student");
           return;
         }
 
@@ -64,7 +61,7 @@ export function useStudentFormAccess(
         }
 
         if (error instanceof ApiError && error.statusCode === 401) {
-          router.replace("/student/login");
+          router.replace(STUDENT_SESSION_EXPIRED_PATH);
           return;
         }
 

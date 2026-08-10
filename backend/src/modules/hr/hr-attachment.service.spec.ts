@@ -157,4 +157,17 @@ describe('HrAttachmentService', () => {
     ).rejects.toThrow(NotFoundException);
     expect(fileStorage.createReadStream).not.toHaveBeenCalled();
   });
+
+  it('does not open a storage key that is not attached to that student', async () => {
+    const { service, fileStorage } = createDependencies();
+
+    await expect(
+      service.createDownload(
+        STUDENT_ID,
+        'students/another-student/resume/private.pdf',
+        HR_ACCESS,
+      ),
+    ).rejects.toThrow(NotFoundException);
+    expect(fileStorage.createReadStream).not.toHaveBeenCalled();
+  });
 });

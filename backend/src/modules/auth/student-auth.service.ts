@@ -40,6 +40,10 @@ export class StudentAuthService {
     return this.studentService.findOneById(studentId);
   }
 
+  async getSessionStudent(studentId: string) {
+    return this.studentService.findActiveIdentityById(studentId);
+  }
+
   async validateLogin(dto: StudentLoginDto) {
     const student = await this.studentService.findByLoginIdentity(
       dto.name,

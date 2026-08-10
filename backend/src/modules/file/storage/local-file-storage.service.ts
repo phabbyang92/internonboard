@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
-import { createReadStream as createNodeReadStream } from 'node:fs';
-import { mkdir, stat, unlink, writeFile } from 'node:fs/promises';
+import { constants, createReadStream as createNodeReadStream } from 'node:fs';
+import { access, mkdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname, extname, posix, resolve, sep } from 'node:path';
 import type { Readable } from 'node:stream';
 import { AttachmentType } from '../../student/enums/student.enums';
@@ -29,6 +29,11 @@ export class LocalFileStorageService implements FileStorage {
 
     // 转成绝对路径，后续统一在这个目录内读写。
     this.uploadRoot = resolve(configuredRoot);
+  }
+
+  async checkAvailability(): Promise<void> {
+    await mkdir(this.uploadRoot, { recursive: true });
+    await access(this.uploadRoot, constants.R_OK | constants.W_OK);
   }
 
   async save(input: SaveFileInput): Promise<string> {

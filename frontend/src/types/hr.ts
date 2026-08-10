@@ -181,7 +181,8 @@ export type OperationAction =
   | "student.attachment.replaced"
   | "student.attachment.deleted"
   | "student.exported"
-  | "student.soft_deleted";
+  | "student.soft_deleted"
+  | "attendance.record.corrected";
 
 export interface OperationLogItem {
   id: string;

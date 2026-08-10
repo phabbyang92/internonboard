@@ -1,0 +1,47 @@
+{
+  "updatedByHrEmail": "admin@example.com",
+  "networks": [
+    {
+      "workLocation": "北京办公室",
+      "cidrs": [],
+      "enabled": false,
+      "description": "上线前由 IT 填写公网出口 IP/CIDR"
+    },
+    {
+      "workLocation": "香港办公室",
+      "cidrs": [],
+      "enabled": false,
+      "description": "上线前由 IT 填写公网出口 IP/CIDR"
+    },
+    {
+      "workLocation": "深圳办公室 - 1302",
+      "cidrs": [],
+      "enabled": false,
+      "description": "上线前由 IT 填写公网出口 IP/CIDR"
+    },
+    {
+      "workLocation": "深圳办公室 - 41层",
+      "cidrs": [],
+      "enabled": false,
+      "description": "上线前由 IT 填写公网出口 IP/CIDR"
+    },
+    {
+      "workLocation": "上海办公室 - 会德丰",
+      "cidrs": [],
+      "enabled": false,
+      "description": "上线前由 IT 填写公网出口 IP/CIDR"
+    },
+    {
+      "workLocation": "上海办公室 - 绿地汇",
+      "cidrs": ["140.207.40.253/32"],
+      "enabled": true,
+      "description": "已提供的上海绿地汇办公室 Wi-Fi 公网出口 IP"
+    },
+    {
+      "workLocation": "南京办公室",
+      "cidrs": [],
+      "enabled": false,
+      "description": "上线前由 IT 填写公网出口 IP/CIDR"
+    }
+  ]
+}

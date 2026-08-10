@@ -114,6 +114,7 @@ async function main(): Promise<void> {
       passwordHash,
       name: input.name,
       role: input.role,
+      managedRegionCodes: [],
       lastLoginAt: null,
     });
 

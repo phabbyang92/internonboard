@@ -70,4 +70,23 @@ export class AuthService {
       })),
     };
   }
+
+  async getSessionUser(hrUserId: string) {
+    const hrUser = await this.hrUserModel
+      .findById(hrUserId)
+      .select('email name role')
+      .lean()
+      .exec();
+
+    if (!hrUser) {
+      throw new UnauthorizedException('登录账号已不存在');
+    }
+
+    return {
+      id: hrUser._id.toString(),
+      email: hrUser.email,
+      name: hrUser.name,
+      role: hrUser.role,
+    };
+  }
 }

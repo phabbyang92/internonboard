@@ -79,6 +79,11 @@ describe('OwnCloudFileStorageService', () => {
     );
   });
 
+  it('checks the configured ownCloud root without reading an attachment', async () => {
+    await expect(service.checkAvailability()).resolves.toBeUndefined();
+    expect(client.exists).toHaveBeenCalledWith('/学生入职登记系统');
+  });
+
   it('returns a readable ownCloud stream for an existing file', async () => {
     const stream = new PassThrough();
     client.createReadStream.mockReturnValue(stream);

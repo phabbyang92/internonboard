@@ -2,6 +2,7 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 interface ApiErrorResponse {
+  code?: string;
   message?: string | string[];
   statusCode?: number;
   path?: string;
@@ -9,6 +10,8 @@ interface ApiErrorResponse {
 }
 
 export class ApiError extends Error {
+  public readonly code?: string;
+
   constructor(
     message: string,
     public readonly statusCode: number,
@@ -16,6 +19,7 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = "ApiError";
+    this.code = response?.code;
   }
 }
 

@@ -6,10 +6,17 @@ backend/dist/
 backend/coverage/
 backend/.env
 backend/uploads/
+backend/config/office-networks.local.json
+backend/config/office-networks.production.json
+backups/
 prototype/
+scripts/run-phase-8h-technical-gate.sh
 tmp/
 **/*-cookie.txt
 *.log
 .env
 .env.*
 !.env.example
+!**/.env.e2e.example
+!**/.env.production.example
+!**/.env.restore-verification.example

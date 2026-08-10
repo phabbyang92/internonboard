@@ -8,10 +8,14 @@ import { JwtService } from '@nestjs/jwt';
 import { HR_AUTH_COOKIE } from '../auth.constants';
 import type { AuthenticatedHrRequest } from '../interfaces/authenticated-hr-request.interface';
 import type { HrJwtPayload } from '../interfaces/hr-jwt-payload.interface';
+import { AuthService } from '../auth.service';
 
 @Injectable()
 export class HrAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly authService: AuthService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedHrRequest>();
@@ -31,7 +35,15 @@ export class HrAuthGuard implements CanActivate {
         throw new UnauthorizedException();
       }
 
-      request.hrUser = payload;
+      // JWT 通过后仍从数据库确认账号存在，并使用当前角色覆盖旧 token 信息。
+      const currentUser = await this.authService.getSessionUser(payload.sub);
+      request.hrUser = {
+        sub: currentUser.id,
+        actor: 'hr',
+        email: currentUser.email,
+        name: currentUser.name,
+        role: currentUser.role,
+      };
 
       return true;
     } catch {

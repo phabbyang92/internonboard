@@ -24,7 +24,13 @@ import { StudentAuthGuard } from './guards/student-auth.guard';
     }),
   ],
   providers: [AuthService, StudentAuthService, HrAuthGuard, StudentAuthGuard],
-  exports: [AuthService, HrAuthGuard, JwtModule, StudentAuthGuard],
+  exports: [
+    AuthService,
+    StudentAuthService,
+    HrAuthGuard,
+    StudentAuthGuard,
+    JwtModule,
+  ],
   controllers: [AuthController, StudentAuthController],
 })
 export class AuthModule {}

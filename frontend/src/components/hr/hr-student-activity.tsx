@@ -56,6 +56,7 @@ const actionLabels: Record<OperationAction, string> = {
   "student.attachment.deleted": "删除附件",
   "student.exported": "导出学生信息",
   "student.soft_deleted": "删除学生",
+  "attendance.record.corrected": "更正考勤记录",
 };
 
 const sourceLabels: Record<WorkLocationHistoryItem["source"], string> = {
@@ -103,6 +104,15 @@ function valueText(value: unknown): string {
 
 function describeChanges(changes: Record<string, unknown> | null): string {
   if (!changes) return "无补充信息";
+
+  if (
+    typeof changes.attendanceDate === "string" &&
+    changes.after &&
+    typeof changes.after === "object" &&
+    "status" in changes.after
+  ) {
+    return `考勤日期：${formatDateOnly(changes.attendanceDate)}；原因：${valueText(changes.reason)}`;
+  }
 
   if (Array.isArray(changes.fields)) {
     return `修改字段：${changes.fields

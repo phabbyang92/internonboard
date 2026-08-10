@@ -12,6 +12,7 @@ export function HrPageState({
       <p
         className={isError ? "text-sm text-[#9d3426]" : "text-sm text-[#52677a]"}
         role={isError ? "alert" : "status"}
+        aria-live={isError ? "assertive" : "polite"}
       >
         {message}
       </p>

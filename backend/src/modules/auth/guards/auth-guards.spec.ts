@@ -6,6 +6,8 @@ import type { AuthenticatedHrRequest } from '../interfaces/authenticated-hr-requ
 import type { AuthenticatedStudentRequest } from '../interfaces/authenticated-student-request.interface';
 import { HrAuthGuard } from './hr-auth.guard';
 import { StudentAuthGuard } from './student-auth.guard';
+import { AuthService } from '../auth.service';
+import { StudentAuthService } from '../student-auth.service';
 
 function createContext<TRequest extends object>(request: TRequest) {
   return {
@@ -18,10 +20,15 @@ function createContext<TRequest extends object>(request: TRequest) {
 describe('authentication guards', () => {
   describe('HrAuthGuard', () => {
     const verifyAsync = jest.fn();
-    const guard = new HrAuthGuard({ verifyAsync } as unknown as JwtService);
+    const getSessionUser = jest.fn();
+    const guard = new HrAuthGuard(
+      { verifyAsync } as unknown as JwtService,
+      { getSessionUser } as unknown as AuthService,
+    );
 
     beforeEach(() => {
       verifyAsync.mockReset();
+      getSessionUser.mockReset();
     });
 
     it('rejects requests without an HR cookie', async () => {
@@ -44,6 +51,12 @@ describe('authentication guards', () => {
         role: HrRole.Hr,
       } as const;
       verifyAsync.mockResolvedValue(payload);
+      getSessionUser.mockResolvedValue({
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        role: payload.role,
+      });
       const request = {
         cookies: { hr_access_token: 'valid-token' },
       } as unknown as AuthenticatedHrRequest;
@@ -78,16 +91,34 @@ describe('authentication guards', () => {
         '登录已失效，请重新登录',
       );
     });
+
+    it('rejects a valid token after the HR account no longer exists', async () => {
+      verifyAsync.mockResolvedValue({
+        sub: 'deleted-hr-id',
+        actor: 'hr',
+      });
+      getSessionUser.mockRejectedValue(new Error('missing account'));
+      const request = {
+        cookies: { hr_access_token: 'previously-valid-token' },
+      } as unknown as AuthenticatedHrRequest;
+
+      await expect(guard.canActivate(createContext(request))).rejects.toThrow(
+        '登录已失效，请重新登录',
+      );
+    });
   });
 
   describe('StudentAuthGuard', () => {
     const verifyAsync = jest.fn();
-    const guard = new StudentAuthGuard({
-      verifyAsync,
-    } as unknown as JwtService);
+    const getSessionStudent = jest.fn();
+    const guard = new StudentAuthGuard(
+      { verifyAsync } as unknown as JwtService,
+      { getSessionStudent } as unknown as StudentAuthService,
+    );
 
     beforeEach(() => {
       verifyAsync.mockReset();
+      getSessionStudent.mockReset();
     });
 
     it('rejects requests without a student cookie', async () => {
@@ -108,6 +139,11 @@ describe('authentication guards', () => {
         email: 'student@example.com',
       } as const;
       verifyAsync.mockResolvedValue(payload);
+      getSessionStudent.mockResolvedValue({
+        id: payload.sub,
+        name: payload.name,
+        email: payload.email,
+      });
       const request = {
         cookies: { student_access_token: 'valid-token' },
       } as unknown as AuthenticatedStudentRequest;
@@ -126,6 +162,21 @@ describe('authentication guards', () => {
 
       await expect(guard.canActivate(createContext(request))).rejects.toThrow(
         UnauthorizedException,
+      );
+    });
+
+    it('rejects a valid token after the student is soft deleted', async () => {
+      verifyAsync.mockResolvedValue({
+        sub: 'deleted-student-id',
+        actor: 'student',
+      });
+      getSessionStudent.mockRejectedValue(new Error('soft deleted'));
+      const request = {
+        cookies: { student_access_token: 'previously-valid-token' },
+      } as unknown as AuthenticatedStudentRequest;
+
+      await expect(guard.canActivate(createContext(request))).rejects.toThrow(
+        '登录已失效，请重新登录',
       );
     });
   });

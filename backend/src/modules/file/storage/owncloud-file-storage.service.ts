@@ -58,6 +58,18 @@ export class OwnCloudFileStorageService implements FileStorage {
     this.clientPromise = clientFactory(url, { username, password });
   }
 
+  async checkAvailability(): Promise<void> {
+    try {
+      const client = await this.clientPromise;
+
+      if (!(await client.exists(this.remoteRoot))) {
+        throw new Error('configured ownCloud root does not exist');
+      }
+    } catch (error: unknown) {
+      this.throwStorageUnavailable('健康检查', error);
+    }
+  }
+
   async save(input: SaveFileInput): Promise<string> {
     this.assertSafeStudentId(input.studentId);
 
@@ -176,8 +188,11 @@ export class OwnCloudFileStorageService implements FileStorage {
   }
 
   private throwStorageUnavailable(action: string, error: unknown): never {
-    const message = error instanceof Error ? error.message : String(error);
-    this.logger.error(`ownCloud ${action}附件失败: ${message}`);
+    const statusCode = this.getStatusCode(error);
+    const errorName = error instanceof Error ? error.name : 'UnknownError';
+    this.logger.error(
+      `ownCloud ${action}附件失败 (${errorName}, status=${statusCode ?? 'unknown'})`,
+    );
 
     throw new ServiceUnavailableException(
       `附件存储服务暂时不可用，${action}失败`,

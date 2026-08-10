@@ -8,10 +8,14 @@ import { JwtService } from '@nestjs/jwt';
 import { STUDENT_AUTH_COOKIE } from '../auth.constants';
 import type { AuthenticatedStudentRequest } from '../interfaces/authenticated-student-request.interface';
 import type { StudentJwtPayload } from '../interfaces/student-jwt-payload.interface';
+import { StudentAuthService } from '../student-auth.service';
 
 @Injectable()
 export class StudentAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly studentAuthService: StudentAuthService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
@@ -34,8 +38,16 @@ export class StudentAuthGuard implements CanActivate {
         throw new UnauthorizedException();
       }
 
-      // 后续 Controller 可以直接读取当前学生身份。
-      request.studentUser = payload;
+      // 软删除学生后，旧 Cookie 立即失效；姓名和邮箱也以数据库当前值为准。
+      const currentStudent = await this.studentAuthService.getSessionStudent(
+        payload.sub,
+      );
+      request.studentUser = {
+        sub: currentStudent.id,
+        actor: 'student',
+        name: currentStudent.name,
+        email: currentStudent.email,
+      };
 
       return true;
     } catch {

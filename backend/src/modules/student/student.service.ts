@@ -57,6 +57,26 @@ export class StudentService {
       .exec();
   }
 
+  async findActiveIdentityById(id: string) {
+    this.validateStudentId(id);
+
+    const student = await this.studentModel
+      .findOne({ _id: id, isDeleted: false })
+      .select('name email')
+      .lean()
+      .exec();
+
+    if (!student) {
+      throw new NotFoundException('学生不存在');
+    }
+
+    return {
+      id: student._id.toString(),
+      name: student.name,
+      email: student.email,
+    };
+  }
+
   async ensureStudentExistsIncludingDeleted(id: string): Promise<void> {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('学生 ID 格式错误');

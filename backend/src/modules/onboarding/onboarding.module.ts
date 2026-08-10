@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { StudentModule } from '../student/student.module';
 import { OnboardingStatusScheduler } from './onboarding-status.scheduler';
 import { WorkLocationHistoryModule } from '../work-location/work-location-history.module';
+import { ObservabilityModule } from '../../common/observability/observability.module';
 
 @Module({
-  imports: [StudentModule, WorkLocationHistoryModule],
+  imports: [StudentModule, WorkLocationHistoryModule, ObservabilityModule],
   providers: [OnboardingStatusScheduler],
 })
 export class OnboardingModule {}

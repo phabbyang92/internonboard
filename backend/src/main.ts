@@ -1,23 +1,22 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { configureHttpSecurity } from './common/security/http-security';
+import { requestIdMiddleware } from './common/http/request-id.middleware';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
   const port = Number(config.get<string>('PORT') ?? 3001);
 
   app.setGlobalPrefix('api');
 
+  app.use(requestIdMiddleware);
   app.use(cookieParser());
-
-  app.enableCors({
-    origin: config.getOrThrow<string>('FRONTEND_ORIGIN'),
-    credentials: true,
-    exposedHeaders: ['Content-Disposition'],
-  });
+  configureHttpSecurity(app, config);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -28,7 +27,7 @@ async function bootstrap() {
   );
 
   await app.listen(port);
-  new Logger('Bootstrap').log(`API running at http://localhost:${port}`);
+  new Logger('Bootstrap').log(`API listening on port ${port}`);
 }
 
 void bootstrap();

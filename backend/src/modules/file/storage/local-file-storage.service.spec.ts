@@ -40,6 +40,10 @@ describe('LocalFileStorageService', () => {
     );
   });
 
+  it('reports the local upload directory as available', async () => {
+    await expect(service.checkAvailability()).resolves.toBeUndefined();
+  });
+
   it('creates a readable stream for an existing file', async () => {
     const storageKey = await service.save({
       studentId: 'student-id',

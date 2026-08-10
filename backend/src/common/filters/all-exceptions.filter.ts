@@ -6,7 +6,8 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
+import type { RequestWithId } from '../http/request-id.middleware';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -15,7 +16,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
-    const request = context.getRequest<Request>();
+    const request = context.getRequest<RequestWithId>();
+    const safePath = request.path || request.url.split('?')[0];
+    const requestId = request.requestId;
 
     const isHttpException = exception instanceof HttpException;
 
@@ -26,6 +29,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const exceptionBody = isHttpException ? exception.getResponse() : null;
 
     let message: string | string[] = 'Internal server error';
+    let code: string | undefined;
 
     if (typeof exceptionBody === 'string') {
       message = exceptionBody;
@@ -39,6 +43,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (typeof value === 'string' || Array.isArray(value)) {
         message = value as string | string[];
       }
+
+      if ('code' in exceptionBody && typeof exceptionBody.code === 'string') {
+        code = exceptionBody.code;
+      }
     }
 
     if (status >= 500) {
@@ -47,15 +55,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ? (exception.stack ?? exception.message)
           : String(exception);
 
-      this.logger.error(errorMessage);
+      this.logger.error(
+        `event=http_request_failed method=${request.method} path=${safePath} ` +
+          `status=${status} requestId=${requestId ?? 'unavailable'}`,
+        errorMessage,
+      );
     }
 
     response.status(status).json({
       success: false,
       statusCode: status,
+      ...(code ? { code } : {}),
       message,
-      path: request.url,
+      // Query parameters may contain storage keys or other private metadata.
+      path: safePath,
       timestamp: new Date().toISOString(),
+      ...(requestId ? { requestId } : {}),
     });
   }
 }

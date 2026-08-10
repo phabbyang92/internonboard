@@ -19,6 +19,7 @@ import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { SelectInput } from "@/components/ui/select-input";
 import { YearSelectInput } from "@/components/ui/year-select-input";
 import { ApiError } from "@/lib/api/client";
+import { STUDENT_SESSION_EXPIRED_PATH } from "@/lib/student-session";
 import { submitStudentForm } from "@/lib/api/student-form";
 import {
   buildStudentFormPayload,
@@ -285,7 +286,7 @@ export function StudentRegistrationForm({ form }: StudentRegistrationFormProps) 
       setIsConfirmationOpen(false);
 
       if (error instanceof ApiError && error.statusCode === 401) {
-        router.replace("/student/login");
+        router.replace(STUDENT_SESSION_EXPIRED_PATH);
         return;
       }
 

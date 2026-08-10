@@ -9,11 +9,15 @@ import { mkdir, rm } from 'node:fs/promises';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { ConfigService } from '@nestjs/config';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { configureHttpSecurity } from '../src/common/security/http-security';
 import { HrRole } from '../src/modules/auth/enums/hr-role.enum';
 import {
   HrUser,
   HrUserDocument,
 } from '../src/modules/auth/schemas/hr-user.schema';
+import { assertE2eMongoUri, assertE2eUploadDirectory } from './e2e-environment';
 
 export const TEST_HR = {
   email: 'e2e.hr@example.com',
@@ -28,13 +32,17 @@ export interface TestHrAccount {
 }
 
 export async function createE2eApp(): Promise<INestApplication> {
+  assertE2eMongoUri(process.env.MONGODB_URI ?? '');
+  assertE2eUploadDirectory(process.env.UPLOAD_DIR ?? '');
+
   const moduleFixture = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
 
-  const app = moduleFixture.createNestApplication();
+  const app = moduleFixture.createNestApplication<NestExpressApplication>();
   app.setGlobalPrefix('api');
   app.use(cookieParser());
+  configureHttpSecurity(app, app.get(ConfigService));
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -63,9 +71,15 @@ export async function resetE2eState(app: INestApplication): Promise<void> {
   const uploadDir = process.env.UPLOAD_DIR;
 
   if (uploadDir) {
-    await rm(uploadDir, { recursive: true, force: true });
-    await mkdir(uploadDir, { recursive: true });
+    const safeUploadDir = assertE2eUploadDirectory(uploadDir);
+    await rm(safeUploadDir, { recursive: true, force: true });
+    await mkdir(safeUploadDir, { recursive: true });
   }
+}
+
+export async function removeE2eUploadDirectory(): Promise<void> {
+  const uploadDir = assertE2eUploadDirectory(process.env.UPLOAD_DIR ?? '');
+  await rm(uploadDir, { recursive: true, force: true });
 }
 
 export async function seedHr(
@@ -99,11 +113,13 @@ export async function loginHr(
 export function assertE2eDatabase(connection: Connection): void {
   const databaseName = connection.db?.databaseName;
 
-  if (!databaseName?.endsWith('_e2e')) {
+  if (!databaseName) {
     throw new Error(
-      `Refusing to clean non-E2E MongoDB database: ${databaseName ?? 'unknown'}`,
+      'Refusing to clean MongoDB because the connected database is unknown',
     );
   }
+
+  assertE2eMongoUri(`mongodb://e2e.invalid/${databaseName}`);
 }
 
 export function responseBody<T>(response: request.Response): T {

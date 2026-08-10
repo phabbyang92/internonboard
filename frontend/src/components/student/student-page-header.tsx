@@ -6,7 +6,7 @@ import { useState } from "react";
 
 interface StudentPageHeaderProps {
   studentName: string;
-  studentEmail: string;
+  studentEmail?: string;
 }
 
 export function StudentPageHeader({
@@ -41,7 +41,9 @@ export function StudentPageHeader({
             <p className="truncate text-sm font-medium text-[#263a4b]">
               {studentName}
             </p>
-            <p className="truncate text-xs text-[#6b7f92]">{studentEmail}</p>
+            {studentEmail ? (
+              <p className="truncate text-xs text-[#6b7f92]">{studentEmail}</p>
+            ) : null}
           </div>
           <button
             type="button"

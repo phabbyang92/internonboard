@@ -12,4 +12,11 @@ export enum OperationAction {
 
   StudentExported = 'student.exported',
   StudentSoftDeleted = 'student.soft_deleted',
+
+  AttendanceCalendarCreated = 'attendance.calendar.created',
+  AttendanceCalendarUpdated = 'attendance.calendar.updated',
+  AttendanceCalendarDeleted = 'attendance.calendar.deleted',
+  AttendanceRecordCorrected = 'attendance.record.corrected',
+  HrRegionsUpdated = 'hr.regions.updated',
+  OfficeNetworkUpdated = 'attendance.office_network.updated',
 }

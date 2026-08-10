@@ -17,6 +17,8 @@ import { HrLoginDto } from './dto/hr-login.dto';
 import { HrAuthGuard } from './guards/hr-auth.guard';
 import type { AuthenticatedHrRequest } from './interfaces/authenticated-hr-request.interface';
 import { HrRole } from './enums/hr-role.enum';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { createAuthCookieOptions } from './auth-cookie.options';
 
 @Controller('hr')
 export class AuthController {
@@ -44,6 +46,8 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000, blockDuration: 300_000 } })
   async login(
     @Body() dto: HrLoginDto,
     @Res({ passthrough: true }) response: Response,
@@ -51,13 +55,11 @@ export class AuthController {
     const { accessToken, user } = await this.authService.login(dto);
 
     // HttpOnly prevents frontend JavaScript from reading the token.
-    response.cookie(HR_AUTH_COOKIE, accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: HR_AUTH_COOKIE_MAX_AGE_MS,
-      path: '/',
-    });
+    response.cookie(
+      HR_AUTH_COOKIE,
+      accessToken,
+      createAuthCookieOptions(process.env.NODE_ENV, HR_AUTH_COOKIE_MAX_AGE_MS),
+    );
 
     // Never return the token or password hash in the response body.
     return { user };
@@ -67,11 +69,9 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   logout(@Res({ passthrough: true }) response: Response): void {
     // Cookie options should match the options used during login.
-    response.clearCookie(HR_AUTH_COOKIE, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-    });
+    response.clearCookie(
+      HR_AUTH_COOKIE,
+      createAuthCookieOptions(process.env.NODE_ENV),
+    );
   }
 }

@@ -3,6 +3,9 @@ import { getModelToken } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import sharp from 'sharp';
 import request from 'supertest';
+import { AttendanceCheckInService } from '../src/modules/attendance/attendance-check-in.service';
+import { AttendanceStatus } from '../src/modules/attendance/enums/attendance-status.enum';
+import { CheckInMode } from '../src/modules/attendance/enums/check-in-mode.enum';
 import { HrRole } from '../src/modules/auth/enums/hr-role.enum';
 import {
   HrUser,
@@ -12,6 +15,7 @@ import {
   createE2eApp,
   getE2eHttpServer,
   loginHr,
+  removeE2eUploadDirectory,
   resetE2eState,
   responseBody,
   seedHr,
@@ -121,6 +125,7 @@ describe('Intern onboarding API (e2e)', () => {
   afterAll(async () => {
     await resetE2eState(app);
     await app.close();
+    await removeE2eUploadDirectory();
   });
 
   async function createStudentAndArrange(
@@ -205,10 +210,34 @@ describe('Intern onboarding API (e2e)', () => {
     const hrAgent = request.agent(server);
     const studentAgent = request.agent(server);
 
-    await anonymous
+    const healthResponse = await anonymous
       .get('/api/health')
       .expect(200)
       .expect({ status: 'ok', service: 'intern-onboarding-api' });
+    expect(healthResponse.headers['x-powered-by']).toBeUndefined();
+    expect(healthResponse.headers['x-content-type-options']).toBe('nosniff');
+    expect(healthResponse.headers['strict-transport-security']).toBeUndefined();
+
+    const allowedPreflight = await anonymous
+      .options('/api/hr/login')
+      .set('Origin', 'http://localhost:3000')
+      .set('Access-Control-Request-Method', 'POST')
+      .expect(204);
+    expect(allowedPreflight.headers['access-control-allow-origin']).toBe(
+      'http://localhost:3000',
+    );
+    expect(allowedPreflight.headers['access-control-allow-credentials']).toBe(
+      'true',
+    );
+
+    const deniedPreflight = await anonymous
+      .options('/api/hr/login')
+      .set('Origin', 'https://untrusted.example.com')
+      .set('Access-Control-Request-Method', 'POST')
+      .expect(404);
+    expect(
+      deniedPreflight.headers['access-control-allow-origin'],
+    ).toBeUndefined();
     await anonymous.get('/api/hr/students').expect(401);
 
     await hrAgent
@@ -265,6 +294,67 @@ describe('Intern onboarding API (e2e)', () => {
     await studentAgent.get('/api/student/me').expect(401);
     await hrAgent.post('/api/hr/logout').expect(204);
     await hrAgent.get('/api/hr/me').expect(401);
+  });
+
+  it('protects the student check-in route and forwards validated requests', async () => {
+    const server = getE2eHttpServer(app);
+    const anonymous = request(server);
+    const hrAgent = request.agent(server);
+    const studentAgent = request.agent(server);
+    expect((await loginHr(hrAgent)).status).toBe(200);
+    const studentId = await createStudentAndArrange(hrAgent);
+
+    await anonymous
+      .post('/api/student/attendance/check-in')
+      .send({
+        checkInMode: CheckInMode.Online,
+        deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      })
+      .expect(401);
+
+    expect((await loginStudent(studentAgent)).status).toBe(200);
+    await studentAgent
+      .post('/api/student/attendance/check-in')
+      .send({
+        checkInMode: CheckInMode.Online,
+        deviceId: 'not-a-uuid',
+      })
+      .expect(400);
+
+    const checkInAt = new Date('2026-08-06T01:30:00.000Z');
+    const service = app.get(AttendanceCheckInService);
+    const checkInSpy = jest.spyOn(service, 'checkIn').mockResolvedValueOnce({
+      attendanceDate: '2026-08-06',
+      status: AttendanceStatus.OnTime,
+      lateLevel: null,
+      message: '打卡成功',
+      checkInAt,
+      assignedWorkLocation: '上海办公室 - 会德丰',
+      checkInMode: CheckInMode.Online,
+      checkInLocation: '线上',
+    });
+
+    const response = await studentAgent
+      .post('/api/student/attendance/check-in')
+      .send({
+        checkInMode: CheckInMode.Online,
+        deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      })
+      .expect(200);
+
+    expect(responseBody<{ message: string }>(response).message).toBe(
+      '打卡成功',
+    );
+    expect(checkInSpy).toHaveBeenCalledWith(
+      studentId,
+      {
+        checkInMode: CheckInMode.Online,
+        deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      },
+      expect.any(String),
+    );
+
+    checkInSpy.mockRestore();
   });
 
   it('isolates regular HR students and lets an administrator view all owners', async () => {
@@ -610,7 +700,8 @@ describe('Intern onboarding API (e2e)', () => {
       .send({ reason: '  offer 发生变动  ' })
       .expect(200);
 
-    await studentAgent.get('/api/student/form').expect(404);
+    // Soft deletion revokes the previously issued student session immediately.
+    await studentAgent.get('/api/student/form').expect(401);
     const newStudentAgent = request.agent(server);
     expect((await loginStudent(newStudentAgent)).status).toBe(401);
     await hrAgent.get(`/api/hr/students/${student.id}`).expect(404);

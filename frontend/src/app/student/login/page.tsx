@@ -1,7 +1,10 @@
 "use client";
 
 import { ApiError } from "@/lib/api/client";
-import { getCurrentStudent, loginStudent } from "@/lib/api/student-auth";
+import { getStudentPortal } from "@/lib/api/student-attendance";
+import { loginStudent } from "@/lib/api/student-auth";
+import { getStudentPortalPath } from "@/lib/student-portal-routing";
+import { isStudentSessionExpiredReason } from "@/lib/student-session";
 import { Steps } from "antd";
 import { CalendarClock, ClipboardCheck, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -31,10 +34,6 @@ const STUDENT_WORKFLOW_STEPS = [
   },
 ] as const;
 
-function getStudentDestination(hasSubmitted: boolean): string {
-  return hasSubmitted ? "/student/submitted" : "/student/form";
-}
-
 export default function StudentLoginPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -45,15 +44,21 @@ export default function StudentLoginPage() {
 
   useEffect(() => {
     let isActive = true;
+    const sessionExpired = isStudentSessionExpiredReason(
+      new URLSearchParams(window.location.search).get("reason"),
+    );
 
-    void getCurrentStudent()
-      .then(({ student }) => {
+    void getStudentPortal()
+      .then((portal) => {
         if (isActive) {
-          router.replace(getStudentDestination(student.hasSubmitted));
+          router.replace(getStudentPortalPath(portal.portalState));
         }
       })
       .catch(() => {
         // A missing/expired Cookie is the normal state on the login page.
+        if (isActive && sessionExpired) {
+          setErrorMessage("登录已过期，请重新输入姓名和邮箱进入系统。");
+        }
       })
       .finally(() => {
         if (isActive) {
@@ -81,12 +86,13 @@ export default function StudentLoginPage() {
     setIsSubmitting(true);
 
     try {
-      const { student } = await loginStudent({
+      await loginStudent({
         name: normalizedName,
         email: normalizedEmail,
       });
+      const portal = await getStudentPortal();
 
-      router.replace(getStudentDestination(student.hasSubmitted));
+      router.replace(getStudentPortalPath(portal.portalState));
     } catch (error: unknown) {
       setErrorMessage(
         error instanceof ApiError ? error.message : "登录失败，请稍后重试",
@@ -229,7 +235,7 @@ export default function StudentLoginPage() {
             disabled={isSubmitting}
             className="mt-7 h-11 w-full bg-[#184268] px-4 text-sm font-semibold text-white transition hover:bg-[#123653] focus:outline-none focus:ring-2 focus:ring-[#184268] focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#8ea8bc]"
           >
-            {isSubmitting ? "正在登录..." : "进入登记系统"}
+            {isSubmitting ? "正在登录..." : "进入工作台"}
           </button>
         </form>
       </section>

@@ -18,6 +18,8 @@ import { StudentLoginDto } from './dto/student-login.dto';
 import { StudentAuthService } from './student-auth.service';
 import { StudentAuthGuard } from './guards/student-auth.guard';
 import type { AuthenticatedStudentRequest } from './interfaces/authenticated-student-request.interface';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { createAuthCookieOptions } from './auth-cookie.options';
 
 @Controller('student')
 export class StudentAuthController {
@@ -35,6 +37,8 @@ export class StudentAuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000, blockDuration: 60_000 } })
   async login(
     @Body() dto: StudentLoginDto,
     @Res({ passthrough: true }) response: Response,
@@ -42,13 +46,14 @@ export class StudentAuthController {
     const { accessToken, student } = await this.studentAuthService.login(dto);
 
     // 学生和 HR 使用不同 Cookie，避免两个登录状态相互覆盖。
-    response.cookie(STUDENT_AUTH_COOKIE, accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: STUDENT_AUTH_COOKIE_MAX_AGE_MS,
-      path: '/',
-    });
+    response.cookie(
+      STUDENT_AUTH_COOKIE,
+      accessToken,
+      createAuthCookieOptions(
+        process.env.NODE_ENV,
+        STUDENT_AUTH_COOKIE_MAX_AGE_MS,
+      ),
+    );
 
     // JWT 放在 HttpOnly Cookie 中，不在响应正文中返回。
     return { student };
@@ -57,11 +62,9 @@ export class StudentAuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   logout(@Res({ passthrough: true }) response: Response): void {
-    response.clearCookie(STUDENT_AUTH_COOKIE, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-    });
+    response.clearCookie(
+      STUDENT_AUTH_COOKIE,
+      createAuthCookieOptions(process.env.NODE_ENV),
+    );
   }
 }

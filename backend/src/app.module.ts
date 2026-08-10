@@ -11,14 +11,33 @@ import { HrModule } from './modules/hr/hr.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { StudentFormModule } from './modules/student-form/student-form.module';
 import { StudentModule } from './modules/student/student.module';
+import { BusinessClockModule } from './common/time/business-clock.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { validateEnvironment } from './config/environment.validation';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { HealthModule } from './modules/health/health.module';
+import { ObservabilityModule } from './common/observability/observability.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validate: validateEnvironment,
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        limit: 60,
+        ttl: 60_000,
+        blockDuration: 60_000,
+      },
+    ]),
     ScheduleModule.forRoot(),
+    ObservabilityModule,
+    BusinessClockModule,
     DatabaseModule,
+    HealthModule,
+    AttendanceModule,
     StudentModule,
     HrModule,
     AuthModule,

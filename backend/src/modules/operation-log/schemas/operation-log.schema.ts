@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
 import { SchemaTypes, Types } from 'mongoose';
 import { OperationAction } from '../enums/operation-action.enum';
+import { OperationTargetType } from '../enums/operation-target-type.enum';
 
 export type OperationLogDocument = HydratedDocument<OperationLog>;
 
@@ -27,10 +28,25 @@ export class OperationLog {
   @Prop({
     type: SchemaTypes.ObjectId,
     ref: 'Student',
-    required: true,
+    default: null,
     index: true,
   })
-  studentId!: Types.ObjectId;
+  studentId!: Types.ObjectId | null;
+
+  @Prop({
+    type: String,
+    enum: Object.values(OperationTargetType),
+    default: null,
+    index: true,
+  })
+  targetType!: OperationTargetType | null;
+
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    default: null,
+    index: true,
+  })
+  targetId!: Types.ObjectId | null;
 
   @Prop({
     type: String,
@@ -54,5 +70,11 @@ export const OperationLogSchema = SchemaFactory.createForClass(OperationLog);
 
 OperationLogSchema.index({
   studentId: 1,
+  createdAt: -1,
+});
+
+OperationLogSchema.index({
+  targetType: 1,
+  targetId: 1,
   createdAt: -1,
 });

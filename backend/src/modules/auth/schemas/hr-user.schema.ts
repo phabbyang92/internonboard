@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
+import { RegionCode } from '../../attendance/enums/region-code.enum';
 import { HrRole } from '../enums/hr-role.enum';
 
 export type HrUserDocument = HydratedDocument<HrUser>;
@@ -39,6 +40,15 @@ export class HrUser {
     default: HrRole.Hr,
   })
   role!: HrRole;
+
+  // 学生可见范围仍由 ownerHrId 决定；该字段只控制地区配置权限。
+  @Prop({
+    type: [String],
+    enum: Object.values(RegionCode),
+    default: [],
+    index: true,
+  })
+  managedRegionCodes!: RegionCode[];
 
   @Prop({
     type: Date,
