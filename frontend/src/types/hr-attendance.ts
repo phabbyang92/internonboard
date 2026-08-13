@@ -14,6 +14,10 @@ export const HR_DAILY_ATTENDANCE_SORTS = [
 export type HrDailyAttendanceSort =
   (typeof HR_DAILY_ATTENDANCE_SORTS)[number];
 
+export type HrDailyAttendanceStatusFilter =
+  | AttendanceStatus
+  | "checked_in";
+
 export const HR_ATTENDANCE_SUMMARY_SORTS = [
   "student_name_asc",
   "total_attendance_days_desc",
@@ -80,7 +84,7 @@ export interface HrAttendanceListQuery {
 
 export interface HrDailyAttendanceQuery extends HrAttendanceListQuery {
   date: string;
-  status?: AttendanceStatus;
+  status?: HrDailyAttendanceStatusFilter;
   sortBy?: HrDailyAttendanceSort;
 }
 

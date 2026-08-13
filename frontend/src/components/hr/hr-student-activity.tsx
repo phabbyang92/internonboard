@@ -344,15 +344,28 @@ export function HrStudentActivity({
         </div>
       ) : null}
 
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
-            <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
-              <h2 className="font-semibold text-[#223548]">工作地点历史</h2>
-              <p className="mt-1 text-xs text-[#6b7f92]">
-                记录学生曾在哪个地点工作，以及每次安排的生效时间。
-              </p>
-            </header>
+      <section className="mt-6 overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
+        <header className="border-b border-[#c7d5e0] bg-[#f6f9fb] px-5 py-4 sm:px-6">
+          <h2 className="text-lg font-semibold text-[#223548]">记录与历史</h2>
+          <p className="mt-1 text-xs text-[#6b7f92]">
+            集中查看工作地点变更、记录状态和 HR 操作记录。
+          </p>
+        </header>
+
+        <div className="grid items-start lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+          <div className="min-w-0">
+            <section aria-labelledby="work-location-history-heading">
+              <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
+                <h3
+                  id="work-location-history-heading"
+                  className="font-semibold text-[#223548]"
+                >
+                  工作地点历史
+                </h3>
+                <p className="mt-1 text-xs text-[#6b7f92]">
+                  记录学生曾在哪个地点工作，以及每次安排的生效时间。
+                </p>
+              </header>
             {isLoading ? (
               <p className="px-5 py-8 text-sm text-[#6b7f92]">
                 正在加载地点历史...
@@ -428,13 +441,21 @@ export function HrStudentActivity({
                 暂无地点变更历史。
               </p>
             )}
-          </section>
+            </section>
 
-          <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
-            <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
-              <h2 className="font-semibold text-[#223548]">记录信息</h2>
-            </header>
-            <dl className="grid gap-4 px-5 py-5 sm:px-6">
+            <section
+              className="border-t border-[#c7d5e0]"
+              aria-labelledby="record-information-heading"
+            >
+              <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
+                <h3
+                  id="record-information-heading"
+                  className="font-semibold text-[#223548]"
+                >
+                  记录信息
+                </h3>
+              </header>
+              <dl className="grid gap-x-6 gap-y-4 px-5 py-5 sm:grid-cols-3 sm:px-6 lg:grid-cols-1 xl:grid-cols-3">
               {[
                 ["系统创建时间", formatDateTime(createdAt)],
                 ["最后更新时间", formatDateTime(updatedAt)],
@@ -455,83 +476,94 @@ export function HrStudentActivity({
                   </dd>
                 </div>
               ))}
-            </dl>
+              </dl>
+            </section>
+          </div>
+
+          <section
+            className="min-w-0 border-t border-[#c7d5e0] lg:border-l lg:border-t-0"
+            aria-labelledby="hr-operation-log-heading"
+          >
+            <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
+              <h3
+                id="hr-operation-log-heading"
+                className="font-semibold text-[#223548]"
+              >
+                HR 操作日志
+              </h3>
+              <p className="mt-1 text-xs text-[#6b7f92]">
+                日志只记录操作和必要字段，不复制身份证号等敏感内容。
+              </p>
+            </header>
+            {isLoading ? (
+              <p className="px-5 py-8 text-sm text-[#6b7f92]">
+                正在加载操作日志...
+              </p>
+            ) : error ? (
+              <p className="px-5 py-8 text-sm text-[#9d3426]" role="alert">
+                {error}
+              </p>
+            ) : logs.items.length ? (
+              <ol className="divide-y divide-[#e1e8ef]">
+                {logs.items.map((log) => (
+                  <li key={log.id} className="px-5 py-4 sm:px-6">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-[#2b3e50]">
+                        {actionLabels[log.action]}
+                      </p>
+                      <time className="text-xs text-[#6b7f92]">
+                        {formatDateTime(log.createdAt)}
+                      </time>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-[#5f7285]">
+                      {describeChanges(log.changes)}
+                    </p>
+                    <p className="mt-1 text-[11px] text-[#7f90a0]">
+                      操作人 ID：{log.operatorHrId}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="px-5 py-8 text-sm text-[#6b7f92]">
+                暂无操作日志。
+              </p>
+            )}
+
+            {!isLoading && !error && logs.pagination.total > 0 ? (
+              <div className="flex items-center justify-between border-t border-[#d5e0e9] px-5 py-3 text-xs text-[#5f7285] sm:px-6">
+                <button
+                  type="button"
+                  disabled={logPage <= 1}
+                  onClick={() => {
+                    setIsLoading(true);
+                    setError("");
+                    setLogPage((page) => Math.max(1, page - 1));
+                  }}
+                  className="min-h-9 cursor-pointer rounded-md border border-[#b9c9d7] px-3 transition hover:border-[#184268] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  上一页
+                </button>
+                <span>
+                  第 {logs.pagination.page} / {pageCount} 页
+                </span>
+                <button
+                  type="button"
+                  disabled={logPage >= pageCount}
+                  onClick={() => {
+                    setIsLoading(true);
+                    setError("");
+                    setLogPage((page) => page + 1);
+                  }}
+                  className="min-h-9 cursor-pointer rounded-md border border-[#b9c9d7] px-3 transition hover:border-[#184268] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  下一页
+                </button>
+              </div>
+            ) : null}
           </section>
         </div>
-
-        <section className="overflow-hidden rounded-lg border border-[#cfdae4] bg-white shadow-[0_3px_14px_rgba(24,66,104,0.05)]">
-          <header className="border-b border-[#d5e0e9] px-5 py-4 sm:px-6">
-            <h2 className="font-semibold text-[#223548]">HR 操作日志</h2>
-            <p className="mt-1 text-xs text-[#6b7f92]">
-              日志只记录操作和必要字段，不复制身份证号等敏感内容。
-            </p>
-          </header>
-          {isLoading ? (
-            <p className="px-5 py-8 text-sm text-[#6b7f92]">
-              正在加载操作日志...
-            </p>
-          ) : error ? (
-            <p className="px-5 py-8 text-sm text-[#9d3426]" role="alert">
-              {error}
-            </p>
-          ) : logs.items.length ? (
-            <ol className="divide-y divide-[#e1e8ef]">
-              {logs.items.map((log) => (
-                <li key={log.id} className="px-5 py-4 sm:px-6">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-[#2b3e50]">
-                      {actionLabels[log.action]}
-                    </p>
-                    <time className="text-xs text-[#6b7f92]">
-                      {formatDateTime(log.createdAt)}
-                    </time>
-                  </div>
-                  <p className="mt-2 text-xs leading-5 text-[#5f7285]">
-                    {describeChanges(log.changes)}
-                  </p>
-                  <p className="mt-1 text-[11px] text-[#7f90a0]">
-                    操作人 ID：{log.operatorHrId}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="px-5 py-8 text-sm text-[#6b7f92]">暂无操作日志。</p>
-          )}
-
-          {!isLoading && !error && logs.pagination.total > 0 ? (
-            <div className="flex items-center justify-between border-t border-[#d5e0e9] px-5 py-3 text-xs text-[#5f7285] sm:px-6">
-              <button
-                type="button"
-                disabled={logPage <= 1}
-                onClick={() => {
-                  setIsLoading(true);
-                  setError("");
-                  setLogPage((page) => Math.max(1, page - 1));
-                }}
-                className="min-h-9 border border-[#b9c9d7] px-3 disabled:opacity-40"
-              >
-                上一页
-              </button>
-              <span>
-                第 {logs.pagination.page} / {pageCount} 页
-              </span>
-              <button
-                type="button"
-                disabled={logPage >= pageCount}
-                onClick={() => {
-                  setIsLoading(true);
-                  setError("");
-                  setLogPage((page) => page + 1);
-                }}
-                className="min-h-9 border border-[#b9c9d7] px-3 disabled:opacity-40"
-              >
-                下一页
-              </button>
-            </div>
-          ) : null}
-        </section>
-      </div>
+      </section>
 
       <HrModal
         isOpen={editingAssignment !== null}

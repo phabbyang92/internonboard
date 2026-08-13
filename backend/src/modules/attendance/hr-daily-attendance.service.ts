@@ -6,6 +6,7 @@ import { HrAttendanceAccessService } from './access/hr-attendance-access.service
 import { AttendanceQueryPreparationService } from './attendance-query-preparation.service';
 import type { ListHrDailyAttendanceQueryDto } from './dto/list-hr-daily-attendance-query.dto';
 import { AttendanceStatus } from './enums/attendance-status.enum';
+import { HrDailyAttendanceStatusFilter } from './enums/hr-daily-attendance-status-filter.enum';
 import { HrDailyAttendanceSort } from './enums/hr-attendance-sort.enum';
 import type { HrDailyAttendanceResponse } from './interfaces/hr-attendance-response.interface';
 import {
@@ -91,10 +92,6 @@ export class HrDailyAttendanceService {
 
     if (scope.ownerHrId) {
       match.ownerHrId = scope.ownerHrId;
-    }
-
-    if (query.status) {
-      match.status = query.status;
     }
 
     if (query.workLocation) {
@@ -194,6 +191,8 @@ export class HrDailyAttendanceService {
       });
     }
 
+    const statusFilter = this.getStatusFilter(query.status);
+
     pipeline.push(
       {
         $addFields: {
@@ -223,8 +222,11 @@ export class HrDailyAttendanceService {
             },
             { $project: { _id: 0 } },
           ],
-          metadata: [{ $count: 'total' }],
+          // 状态卡片始终展示当前日期和其他查询条件下的完整统计；
+          // 状态筛选只作用于列表及分页数量，便于 HR 连续切换卡片。
+          metadata: [...statusFilter, { $count: 'total' }],
           items: [
+            ...statusFilter,
             { $sort: this.getSort(query.sortBy) },
             { $skip: (query.page - 1) * query.limit },
             { $limit: query.limit },
@@ -256,6 +258,18 @@ export class HrDailyAttendanceService {
     );
 
     return pipeline;
+  }
+
+  private getStatusFilter(
+    status?: HrDailyAttendanceStatusFilter,
+  ): PipelineStage.Match[] {
+    if (!status) return [];
+
+    if (status === HrDailyAttendanceStatusFilter.CheckedIn) {
+      return [{ $match: { checkInAt: { $ne: null } } }];
+    }
+
+    return [{ $match: { status } }];
   }
 
   private statusCounter(status: AttendanceStatus) {

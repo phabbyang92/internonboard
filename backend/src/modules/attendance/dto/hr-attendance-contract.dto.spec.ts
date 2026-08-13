@@ -4,6 +4,7 @@ import { validate } from 'class-validator';
 import { WorkLocation } from '../../student/enums/student.enums';
 import { AttendanceStatus } from '../enums/attendance-status.enum';
 import { CheckInMode } from '../enums/check-in-mode.enum';
+import { HrDailyAttendanceStatusFilter } from '../enums/hr-daily-attendance-status-filter.enum';
 import {
   HrAttendanceSummarySort,
   HrDailyAttendanceSort,
@@ -23,7 +24,7 @@ describe('HR attendance API contract DTOs', () => {
       page: '2',
       limit: '50',
       keyword: '  Student One  ',
-      status: AttendanceStatus.Late,
+      status: HrDailyAttendanceStatusFilter.CheckedIn,
       workLocation: WorkLocation.ShanghaiOffice,
       checkInMode: CheckInMode.Offline,
       ownerHrId: OWNER_HR_ID,
@@ -35,6 +36,7 @@ describe('HR attendance API contract DTOs', () => {
       page: 2,
       limit: 50,
       keyword: 'Student One',
+      status: HrDailyAttendanceStatusFilter.CheckedIn,
       sortBy: HrDailyAttendanceSort.CheckInAtAsc,
     });
   });

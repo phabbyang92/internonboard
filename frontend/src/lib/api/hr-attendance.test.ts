@@ -31,7 +31,7 @@ describe("HR attendance API", () => {
       workLocation: "上海办公室 - 会德丰",
       checkInMode: "offline",
       ownerHrId: "6a574ec45bd0f7b2a8b65b91",
-      status: "late",
+      status: "checked_in",
       sortBy: "check_in_at_desc",
     });
 
@@ -47,7 +47,7 @@ describe("HR attendance API", () => {
       workLocation: "上海办公室 - 会德丰",
       checkInMode: "offline",
       ownerHrId: "6a574ec45bd0f7b2a8b65b91",
-      status: "late",
+      status: "checked_in",
       sortBy: "check_in_at_desc",
     });
     expect(options.method).toBe("GET");

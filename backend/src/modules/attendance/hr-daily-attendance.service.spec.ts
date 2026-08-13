@@ -9,6 +9,7 @@ import type { ListHrDailyAttendanceQueryDto } from './dto/list-hr-daily-attendan
 import { AttendanceSource } from './enums/attendance-source.enum';
 import { AttendanceStatus } from './enums/attendance-status.enum';
 import { CheckInMode } from './enums/check-in-mode.enum';
+import { HrDailyAttendanceStatusFilter } from './enums/hr-daily-attendance-status-filter.enum';
 import { HrDailyAttendanceSort } from './enums/hr-attendance-sort.enum';
 import { LateLevel } from './enums/late-level.enum';
 import { HrDailyAttendanceService } from './hr-daily-attendance.service';
@@ -139,7 +140,6 @@ describe('HrDailyAttendanceService', () => {
       $match: {
         attendanceDate: query.date,
         ownerHrId: new Types.ObjectId(HR_ID),
-        status: AttendanceStatus.Late,
         assignedWorkLocation: WorkLocation.ShanghaiOffice,
         checkInMode: CheckInMode.Offline,
       },
@@ -204,6 +204,56 @@ describe('HrDailyAttendanceService', () => {
         },
       },
     });
+  });
+
+  it('filters checked-in records without changing the summary counters', async () => {
+    const { service, getPipeline } = createService([
+      { summary: [], metadata: [], items: [] },
+    ]);
+
+    await service.listDaily(
+      createQuery({ status: HrDailyAttendanceStatusFilter.CheckedIn }),
+      ACCESS,
+    );
+
+    const pipeline = getPipeline();
+    expect(pipeline[0]).toEqual({
+      $match: {
+        attendanceDate: '2026-08-07',
+        ownerHrId: new Types.ObjectId(HR_ID),
+      },
+    });
+
+    const facetStage = pipeline.find((stage) => '$facet' in stage);
+    if (!facetStage || !('$facet' in facetStage)) {
+      throw new Error('Daily attendance facet was not generated');
+    }
+
+    const checkedInMatch = { $match: { checkInAt: { $ne: null } } };
+    expect(facetStage.$facet.summary).not.toContainEqual(checkedInMatch);
+    expect(facetStage.$facet.metadata[0]).toEqual(checkedInMatch);
+    expect(facetStage.$facet.items[0]).toEqual(checkedInMatch);
+  });
+
+  it('applies a single status filter only to list results and pagination', async () => {
+    const { service, getPipeline } = createService([
+      { summary: [], metadata: [], items: [] },
+    ]);
+
+    await service.listDaily(
+      createQuery({ status: HrDailyAttendanceStatusFilter.Leave }),
+      ACCESS,
+    );
+
+    const facetStage = getPipeline().find((stage) => '$facet' in stage);
+    if (!facetStage || !('$facet' in facetStage)) {
+      throw new Error('Daily attendance facet was not generated');
+    }
+
+    const leaveMatch = { $match: { status: AttendanceStatus.Leave } };
+    expect(facetStage.$facet.summary).not.toContainEqual(leaveMatch);
+    expect(facetStage.$facet.metadata[0]).toEqual(leaveMatch);
+    expect(facetStage.$facet.items[0]).toEqual(leaveMatch);
   });
 
   it('queries and prepares all owners for an Admin without an owner filter', async () => {

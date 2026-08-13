@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api/client";
 import type { HrUser } from "@/types/hr";
 import type { HrDailyAttendanceResponse } from "@/types/hr-attendance";
 import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
@@ -90,6 +91,10 @@ describe("HrDailyAttendance", () => {
     render(<HrDailyAttendance user={regularHr} />);
 
     expect(await screen.findByText("测试学生")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "测试学生" })).toHaveAttribute(
+      "href",
+      "/hr/attendance/students/student-1?month=2026-08",
+    );
     expect(screen.getByText("09:02:03")).toBeInTheDocument();
     expect(screen.getByText("线下签到")).toBeInTheDocument();
     expect(screen.getByText("学生签到")).toBeInTheDocument();
@@ -134,6 +139,42 @@ describe("HrDailyAttendance", () => {
     expect(screen.getAllByText("负责 HR")).toHaveLength(2);
     expect(screen.getByText("严重迟到（缺勤）")).toBeInTheDocument();
     expect(screen.getByText("HR 已更正")).toBeInTheDocument();
+  });
+
+  it("uses the summary cards as synchronized attendance filters", async () => {
+    const user = userEvent.setup();
+    mockedListDaily.mockResolvedValue(makeDailyResponse());
+
+    render(<HrDailyAttendance user={regularHr} />);
+
+    const checkedInCard = await screen.findByRole("button", {
+      name: /已打卡/,
+    });
+    await user.click(checkedInCard);
+
+    await waitFor(() => {
+      expect(mockedListDaily).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: "checked_in", page: 1 }),
+      );
+    });
+    expect(checkedInCard).toHaveAttribute("aria-pressed", "true");
+
+    const leaveCard = screen.getByRole("button", { name: /请假/ });
+    await user.click(leaveCard);
+
+    await waitFor(() => {
+      expect(mockedListDaily).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: "leave", page: 1 }),
+      );
+    });
+    expect(leaveCard).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(screen.getByRole("button", { name: /全部学生/ }));
+    await waitFor(() => {
+      expect(mockedListDaily).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: undefined, page: 1 }),
+      );
+    });
   });
 
   it("redirects to HR login when the session has expired", async () => {

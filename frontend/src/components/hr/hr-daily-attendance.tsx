@@ -23,6 +23,7 @@ import type {
   HrDailyAttendanceItem,
   HrDailyAttendanceResponse,
   HrDailyAttendanceSort,
+  HrDailyAttendanceStatusFilter,
 } from "@/types/hr-attendance";
 import type {
   AttendanceStatus,
@@ -39,12 +40,16 @@ interface DailyFilters {
   keyword: string;
   workLocation: WorkLocation | "";
   checkInMode: CheckInMode | "";
-  status: AttendanceStatus | "";
+  status: HrDailyAttendanceStatusFilter | "";
   ownerHrId: string;
 }
 
-const STATUS_OPTIONS: Array<{ value: AttendanceStatus | ""; label: string }> = [
+const STATUS_OPTIONS: Array<{
+  value: HrDailyAttendanceStatusFilter | "";
+  label: string;
+}> = [
   { value: "", label: "全部状态" },
+  { value: "checked_in", label: "已打卡" },
   { value: "on_time", label: "按时" },
   { value: "late", label: "迟到" },
   { value: "leave", label: "请假" },
@@ -255,14 +260,57 @@ export function HrDailyAttendance({ user }: HrDailyAttendanceProps) {
     setPage(1);
   }
 
+  function applyStatusQuickFilter(
+    status: HrDailyAttendanceStatusFilter | "",
+  ) {
+    // 快捷卡片只改变状态，保留已经查询生效的其他条件；
+    // 尚未点击“查询”的输入不会被意外带入本次筛选。
+    const nextFilters = { ...filters, status };
+    setIsLoading(true);
+    setErrorMessage("");
+    setDraft((current) => ({ ...current, status }));
+    setFilters(nextFilters);
+    setPage(1);
+  }
+
   const pageCount = Math.max(1, data.pagination.totalPages);
   const summaryItems = [
-    { label: "全部学生", value: data.summary.totalStudents, tone: "default" },
-    { label: "已打卡", value: data.summary.checkedIn, tone: "blue" },
-    { label: "按时", value: data.summary.onTime, tone: "green" },
-    { label: "迟到", value: data.summary.late, tone: "amber" },
-    { label: "请假", value: data.summary.leave, tone: "blue" },
-    { label: "缺勤", value: data.summary.absent, tone: "red" },
+    {
+      label: "全部学生",
+      value: data.summary.totalStudents,
+      tone: "default",
+      status: "",
+    },
+    {
+      label: "已打卡",
+      value: data.summary.checkedIn,
+      tone: "blue",
+      status: "checked_in",
+    },
+    {
+      label: "按时",
+      value: data.summary.onTime,
+      tone: "green",
+      status: "on_time",
+    },
+    {
+      label: "迟到",
+      value: data.summary.late,
+      tone: "amber",
+      status: "late",
+    },
+    {
+      label: "请假",
+      value: data.summary.leave,
+      tone: "blue",
+      status: "leave",
+    },
+    {
+      label: "缺勤",
+      value: data.summary.absent,
+      tone: "red",
+      status: "absent",
+    },
   ] as const;
   const toneClasses = {
     default: "text-[#172735]",
@@ -312,21 +360,36 @@ export function HrDailyAttendance({ user }: HrDailyAttendanceProps) {
         className="mt-5 grid overflow-hidden rounded-lg border border-[#cfdae4] bg-white sm:grid-cols-3 lg:grid-cols-6"
         aria-label="每日出勤统计"
       >
-        {summaryItems.map((item) => (
-          <div
-            key={item.label}
-            className="min-h-24 border-b border-[#d9e3eb] px-4 py-4 last:border-b-0 sm:border-r sm:[&:nth-child(3n)]:border-r-0 lg:border-b-0 lg:[&:nth-child(3n)]:border-r lg:last:border-r-0"
-          >
-            <p className="text-xs font-semibold text-[#6b7f92]">
-              {item.label}
-            </p>
-            <p
-              className={`mt-2 text-2xl font-semibold ${toneClasses[item.tone]}`}
+        {summaryItems.map((item) => {
+          const isActive = filters.status === item.status;
+
+          return (
+            <button
+              key={item.label}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() =>
+                applyStatusQuickFilter(
+                  item.status as HrDailyAttendanceStatusFilter | "",
+                )
+              }
+              className={`min-h-24 rounded-none border-b border-[#d9e3eb] px-4 py-4 text-left transition last:border-b-0 hover:bg-[#f3f7fb] focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[#184268] sm:border-r sm:[&:nth-child(3n)]:border-r-0 lg:border-b-0 lg:[&:nth-child(3n)]:border-r lg:last:border-r-0 ${
+                isActive
+                  ? "bg-[#edf4fa] shadow-[inset_0_3px_0_#184268]"
+                  : ""
+              }`}
             >
-              {isLoading ? "—" : item.value}
-            </p>
-          </div>
-        ))}
+              <p className="text-xs font-semibold text-[#6b7f92]">
+                {item.label}
+              </p>
+              <p
+                className={`mt-2 text-2xl font-semibold ${toneClasses[item.tone]}`}
+              >
+                {isLoading ? "—" : item.value}
+              </p>
+            </button>
+          );
+        })}
       </section>
 
       <section className="mt-5 rounded-lg border border-[#cfdae4] bg-white">
@@ -436,7 +499,7 @@ export function HrDailyAttendance({ user }: HrDailyAttendanceProps) {
               onChange={(value) =>
                 setDraft((current) => ({
                   ...current,
-                  status: value as AttendanceStatus | "",
+                  status: value as HrDailyAttendanceStatusFilter | "",
                 }))
               }
               ariaLabel="筛选考勤状态"
@@ -619,7 +682,7 @@ export function HrDailyAttendance({ user }: HrDailyAttendanceProps) {
                       >
                         <td className="px-4 py-4 align-top">
                           <Link
-                            href={`/hr/students/${item.student.id}`}
+                            href={`/hr/attendance/students/${item.student.id}?month=${encodeURIComponent(item.attendanceDate.slice(0, 7))}`}
                             className="font-semibold text-[#243648] transition hover:text-[#006eb6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#184268]"
                           >
                             {item.student.name}

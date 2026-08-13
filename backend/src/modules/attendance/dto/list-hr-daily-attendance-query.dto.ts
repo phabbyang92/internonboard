@@ -1,6 +1,6 @@
 import { IsEnum, IsOptional, Matches } from 'class-validator';
 import { ATTENDANCE_DATE_PATTERN } from '../attendance.constants';
-import { AttendanceStatus } from '../enums/attendance-status.enum';
+import { HrDailyAttendanceStatusFilter } from '../enums/hr-daily-attendance-status-filter.enum';
 import { HrDailyAttendanceSort } from '../enums/hr-attendance-sort.enum';
 import { HrAttendanceListQueryDto } from './hr-attendance-list-query.dto';
 
@@ -11,8 +11,8 @@ export class ListHrDailyAttendanceQueryDto extends HrAttendanceListQueryDto {
   date!: string;
 
   @IsOptional()
-  @IsEnum(AttendanceStatus)
-  status?: AttendanceStatus;
+  @IsEnum(HrDailyAttendanceStatusFilter)
+  status?: HrDailyAttendanceStatusFilter;
 
   @IsEnum(HrDailyAttendanceSort)
   sortBy: HrDailyAttendanceSort = HrDailyAttendanceSort.StudentNameAsc;
